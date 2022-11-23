@@ -790,35 +790,35 @@ Hungarian::Hungarian()	// Magyar
 Italian::Italian()	// Italiano
 // build the translation vector in the Translation base class
 {
-	addPair("Formatted  %s\n", L"Formattata  %s\n");	// should align with unchanged
+	addPair("Formatted  %s\n", L"Formattato  %s\n");	// should align with unchanged
 	addPair("Unchanged  %s\n", L"Immutato    %s\n");	// should align with formatted
-	addPair("Directory  %s\n", L"Elenco  %s\n");
-	addPair("Default option file  %s\n", L"File di opzione predefinito  %s\n");
-	addPair("Project option file  %s\n", L"File di opzione del progetto  %s\n");
-	addPair("Exclude  %s\n", L"Escludere  %s\n");
-	addPair("Exclude (unmatched)  %s\n", L"Escludere (senza pari)  %s\n");
-	addPair(" %s formatted   %s unchanged   ", L" %s ormattata   %s immutato   ");
-	addPair(" seconds   ", L" secondo   ");
-	addPair("%d min %d sec   ", L"%d min %d seg   ");
+	addPair("Directory  %s\n", L"Directory  %s\n");
+	addPair("Default option file  %s\n", L"File di configurazione predefinito  %s\n");
+	addPair("Project option file  %s\n", L"File di configurazione del progetto %s\n");
+	addPair("Exclude  %s\n", L"Escluso  %s\n");
+	addPair("Exclude (unmatched)  %s\n", L"Escluso (senza pari)  %s\n");
+	addPair(" %s formatted   %s unchanged   ", L" %s formattato   %s immutato   ");
+	addPair(" seconds   ", L" secondi   ");
+	addPair("%d min %d sec   ", L"%d min %d sec   ");
 	addPair("%s lines\n", L"%s linee\n");
 	addPair("Opening HTML documentation %s\n", L"Apertura di documenti HTML %s\n");
 	addPair("Invalid default options:", L"Opzioni di default non valide:");
 	addPair("Invalid project options:", L"Opzioni di progetto non valide:");
-	addPair("Invalid command line options:", L"Opzioni della riga di comando non valido:");
-	addPair("For help on options type 'astyle -h'", L"Per informazioni sulle opzioni di tipo 'astyle-h'");
-	addPair("Cannot open default option file", L"Impossibile aprire il file di opzione predefinito");
-	addPair("Cannot open project option file", L"Impossibile aprire il file di opzione del progetto");
+	addPair("Invalid command line options:", L"Opzioni della riga di comando non valide:");
+	addPair("For help on options type 'astyle -h'", L"Per informazioni sulle opzioni di tipo 'astyle -h'");
+	addPair("Cannot open default option file", L"Impossibile aprire il file di configurazione predefinito");
+	addPair("Cannot open project option file", L"Impossibile aprire il file di configurazione del progetto");
 	addPair("Cannot open directory", L"Impossibile aprire la directory");
 	addPair("Cannot open HTML file %s\n", L"Impossibile aprire il file HTML %s\n");
-	addPair("Command execute failure", L"Esegui fallimento comando");
+	addPair("Command execute failure", L"Esecuzione del comando fallita");
 	addPair("Command is not installed", L"Il comando non è installato");
 	addPair("Missing filename in %s\n", L"Nome del file mancante in %s\n");
 	addPair("Recursive option with no wildcard", L"Opzione ricorsiva senza jolly");
 	addPair("Did you intend quote the filename", L"Avete intenzione citare il nome del file");
-	addPair("No file to process %s\n", L"Nessun file al processo %s\n");
+	addPair("No file to process %s\n", L"Nessun file da processare %s\n");
 	addPair("Did you intend to use --recursive", L"Hai intenzione di utilizzare --recursive");
-	addPair("Cannot process UTF-32 encoding", L"Non è possibile processo di codifica UTF-32");
-	addPair("Artistic Style has terminated\n", L"Artistic Style ha terminato\n");
+	addPair("Cannot process UTF-32 encoding", L"Non è possibile processare codifica UTF-32");
+	addPair("Artistic Style has terminated\n", L"Artistic Style è terminato\n");
 }
 
 Japanese::Japanese()	// 日本語
