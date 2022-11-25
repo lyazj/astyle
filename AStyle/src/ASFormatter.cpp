@@ -4374,6 +4374,7 @@ void ASFormatter::formatPointerOrReferenceToName()
 		}
 	}
 	// if reference to a pointer align both to name
+
 	else if (currentChar == '*' && peekNextChar() == '&')
 	{
 		sequenceToInsert = "*&";
@@ -4428,7 +4429,9 @@ void ASFormatter::formatPointerOrReferenceToName()
 	        && formattedLine.length() > startNum + 1
 	        && isWhiteSpace(formattedLine[startNum + 1])
 	        && peekedChar != '*'		// check for '* *'
-	        && !isBeforeAnyComment())
+	        && !isBeforeAnyComment()
+            && !(peekedChar == '&' && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/546/
+			)
 	{
 		formattedLine.erase(startNum + 1, 1);
 		spacePadNum--;
