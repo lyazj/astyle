@@ -262,6 +262,7 @@ public:
 	static const string AS_NOEXCEPT, AS_INTERRUPT, AS_AUTORELEASEPOOL;
 	static const string AS_WHERE, AS_LET, AS_SYNCHRONIZED;
 	static const string AS_OPERATOR, AS_TEMPLATE;
+	static const string AS_OPEN_PAREN, AS_CLOSE_PAREN;
 	static const string AS_OPEN_BRACE, AS_CLOSE_BRACE;
 	static const string AS_OPEN_LINE_COMMENT, AS_OPEN_COMMENT, AS_CLOSE_COMMENT;
 	static const string AS_BAR_DEFINE, AS_BAR_INCLUDE, AS_BAR_IF, AS_BAR_EL, AS_BAR_ENDIF;

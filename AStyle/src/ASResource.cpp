@@ -94,6 +94,8 @@ const string ASResource::AS_BAR_IF = string("#if");
 const string ASResource::AS_BAR_EL = string("#el");
 const string ASResource::AS_BAR_ENDIF = string("#endif");
 
+const string ASResource::AS_OPEN_PAREN = string("(");
+const string ASResource::AS_CLOSE_PAREN = string(")");
 const string ASResource::AS_OPEN_BRACE = string("{");
 const string ASResource::AS_CLOSE_BRACE = string("}");
 const string ASResource::AS_OPEN_LINE_COMMENT = string("//");
