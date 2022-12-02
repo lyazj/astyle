@@ -6807,10 +6807,15 @@ void ASFormatter::findReturnTypeSplitPoint(const string& firstLine)
 					methodBreakCharNum = breakCharNum;
 					methodBreakLineNum = breakLineNum;
 				}
+
 				if (shouldAttachReturnType && foundSplitPoint && isAlreadyBroken)
 				{
-					methodAttachCharNum = breakCharNum;
-					methodAttachLineNum = breakLineNum;
+					//https://sourceforge.net/p/astyle/bugs/545/
+					if ((maxCodeLength != string::npos && previousReadyFormattedLineLength < maxCodeLength) || maxCodeLength == string::npos)
+					{
+						methodAttachCharNum = breakCharNum;
+						methodAttachLineNum = breakLineNum;
+					}
 				}
 				return;
 			}
