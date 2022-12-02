@@ -226,7 +226,7 @@ def get_7zip_path():
     if os.name == "nt":
         exepath = "C:/Program Files/7-Zip/7z.exe"
     else:
-        exepath = "7z"
+        exepath = "7zz"
     return exepath
 
 # -----------------------------------------------------------------------------
@@ -405,7 +405,7 @@ def get_diff_path():
             message = "Cannot find diff path: " + exepath
             system_exit(message)
     else:
-        exepath = "diffuse"
+        exepath = "diff"
     return exepath
 
 # -----------------------------------------------------------------------------
@@ -424,9 +424,9 @@ def get_file_py_directory(endsep=False):
     if os.name == "nt":
         if pydir[0:2].upper() != "C:":
             system_exit("File executed from drive " + pydir[0:2])
-    else:
-        if pydir[0:6] != "/home/":
-            system_exit("File executed from " + pydir)
+    #else:
+        #--if pydir[0:6] != "/home/":
+          #  system_exit("File executed from " + pydir)
     return pydir
 
 # -----------------------------------------------------------------------------
@@ -467,10 +467,12 @@ def get_project_directory(endsep=False):
         system_exit("Bad arg in get_project_directory(): " + str(endsep))
     # get project directory
     pydir = get_file_py_directory()
+
     projdir = os.path.realpath(pydir + "../../../")
     #~ print("project directory = " + projdir)
     if endsep:
         projdir += '/'
+
     return projdir
 
 # -----------------------------------------------------------------------------
@@ -487,19 +489,9 @@ def get_project_excludes(project):
         # propgrid.cpp is the macro IMPLEMENT_GET_VALUE
         # sqplus.h aborts on verifyBeautifierStacks because of unmatched paren
         # sqvm.cpp doesn't compile because of _RET_SUCCEED macro used with --remove-braces
-        excludes.append("--exclude=resources/plugins/templates")
-        excludes.append("--exclude=resources/wxwidgets/common/main.cpp")
-        excludes.append("--exclude=resources/wxwidgets/wxsmith/main.cpp")
-        excludes.append("--exclude=resources/wxwidgets/wxsmith/main.h")
-        excludes.append("--exclude=wx/pdfpattern.h")
-        excludes.append("--exclude=wx/wxscintilla.h")
-        excludes.append("--exclude=wx/propgrid/advprops.h")
-        excludes.append("--exclude=wx/propgrid/manager.h")
-        excludes.append("--exclude=wx/propgrid/propgrid.h")
-        excludes.append("--exclude=wxwidgets/common/main.h")
-        excludes.append("--exclude=sqplus/sqplus.h")
-        excludes.append("--exclude=squirrel/sqvm.cpp")
+
         # excludes.append("--exclude=propgrid/propgrid.cpp")
+        pass
 #    elif project == GWORKSPACE:
 #        excludes.append("--exclude=GNUstep.h")
 #	elif project == KDEVELOP:
@@ -524,10 +516,9 @@ def get_project_filepaths(project):
     test_directory = get_test_directory()
     if project == CODEBLOCKS:
         if USE_MULTIPLE_EXTENSIONS:
-            filepaths.append(test_directory + "/CodeBlocks/src/*.cpp,*.cxx,*.h")
+            filepaths.append(test_directory + "/CodeBlocks/src/src/*.cpp,*.cxx,*.h")
         else:
             filepaths.append(test_directory + "/CodeBlocks/src/*.cpp")
-            # filepath.append(test_directory + "/CodeBlocks/src/*.cxx")
             filepaths.append(test_directory + "/CodeBlocks/src/*.h")
 #    elif project == GWORKSPACE:
 #        filepaths.append(test_directory + "/GWorkspace/*.m")
@@ -702,11 +693,10 @@ def system_exit(message=''):
         set_text_color("red")
         print(message)
     # pause if script is run from the console
-    if is_executed_from_console():
+    if os.name == "nt" and is_executed_from_console():
         print("\nPress any key to end . . .")
         get_ch()
-    else:
-        print("\nEnd of script !")
+
     # this does NOT raise a SystemExit exception like sys.exit()
     os._exit(0)
 
@@ -741,8 +731,8 @@ def test_all_functions():
 # make the module executable
 # run tests if executed as stand-alone
 if __name__ == "__main__":
+
     set_text_color("yellow")
     print(get_python_version())
-    print("Testing Library Functions")
     test_all_functions()
     system_exit()

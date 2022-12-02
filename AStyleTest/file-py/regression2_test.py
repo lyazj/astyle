@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+# -*- coding: utf-8 -*-
 """ Run the AStyle regression test.
     Tests the output of a new program against an older one.
     Change the global variables to the desired values.
@@ -17,6 +18,7 @@ import shutil
 import stat
 import subprocess
 import time
+import string
 # local libraries
 import libastyle
 import libextract
@@ -46,8 +48,8 @@ __options_x2 = ""
 #__options = "-tapOHUk3"
 
 # executables for test - astyleexe1 is old version, astyleexe2 is new version
-__astyleexe1 = "astyle31"
-__astyleexe2 = "astyled"
+__astyleexe1 = "astyle"
+__astyleexe2 = "AStyle"
 
 # select one of the following to format files in the OLD directory
 __formatOLD = True
@@ -69,13 +71,16 @@ def main():
     # initialization
     starttime = time.time()
     libastyle.set_text_color("yellow")
-    print(libastyle.get_python_version())
+
     locale.setlocale(locale.LC_ALL, "")
     if os.name == "nt":
         process_windows_ramdrive()
     verify_options_x_variable()
     print_run_header()
+
     os.chdir(libastyle.get_file_py_directory())
+
+    print("chdir " + libastyle.get_file_py_directory())
     libastyle.build_astyle_executable(get_astyle_config())
     verify_astyle_executables(__astyleexe1, __astyleexe2)
     filepaths = libastyle.get_project_filepaths(__project)
@@ -118,6 +123,7 @@ def call_artistic_style(astyle, testfile):
     """
     outfile = open(testfile, 'w')
     try:
+        print("Invoking " + string.join(astyle))
         subprocess.check_call(astyle, stdout=outfile)
     except subprocess.CalledProcessError as err:
         libastyle.system_exit("Bad astyle return: " + str(err.returncode))
@@ -363,6 +369,7 @@ def set_astyle_args(filepath, excludes, astyleexe):
     if (astyleexe == __astyleexe2
             and len(__options_x2.strip()) > 0):
         args.append(__options_x2)
+
     # set excludes
     for exclude in excludes:
         args.append(exclude)
