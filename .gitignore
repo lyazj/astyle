@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+TestArchives/
+TestData/
+AStyle/build/
+AStyleTest/file-py/*.tmp
+AStyleTest/file-py/*.pyc
+AStyleTest/file-py/test-diff.txt
+AStyleTest/file-py/test.txt
+
