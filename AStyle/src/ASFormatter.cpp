@@ -4028,6 +4028,7 @@ void ASFormatter::padOperators(const string* newOperator)
 	                           || isInObjCSelector || squareBracketCount != 0))
 	                  && !(newOperator == &AS_MINUS && isInExponent())
 	                  && !(newOperator == &AS_PLUS && isInExponent())
+                      && !(newOperator == &AS_GR && previousChar=='-') //https://sourceforge.net/p/astyle/bugs/544/
 	                  && !((newOperator == &AS_PLUS || newOperator == &AS_MINUS)	// check for unary plus or minus
 	                       && (previousNonWSChar == '('
 	                           || previousNonWSChar == '['
@@ -4035,9 +4036,6 @@ void ASFormatter::padOperators(const string* newOperator)
 	                           || previousNonWSChar == ','
 	                           || previousNonWSChar == ':'
 	                           || previousNonWSChar == '{'))
-//?                   // commented out in release 2.05.1 - doesn't seem to do anything???
-//x                   && !((newOperator == &AS_MULT || newOperator == &AS_BIT_AND || newOperator == &AS_AND)
-//x                        && isPointerOrReference())
 	                  && !(newOperator == &AS_MULT
 	                       && (previousNonWSChar == '.'
 	                           || previousNonWSChar == '>'))    // check for ->
