@@ -1772,8 +1772,11 @@ string ASFormatter::nextLine()
 		            || newHeader == &AS_AND)
 		        && isPointerOrReference())
 		{
-			if (!isDereferenceOrAddressOf() && !isOperatorPaddingDisabled())
+
+			if (!isDereferenceOrAddressOf() && !isOperatorPaddingDisabled()) {
 				formatPointerOrReference();
+			}
+
 			else
 			{
 				appendOperator(*newHeader);
@@ -3320,7 +3323,7 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 		return false;
 
 	if (previousNonWSChar == '='
-	        || previousNonWSChar == ','
+	       // || previousNonWSChar == ','
 	        || previousNonWSChar == '.'
 	        || previousNonWSChar == '{'
 	        || previousNonWSChar == '>'
@@ -3331,6 +3334,13 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 	        || isCharImmediatelyPostReturn)
 		return true;
 
+	// https://sourceforge.net/p/astyle/bugs/537/
+	if ( previousNonWSChar == ',') {
+
+		return false;
+	}
+
+
 	char nextChar = peekNextChar();
 	if (currentChar == '*' && nextChar == '*')
 	{
@@ -3340,6 +3350,7 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 			return true;
 		return false;
 	}
+
 	if (currentChar == '&' && nextChar == '&')
 	{
 		if (previousNonWSChar == '(' || isInTemplate)
@@ -3364,7 +3375,6 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 		if (nextText[0] == ';')
 			return true;
 	}
-
 	// check for reference to a pointer *&
 	if ((currentChar == '*' && nextChar == '&')
 	        || (previousNonWSChar == '*' && currentChar == '&'))
@@ -3373,14 +3383,11 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 	if (!isBraceType(braceTypeStack->back(), COMMAND_TYPE)
 	        && parenStack->back() == 0)
 		return false;
-
 	string lastWord = getPreviousWord(currentLine, charNum);
 	if (lastWord == "else" || lastWord == "delete")
 		return true;
-
 	if (isPointerOrReferenceVariable(lastWord))
 		return false;
-
 	bool isDA = (!(isLegalNameChar(previousNonWSChar) || previousNonWSChar == '>')
 	             || (nextText.length() > 0 && !isLegalNameChar(nextText[0]) && nextText[0] != '/')
 	             || (ispunct((unsigned char)previousNonWSChar) && previousNonWSChar != '.')
@@ -3456,6 +3463,7 @@ bool ASFormatter::isPointerOrReferenceVariable(const string& word) const
 	        || word == "INT"
 	        || word == "VOID")
 		retval = true;
+
 	// check for C# object type "x is string"
 	if (retval && isSharpStyle())
 	{
@@ -4190,6 +4198,11 @@ void ASFormatter::formatPointerOrReferenceToType()
 		charSave = formattedLine.substr(prevCh + 1);
 		formattedLine.resize(prevCh + 1);
 	}
+
+	// https://sourceforge.net/p/astyle/bugs/537/
+	if (previousNonWSChar==',' && currentChar!=' ')
+		appendSpacePad();
+
 	formattedLine.append(sequenceToInsert);
 	if (peekNextChar() != ')')
 		formattedLine.append(charSave);
@@ -4200,6 +4213,7 @@ void ASFormatter::formatPointerOrReferenceToType()
 	        && !isWhiteSpace(currentLine[charNum + 1])
 	        && currentLine[charNum + 1] != ')')
 		appendSpacePad();
+
 	// if old pointer or reference is centered, remove a space
 	if (isOldPRCentered
 	        && isWhiteSpace(formattedLine[formattedLine.length() - 1]))
