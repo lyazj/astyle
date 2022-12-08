@@ -4385,6 +4385,7 @@ void ASFormatter::formatPointerOrReferenceToName()
 			break;
 		}
 	}
+
 	// if reference to a pointer align both to name
 
 	else if (currentChar == '*' && peekNextChar() == '&')
@@ -4437,12 +4438,14 @@ void ASFormatter::formatPointerOrReferenceToName()
 	}
 	appendSequence(sequenceToInsert, false);
 	// if old pointer or reference is centered, remove a space
+
 	if (isOldPRCentered
 	        && formattedLine.length() > startNum + 1
 	        && isWhiteSpace(formattedLine[startNum + 1])
 	        && peekedChar != '*'		// check for '* *'
 	        && !isBeforeAnyComment()
             && !(peekedChar == '&' && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/546/
+            && !(peekedChar == '{' && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/527/
 			)
 	{
 		formattedLine.erase(startNum + 1, 1);
