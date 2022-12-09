@@ -4127,6 +4127,11 @@ void ASFormatter::formatPointerOrReference()
 			peekedChar = ' ';
 		else
 			peekedChar = currentLine[nextChar];
+
+		//https://sourceforge.net/p/astyle/bugs/543/
+		if (currentChar=='&' /*&& itemAlignment == PTR_ALIGN_NAME*/) {
+			itemAlignment = PTR_ALIGN_NONE;
+		}
 	}
 	// check for cast
 	if (peekedChar == ')' || peekedChar == '>' || peekedChar == ',')
