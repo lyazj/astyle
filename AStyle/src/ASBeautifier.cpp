@@ -2528,6 +2528,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 	bool previousLineProbation = (probationHeader != nullptr);
 	char ch = ' ';
 	int tabIncrementIn = 0;
+
 	if (isInQuote
 	        && !haveLineContinuationChar
 	        && !isInVerbatimQuote
@@ -2585,7 +2586,9 @@ void ASBeautifier::parseCurrentLine(const string& line)
 				quoteChar = ch;
 				isInQuote = true;
 				char prevCh = i > 0 ? line[i - 1] : ' ';
-				if (isCStyle() && prevCh == 'R')
+
+				// https://sourceforge.net/p/astyle/bugs/535/
+				if (isCStyle() && prevCh == 'R' && !(isalpha(prevPrevCh) || prevNonSpaceCh=='('  ))
 				{
 					int parenPos = line.find('(', i);
 					if (parenPos != -1)
@@ -3213,7 +3216,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 		if (ch == '?')
 			isInQuestion = true;
 
-		// special handling of colons
+		// special handling of colons XXX 533
 		if (ch == ':')
 		{
 			if (line.length() > i + 1 && line[i + 1] == ':') // look for ::
