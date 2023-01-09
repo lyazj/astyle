@@ -23,6 +23,7 @@ else:
 
 # test project IDs
 CODEBLOCKS   = "CodeBlocks"
+LSOF         = "lsof"
 JEDIT        = "jEdit"              # Java
 LIBSBASE     = "libsBase"           # Objective-C
 SCITE        = "SciTE"
@@ -65,6 +66,12 @@ OPT2 = "-xGSKNLwxWM60m3fpdHUxeEk3W1eJcxMxRxrxsxP0"
 #     add-braces (j,J), break-blocks (f,F),
 #     pad-oper (p), delete-empty-lines (xe)
 OPT3 = "-xwM80m1DyHUEk2W3xbxjxyxpxkxVxcxlxnxdxgxt2"
+
+# OPT4
+# align-pointer=type (k1), add-braces (j), break-blocks=all (F),
+#     min-conditional-indent=0 (m0), pad-oper (p), pad-oparen (P)
+#     obj-c (xMxQxqxSxP1)
+OPT4 = "-CSKNLwxwxWYM50m0FpPHUEyexbjOoc"
 
 # TEST SEPARATELY
 # max-code-length (xC), break-after-logical (xL)
@@ -483,23 +490,7 @@ def get_project_excludes(project):
        Returns a list of excludes.
     """
     excludes = []
-    if project == CODEBLOCKS:
-        # excludes because of %pythoncode
-        # advprops.h is __WXPYTHON__ at line 192
-        # propgrid.cpp is the macro IMPLEMENT_GET_VALUE
-        # sqplus.h aborts on verifyBeautifierStacks because of unmatched paren
-        # sqvm.cpp doesn't compile because of _RET_SUCCEED macro used with --remove-braces
-
-        # excludes.append("--exclude=propgrid/propgrid.cpp")
-        pass
-#    elif project == GWORKSPACE:
-#        excludes.append("--exclude=GNUstep.h")
-#	elif project == KDEVELOP:
-#		excludes.append("--exclude=app_templates")
-#		excludes.append("--exclude=autotools/autotools_lex.cpp")
-#		excludes.append("--exclude=qmake/qmake_lex.cpp")
-#		excludes.append("--exclude=doxygen/config.cpp")
-    elif project == SCITE:
+    if project == SCITE:
         excludes.append("--exclude=lua")
     elif project == SHARPDEVELOP:
         excludes.append("--exclude=Debugger.Tests")    # xml data
@@ -520,9 +511,9 @@ def get_project_filepaths(project):
         else:
             filepaths.append(test_directory + "/CodeBlocks/src/*.cpp")
             filepaths.append(test_directory + "/CodeBlocks/src/*.h")
-#    elif project == GWORKSPACE:
-#        filepaths.append(test_directory + "/GWorkspace/*.m")
-#        filepaths.append(test_directory + "/GWorkspace/*.h")
+    elif project == LSOF:
+        filepaths.append(test_directory + "/lsof/*.c,*.h")
+        filepaths.append(test_directory + "/lsof/lib/*.c,*.h")
     elif project == JEDIT:
         filepaths.append(test_directory + "/jEdit/*.java")
 #	elif project == KDEVELOP:

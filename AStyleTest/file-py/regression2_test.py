@@ -34,10 +34,10 @@ import libtest
 # SHARPDEVELOP      # C# - Compile on Windows only
 # SHARPMAIN         # C# - 1000 files from SharpDevelop
 # TESTPROJECT
-__project = libastyle.CODEBLOCKS
+__project = libastyle.LSOF
 
 # select OPT0 thru OPT3, or use customized options
-__options = libastyle.OPT3
+__options = libastyle.OPT4
 
 # options_x are for BOTH executables
 __options_x = ""
@@ -86,15 +86,19 @@ def main():
     filepaths = libastyle.get_project_filepaths(__project)
     excludes = libastyle.get_project_excludes(__project)
     testfile = "test.txt"
+
+    print ("filepaths:")
+    print(filepaths)
+
     # run test 1
     if __formatOLD:
         print("\nTest 1 Extract")
         libextract.extract_project(__project, __all_files_option)
         print_test_header(1, __astyleexe1)
-        astyle = set_astyle_args(filepaths, excludes, __astyleexe1)
+        astyle = set_astyle_args(filepaths, excludes, __astyleexe1, True)
         print_formatting_message(astyle, __project)
         call_artistic_style(astyle, testfile)
-        print_astyle_totals(testfile)
+        #print_astyle_totals(testfile)
         print("\nTest 1 Rename")
         libextract.remove_test_directory(__project + "OLD")
         libextract.rename_test_directory(__project, __project + "OLD")
@@ -106,10 +110,10 @@ def main():
     print("\nTest 2 Extract")
     libextract.extract_project(__project, __all_files_option)
     print_test_header(2, __astyleexe2)
-    astyle = set_astyle_args(filepaths, excludes, __astyleexe2)
+    astyle = set_astyle_args(filepaths, excludes, __astyleexe2, False)
     print_formatting_message(astyle, __project)
     call_artistic_style(astyle, testfile)
-    print_astyle_totals(testfile)
+    #print_astyle_totals(testfile)
 
     # process formatted files
     diffs = compare_formatted_files(filepaths, len(excludes))
@@ -225,9 +229,12 @@ def get_astyle_config():
 
 # -----------------------------------------------------------------------------
 
-def get_astyle_path(astyleexe):
+def get_astyle_path(astyleexe, is_system_wide):
     """Get the astyle executable path.
     """
+    if (is_system_wide):
+        return astyleexe
+
     config = get_astyle_config()
     astylepath = libastyle.get_astyleexe_directory(config, True) + astyleexe
     return astylepath
@@ -352,10 +359,10 @@ def process_windows_ramdrive():
 
 # -----------------------------------------------------------------------------
 
-def set_astyle_args(filepath, excludes, astyleexe):
+def set_astyle_args(filepath, excludes, astyleexe, is_system_wide):
     """Set args for calling artistic style.
     """
-    astylepath = get_astyle_path(astyleexe)
+    astylepath = get_astyle_path(astyleexe, is_system_wide)
     args = [astylepath]
     # set filepaths
     for file_in in filepath:
@@ -381,8 +388,8 @@ def verify_astyle_executables(exe1, exe2):
     """Verify that the astyle test executables are available.
     """
     # get paths
-    exe1path = get_astyle_path(exe1)
-    exe2path = get_astyle_path(exe2)
+    exe1path = get_astyle_path(exe1, True)
+    exe2path = get_astyle_path(exe2, False)
     regress1path = libastyle.get_astyle_directory() + "/regress/" + exe1
     # add "exe" extension
     if os.name == "nt":
@@ -393,7 +400,7 @@ def verify_astyle_executables(exe1, exe2):
         if not regress1path.endswith(".exe"):
             regress1path += ".exe"
     # verify exe1
-    if not os.path.exists(exe1path):
+    if not os.path.exists(exe1path) and False:
         # try to copy exe1 from the "regress" directory
         if os.path.exists(regress1path):
             print("Copying " + exe1)

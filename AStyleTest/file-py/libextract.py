@@ -34,8 +34,8 @@ def extract_project(project, all_files_option):
         __extract_all_files = True
     if project == libastyle.CODEBLOCKS:
         extract_codeblocks()
-#    elif project == libastyle.GWORKSPACE:
-#        extract_gworkspace()
+    elif project == libastyle.LSOF:
+        extract_lsof()
     elif project == libastyle.JEDIT:
         extract_jedit()
 #	elif project == libastyle.KDEVELOP:
@@ -120,6 +120,17 @@ def extract_codeblocks():
     remove_test_directory("[Cc]ode[Bb]locks")
     extract_test_tar("codeblocks*.gz", "codeblocks*.tar", ["*.cpp", "*.cxx", "*.h"])
     rename_test_directory("codeblocks-*", "CodeBlocks")
+
+# -----------------------------------------------------------------------------
+
+def extract_lsof():
+    """Extract CodeBlocks files from archive to test directory.
+    """
+    remove_test_directory("lsof-*")
+    remove_test_directory("lsof")
+    extract_test_tar("lsof*.gz", "lsof*.tar", ["*.c", "*.h"])
+    rename_test_directory("lsof-*", "lsof")
+
 
 # -----------------------------------------------------------------------------
 
