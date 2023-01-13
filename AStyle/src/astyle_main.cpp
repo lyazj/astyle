@@ -2455,19 +2455,7 @@ void ASConsole::processOptions(const vector<string>& argvOptions)
 					setOptionFileName(name);
 			}
 		}
-		// for Windows
-		// NOTE: depreciated with release 3.1, remove when appropriate
-		// there is NO test data for this option
-		if (optionFileName.empty())
-		{
-			const char* const env = getenv("USERPROFILE");
-			if (env != nullptr)
-			{
-				string name = string(env) + "\\astylerc";
-				if (fileExists(name.c_str()))
-					setOptionFileName(name);
-			}
-		}
+
 	}
 
 	// find project option file
@@ -2691,14 +2679,7 @@ void ASConsole::printVerboseHeader() const
 	// print option files
 	if (!optionFileName.empty())
 		printf(_("Default option file  %s\n"), optionFileName.c_str());
-	// NOTE: depreciated with release 3.1, remove when appropriate
-	if (!optionFileName.empty())
-	{
-		const char* const env = getenv("USERPROFILE");
-		if (env != nullptr && optionFileName == string(env) + "\\astylerc")
-			printf("The above option file has been DEPRECIATED\n");
-	}
-	// end depreciated
+
 	if (!projectOptionFileName.empty())
 		printf(_("Project option file  %s\n"), projectOptionFileName.c_str());
 }
@@ -3605,45 +3586,7 @@ bool ASOptions::parseOptionContinued(const string& arg, const string& errorInfo)
 	{
 		formatter.setObjCColonPaddingMode(COLON_PAD_BEFORE);
 	}
-	// NOTE: depreciated options - remove when appropriate
-	// depreciated options ////////////////////////////////////////////////////////////////////////
-	else if (isOption(arg, "indent-preprocessor"))			// depreciated release 2.04
-	{
-		formatter.setPreprocDefineIndent(true);
-	}
-	else if (isOption(arg, "style=ansi"))					// depreciated release 2.05
-	{
-		formatter.setFormattingStyle(STYLE_ALLMAN);
-	}
-	// depreciated in release 3.0 /////////////////////////////////////////////////////////////////
-	else if (isOption(arg, "break-closing-brackets"))		// depreciated release 3.0
-	{
-		formatter.setBreakClosingHeaderBracketsMode(true);
-	}
-	else if (isOption(arg, "add-brackets"))					// depreciated release 3.0
-	{
-		formatter.setAddBracketsMode(true);
-	}
-	else if (isOption(arg, "add-one-line-brackets"))		// depreciated release 3.0
-	{
-		formatter.setAddOneLineBracketsMode(true);
-	}
-	else if (isOption(arg, "remove-brackets"))				// depreciated release 3.0
-	{
-		formatter.setRemoveBracketsMode(true);
-	}
-	else if (isParamOption(arg, "max-instatement-indent="))	// depreciated release 3.0
-	{
-		int maxIndent = 40;
-		string maxIndentParam = getParam(arg, "max-instatement-indent=");
-		if (maxIndentParam.length() > 0)
-			maxIndent = atoi(maxIndentParam.c_str());
-		if (maxIndent < 40)
-			isOptionError(arg, errorInfo);
-		else
-			formatter.setMaxInStatementIndentLength(maxIndent);
-	}
-	// end depreciated options ////////////////////////////////////////////////////////////////////
+
 #ifdef ASTYLE_LIB
 	// End of options used by GUI /////////////////////////////////////////////////////////////////
 	else
