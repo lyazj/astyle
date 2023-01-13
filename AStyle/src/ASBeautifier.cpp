@@ -818,6 +818,14 @@ void ASBeautifier::setJavaStyle()
 }
 
 /**
+ * set indentation style to JavaScript.
+ */
+void ASBeautifier::setJSStyle()
+{
+	fileType = JS_TYPE;
+}
+
+/**
  * set indentation style to C#.
  */
 void ASBeautifier::setSharpStyle()

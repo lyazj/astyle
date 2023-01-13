@@ -140,6 +140,7 @@ const string ASResource::AS_AND = string("&&");
 const string ASResource::AS_OR = string("||");
 const string ASResource::AS_SCOPE_RESOLUTION = string("::");
 const string ASResource::AS_SPACESHIP = string("<=>");
+const string ASResource::AS_EQUAL_JS = string("===");
 
 const string ASResource::AS_PLUS = string("+");
 const string ASResource::AS_MINUS = string("-");
@@ -492,7 +493,10 @@ void ASResource::buildOperators(vector<const string*>* operators, int fileType)
 		operators->emplace_back(&AS_GCC_MAX_ASSIGN);
 		operators->emplace_back(&AS_SPACESHIP);
 	}
-
+	if (fileType == JS_TYPE)
+	{
+		operators->emplace_back(&AS_EQUAL_JS);
+	}
 	assert(operators->size() < elements);
 	sort(operators->begin(), operators->end(), sortOnLength);
 }
