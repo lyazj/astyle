@@ -42,6 +42,7 @@ ASFormatter::ASFormatter()
 	objCColonPadMode = COLON_PAD_NO_CHANGE;
 	lineEnd = LINEEND_DEFAULT;
 	maxCodeLength = string::npos;
+	isInStruct = false;
 	shouldPadCommas = false;
 	shouldPadOperators = false;
 	shouldPadParensOutside = false;
@@ -239,6 +240,7 @@ void ASFormatter::init(ASSourceIterator* si)
 	endOfCodeReached = false;
 	isFormattingModeOff = false;
 	isInEnum = false;
+	isInStruct = false;
 	isInExecSQL = false;
 	isInAsm = false;
 	isInAsmOneLine = false;
@@ -887,6 +889,7 @@ string ASFormatter::nextLine()
 			}
 		}
 
+// #534.c
 		if (passedColon)
 		{
 			passedColon = false;
@@ -1039,6 +1042,7 @@ string ASFormatter::nextLine()
 				isImmediatelyPostObjCMethodPrefix = false;
 				isInObjCInterface = false;
 				isInEnum = false;
+				//isInStruct = false;
 				isJavaStaticConstructor = false;
 				isCharImmediatelyPostNonInStmt = false;
 				needHeaderOpeningBrace = false;
@@ -1506,6 +1510,7 @@ string ASFormatter::nextLine()
 			         && !isInObjCSelector           // not objC @selector
 			         && !isDigit(peekNextChar())    // not a bit field
 			         && !isInEnum                   // not an enum with a base type
+			         && !isInStruct                   // not an enum with a base type
 			         && !isInAsm                    // not in extended assembler
 			         && !isInAsmOneLine             // not in extended assembler
 			         && !isInAsmBlock)              // not in extended assembler
@@ -1532,8 +1537,10 @@ string ASFormatter::nextLine()
 					currentLine.insert(charNum + 1, " ");
 			}
 
-			if (isClassInitializer())
+			if (isClassInitializer()) {
 				isInClassInitializer = true;
+			}
+
 		}
 
 		if (currentChar == '?')
@@ -1564,6 +1571,17 @@ string ASFormatter::nextLine()
 				        || currentLine[firstNum] == '{'
 				        || currentLine[firstNum] == '/')
 					isInEnum = true;
+			}
+
+			if (findKeyword(currentLine, charNum, AS_TYPEDEF_STRUCT) || findKeyword(currentLine, charNum, AS_STRUCT))
+			{
+				size_t firstNum = currentLine.find_first_of("(){},/");
+
+				if (firstNum == string::npos
+				        || currentLine[firstNum] == '{'
+				        || currentLine[firstNum] == '/') {
+					isInStruct = true;
+				}
 			}
 
 			if (isCStyle()
@@ -4075,8 +4093,10 @@ void ASFormatter::padOperators(const string* newOperator)
 	             && (!foundQuestionMark && !isInEnum) && currentHeader != &AS_FOR)
 	        && !(newOperator == &AS_QUESTION && isSharpStyle() // check for C# nullable type (e.g. int?)
 	             && currentLine.find(':', charNum + 1) == string::npos)
-	   )
+	   ) {
 		appendSpacePad();
+	   }
+
 	appendOperator(*newOperator);
 	goForward(newOperator->length() - 1);
 
@@ -4537,6 +4557,7 @@ void ASFormatter::formatPointerOrReferenceCast()
 			formattedLine.erase(prevNum + 1);
 		}
 	}
+
 	bool isAfterScopeResolution = previousNonWSChar == ':';
 	if ((itemAlignment == PTR_ALIGN_MIDDLE || itemAlignment == PTR_ALIGN_NAME)
 	        && !isAfterScopeResolution && prevCh != '(')
@@ -4629,8 +4650,10 @@ void ASFormatter::padParens()
 			         || lastChar == '/'
 			         || lastChar == '%'
 			         || lastChar == '^'
-			        )
-				spacesOutsideToDelete--;
+			        ) {
+						spacesOutsideToDelete--;
+					}
+
 
 			if (spacesOutsideToDelete > 0)
 			{
@@ -7379,6 +7402,7 @@ void ASFormatter::checkIfTemplateOpener()
 				templateDepth = 0;
 				return;
 			}
+
 			if (currentChar_ == ','  // comma,     e.g. A<int, char>
 			        || currentChar_ == '&'    // reference, e.g. A<int&>
 			        || currentChar_ == '*'    // pointer,   e.g. A<int*>
@@ -7991,6 +8015,7 @@ void ASFormatter::resetEndOfStatement()
 	isInObjCInterface = false;
 	isInObjCSelector = false;
 	isInEnum = false;
+	//isInStruct = false;
 	isInExternC = false;
 	elseHeaderFollowsComments = false;
 	returnTypeChecked = false;
