@@ -240,6 +240,7 @@ void ASFormatter::init(ASSourceIterator* si)
 	endOfCodeReached = false;
 	isFormattingModeOff = false;
 	isInEnum = false;
+	isInContinuedPreProc = false;
 	isInStruct = false;
 	isInExecSQL = false;
 	isInAsm = false;
@@ -293,8 +294,8 @@ void ASFormatter::init(ASSourceIterator* si)
 	currentLineBeginsWithBrace = false;
 	isPrependPostBlockEmptyLineRequested = false;
 	isAppendPostBlockEmptyLineRequested = false;
-	isIndentableProprocessor = false;
-	isIndentableProprocessorBlock = false;
+	isIndentablePreprocessor = false;
+	isIndentablePreprocessorBlck = false;
 	prependEmptyLine = false;
 	appendOpeningBrace = false;
 	foundClosingHeader = false;
@@ -597,9 +598,11 @@ string ASFormatter::nextLine()
 			continue;
 		}
 		// treat these preprocessor statements as a line comment
-		if (currentChar == '#'
+		if ((currentChar == '#')
 		        && currentLine.find_first_not_of(" \t") == (size_t) charNum)
 		{
+			isInContinuedPreProc = currentLine[currentLine.size()-1] == '\\';
+
 			string preproc = trim(currentLine.c_str() + charNum + 1);
 			if (preproc.length() > 0
 			        && isCharPotentialHeader(preproc, 0)
@@ -683,11 +686,11 @@ string ASFormatter::nextLine()
 				{
 					if (isImmediatelyPostPreprocessor)
 						breakLine();
-					isIndentableProprocessorBlock = isIndentablePreprocessorBlock(currentLine, charNum);
-					isIndentableProprocessor = isIndentableProprocessorBlock;
+					isIndentablePreprocessorBlck = isIndentablePreprocessorBlock(currentLine, charNum);
+					isIndentablePreprocessor = isIndentablePreprocessorBlck;
 				}
 			}
-			if (isIndentableProprocessorBlock
+			if (isIndentablePreprocessorBlck
 			        && charNum < (int) currentLine.length() - 1
 			        && isWhiteSpace(currentLine[charNum + 1]))
 			{
@@ -695,9 +698,9 @@ string ASFormatter::nextLine()
 				if (nextText != string::npos)
 					currentLine.erase(charNum + 1, nextText - charNum - 1);
 			}
-			if (isIndentableProprocessorBlock
+			if (isIndentablePreprocessorBlck
 			        && sourceIterator->tellg() >= preprocBlockEnd)
-				isIndentableProprocessorBlock = false;
+				isIndentablePreprocessorBlck = false;
 			//  need to fall thru here to reset the variables
 		}
 
@@ -889,7 +892,6 @@ string ASFormatter::nextLine()
 			}
 		}
 
-// #534.c
 		if (passedColon)
 		{
 			passedColon = false;
@@ -1436,8 +1438,8 @@ string ASFormatter::nextLine()
 				lineCommentNoIndent = false;
 				if (isImmediatelyPostPreprocessor)
 				{
-					isInIndentablePreproc = isIndentableProprocessor;
-					isIndentableProprocessor = false;
+					isInIndentablePreproc = isIndentablePreprocessor;
+					isIndentablePreprocessor = false;
 				}
 			}
 		}
@@ -1510,7 +1512,8 @@ string ASFormatter::nextLine()
 			         && !isInObjCSelector           // not objC @selector
 			         && !isDigit(peekNextChar())    // not a bit field
 			         && !isInEnum                   // not an enum with a base type
-			         && !isInStruct                   // not an enum with a base type
+			         && !isInStruct                 // not an struct
+					 && !isInContinuedPreProc           // not in preprocessor line
 			         && !isInAsm                    // not in extended assembler
 			         && !isInAsmOneLine             // not in extended assembler
 			         && !isInAsmBlock)              // not in extended assembler
@@ -1925,8 +1928,8 @@ string ASFormatter::nextLine()
 		runInIndentChars = 0;
 		lineCommentNoBeautify = lineCommentNoIndent;
 		lineCommentNoIndent = false;
-		isInIndentablePreproc = isIndentableProprocessor;
-		isIndentableProprocessor = false;
+		isInIndentablePreproc = isIndentablePreprocessor;
+		isIndentablePreprocessor = false;
 		isElseHeaderIndent = elseHeaderFollowsComments;
 		isCaseHeaderCommentIndent = caseHeaderFollowsComments;
 		objCColonAlignSubsequent = objCColonAlign;
@@ -2614,7 +2617,6 @@ bool ASFormatter::getNextChar()
 	        && (!isWhiteSpace(peekNextChar()) || isInComment || isInLineComment))
 	{
 		currentChar = currentLine[++charNum];
-
 		if (currentChar == '\t' && shouldConvertTabs)
 			convertTabToSpaces();
 
@@ -2645,6 +2647,7 @@ bool ASFormatter::getNextLine(bool emptyLineWasDeleted /*false*/)
 		currentLine = sourceIterator->nextLine(emptyLineWasDeleted);
 		assert(computeChecksumIn(currentLine));
 	}
+
 	// reset variables for new line
 	inLineNumber++;
 	if (endOfAsmReached)
@@ -2659,8 +2662,10 @@ bool ASFormatter::getNextLine(bool emptyLineWasDeleted /*false*/)
 	isImmediatelyPostEmptyLine = lineIsEmpty;
 	previousChar = ' ';
 
-	if (currentLine.length() == 0)
+	if (currentLine.length() == 0) {
+		isInContinuedPreProc = false;
 		currentLine = string(" ");        // a null is inserted if this is not done
+	}
 
 	if (methodBreakLineNum > 0)
 		--methodBreakLineNum;
@@ -5658,7 +5663,6 @@ void ASFormatter::processPreprocessor()
 	assert(currentChar == '#');
 
 	const size_t preproc = currentLine.find_first_not_of(" \t", charNum + 1);
-
 	if (preproc == string::npos)
 		return;
 
@@ -5679,6 +5683,8 @@ void ASFormatter::processPreprocessor()
 	}
 	else if (currentLine.compare(preproc, 6, "define") == 0)
 		isInPreprocessorDefineDef = true;
+
+
 }
 
 /**
@@ -8015,7 +8021,6 @@ void ASFormatter::resetEndOfStatement()
 	isInObjCInterface = false;
 	isInObjCSelector = false;
 	isInEnum = false;
-	//isInStruct = false;
 	isInExternC = false;
 	elseHeaderFollowsComments = false;
 	returnTypeChecked = false;

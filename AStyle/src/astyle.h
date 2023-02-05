@@ -976,6 +976,7 @@ private:  // variables
 	bool isFormattingModeOff;
 	bool isInEnum;
 	bool isInStruct;
+    bool isInContinuedPreProc;
 	bool isInExecSQL;
 	bool isInAsm;
 	bool isInAsmOneLine;
@@ -1051,8 +1052,8 @@ private:  // variables
 	bool shouldBreakClosingHeaderBlocks;
 	bool isPrependPostBlockEmptyLineRequested;
 	bool isAppendPostBlockEmptyLineRequested;
-	bool isIndentableProprocessor;
-	bool isIndentableProprocessorBlock;
+	bool isIndentablePreprocessor;
+	bool isIndentablePreprocessorBlck;
 	bool prependEmptyLine;
 	bool appendOpeningBrace;
 	bool foundClosingHeader;
