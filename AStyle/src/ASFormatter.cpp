@@ -606,6 +606,7 @@ string ASFormatter::nextLine()
 			string preproc = trim(currentLine.c_str() + charNum + 1);
 			if (preproc.length() > 0
 			        && isCharPotentialHeader(preproc, 0)
+					&& getFileType() != C_TYPE
 			        && (findKeyword(preproc, 0, "region")
 			            || findKeyword(preproc, 0, "endregion")
 			            || findKeyword(preproc, 0, "error")
@@ -675,7 +676,8 @@ string ASFormatter::nextLine()
 			// if top level it is potentially indentable
 			if (shouldIndentPreprocBlock
 			        && (isBraceType(braceTypeStack->back(), NULL_TYPE)
-			            || isBraceType(braceTypeStack->back(), NAMESPACE_TYPE))
+			            || isBraceType(braceTypeStack->back(), NAMESPACE_TYPE)
+						|| getFileType() == C_TYPE)
 			        && !foundClassHeader
 			        && !isInClassInitializer
 			        && sourceIterator->tellg() > preprocBlockEnd)
