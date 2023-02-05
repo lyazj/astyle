@@ -1306,7 +1306,8 @@ void ASConsole::getFileNames(const string& directory, const vector<string>& wild
 				continue;
 			}
 			perror("errno message");
-			error("Error getting file status in directory", directory.c_str());
+			//error("Error getting file status in directory", directory.c_str());
+			error("Error getting file status for", entryFilepath.c_str());
 		}
 		// skip hidden or read only
 		if (entry->d_name[0] == '.' || !(statbuf.st_mode & S_IWUSR))
