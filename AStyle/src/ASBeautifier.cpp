@@ -3218,9 +3218,13 @@ void ASBeautifier::parseCurrentLine(const string& line)
 			if (parenDepth == 0 && findKeyword(line, i, AS_ENUM) && line.find_first_of(AS_OPEN_PAREN, i) == string::npos)
 				isInEnum = true;
 
-
 			if (parenDepth == 0 && (findKeyword(line, i, AS_TYPEDEF_STRUCT) || findKeyword(line, i, AS_STRUCT))) {
 				isInStruct = true;
+			}
+
+			// avoid regression with neovim test dataset
+			if (parenDepth == 0 && findKeyword(line, i, AS_UNION) ) {
+				isInStruct = false;
 			}
 
 			if (isSharpStyle() && findKeyword(line, i, AS_LET))
