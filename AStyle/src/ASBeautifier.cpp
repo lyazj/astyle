@@ -3218,8 +3218,10 @@ void ASBeautifier::parseCurrentLine(const string& line)
 			if (parenDepth == 0 && findKeyword(line, i, AS_ENUM) && line.find_first_of(AS_OPEN_PAREN, i) == string::npos)
 				isInEnum = true;
 
-			if (parenDepth == 0 && (findKeyword(line, i, AS_TYPEDEF_STRUCT) || findKeyword(line, i, AS_STRUCT)))
+
+			if (parenDepth == 0 && (findKeyword(line, i, AS_TYPEDEF_STRUCT) || findKeyword(line, i, AS_STRUCT))) {
 				isInStruct = true;
+			}
 
 			if (isSharpStyle() && findKeyword(line, i, AS_LET))
 				isInLet = true;
@@ -3253,7 +3255,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 				if (i == 0)
 					indentCount += classInitializerIndents;
 			}
-			else if (isInStruct)
+			else if (isInStruct && !isInCase)
 			{
 				if (i == 0)
 					indentCount += classInitializerIndents;
@@ -3422,7 +3424,6 @@ void ASBeautifier::parseCurrentLine(const string& line)
 				isInAsmBlock = false;
 				isInAsm = isInAsmOneLine = isInQuote = false;	// close these just in case
 				isInStruct = false;
-
 
 				int headerPlace = indexOf(*headerStack, &AS_OPEN_BRACE);
 				if (headerPlace != -1)
