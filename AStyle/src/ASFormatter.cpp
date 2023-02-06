@@ -606,8 +606,8 @@ string ASFormatter::nextLine()
 			string preproc = trim(currentLine.c_str() + charNum + 1);
 			if (preproc.length() > 0
 			        && isCharPotentialHeader(preproc, 0)
-					&& getFileType() != C_TYPE
-			        && (findKeyword(preproc, 0, "region")
+                    && getFileType() != C_TYPE
+                    && (findKeyword(preproc, 0, "region")
 			            || findKeyword(preproc, 0, "endregion")
 			            || findKeyword(preproc, 0, "error")
 			            || findKeyword(preproc, 0, "warning")
@@ -1474,12 +1474,14 @@ string ASFormatter::nextLine()
 						passedSemicolon = true;
 				}
 
+//is set in struct case? #518
 				if (shouldBreakBlocks
 				        && currentHeader != nullptr
 				        && currentHeader != &AS_CASE
 				        && currentHeader != &AS_DEFAULT
 				        && !isHeaderInMultiStatementLine
-				        && parenStack->back() == 0)
+				        && parenStack->back() == 0
+						)
 				{
 					isAppendPostBlockEmptyLineRequested = true;
 				}
