@@ -2075,7 +2075,7 @@ void ASConsole::printHelp() const
 	cout << "    Remove unnecessary space padding around parenthesis. This\n";
 	cout << "    can be used in combination with the 'pad' options above.\n";
 	cout << endl;
-	cout << "    --delete-empty-lines  OR  -xd\n";
+	cout << "    --delete-empty-lines  OR  -xe\n";
 	cout << "    Delete empty lines within a function or method.\n";
 	cout << "    It will NOT delete lines added by the break-blocks options.\n";
 	cout << endl;
