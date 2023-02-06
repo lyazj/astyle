@@ -3621,6 +3621,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 		// Handle Objective-C statements
 
 		if (ch == '@'
+		        && !isCStyle() // we need one to determine Objective C
 		        && line.length() > i + 1
 		        && !isWhiteSpace(line[i + 1])
 		        && isCharPotentialHeader(line, i + 1))
@@ -3667,6 +3668,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 		             || headerStack->empty() || isInObjCInterface)
 		         && ASBase::peekNextChar(line, i) != '-'
 		         && ASBase::peekNextChar(line, i) != '+'
+				 && !isCStyle() // we need one to determine Objective C
 		         && line.find_first_not_of(" \t") == i)
 		{
 			if (isInObjCInterface)

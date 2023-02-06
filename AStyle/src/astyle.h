@@ -309,6 +309,7 @@ protected:  // inline functions
 	bool isJavaStyle() const { return (baseFileType == JAVA_TYPE); }
 	bool isSharpStyle() const { return (baseFileType == SHARP_TYPE); }
 	bool isJSStyle() const { return (baseFileType == JS_TYPE); }
+
 	bool isWhiteSpace(char ch) const { return (ch == ' ' || ch == '\t'); }
 
 protected:  // functions definitions are at the end of ASResource.cpp
