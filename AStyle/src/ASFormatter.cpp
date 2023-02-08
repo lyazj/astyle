@@ -598,11 +598,13 @@ string ASFormatter::nextLine()
 			continue;
 		}
 		// treat these preprocessor statements as a line comment
+
 		if ((currentChar == '#')
 		        && currentLine.find_first_not_of(" \t") == (size_t) charNum)
 		{
 			isInContinuedPreProc = currentLine[currentLine.size()-1] == '\\';
 
+			/*
 			string preproc = trim(currentLine.c_str() + charNum + 1);
 			if (preproc.length() > 0
 			        && isCharPotentialHeader(preproc, 0)
@@ -626,6 +628,7 @@ string ASFormatter::nextLine()
 				appendCurrentChar();
 				continue;
 			}
+			*/
 		}
 
 		if (isInPreprocessor)
@@ -677,7 +680,10 @@ string ASFormatter::nextLine()
 			if (shouldIndentPreprocBlock
 			        && (isBraceType(braceTypeStack->back(), NULL_TYPE)
 			            || isBraceType(braceTypeStack->back(), NAMESPACE_TYPE)
-						|| getFileType() == C_TYPE)
+
+						/* #521 enables preprocessor indent within { ... } block, but disables indent of code between #ifdefs  */
+						//|| getFileType() == C_TYPE
+						)
 			        && !foundClassHeader
 			        && !isInClassInitializer
 			        && sourceIterator->tellg() > preprocBlockEnd)
