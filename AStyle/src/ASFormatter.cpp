@@ -4477,15 +4477,14 @@ void ASFormatter::formatPointerOrReferenceToName()
 		spacePadNum++;
 	}
 	appendSequence(sequenceToInsert, false);
-	// if old pointer or reference is centered, remove a space
 
+	// if old pointer or reference is centered, remove a space
 	if (isOldPRCentered
 	        && formattedLine.length() > startNum + 1
 	        && isWhiteSpace(formattedLine[startNum + 1])
 	        && peekedChar != '*'		// check for '* *'
 	        && !isBeforeAnyComment()
-            && !(peekedChar == '&' && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/546/
-            && !(peekedChar == '{' && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/527/
+            && (isLegalNameChar(peekedChar) && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/546/ + #527
 			)
 	{
 		formattedLine.erase(startNum + 1, 1);
