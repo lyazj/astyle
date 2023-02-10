@@ -4478,13 +4478,15 @@ void ASFormatter::formatPointerOrReferenceToName()
 	}
 	appendSequence(sequenceToInsert, false);
 
+std::cerr <<"peekedChar "<<peekedChar<<"\n";
+
 	// if old pointer or reference is centered, remove a space
 	if (isOldPRCentered
 	        && formattedLine.length() > startNum + 1
 	        && isWhiteSpace(formattedLine[startNum + 1])
 	        && peekedChar != '*'		// check for '* *'
 	        && !isBeforeAnyComment()
-            && (isLegalNameChar(peekedChar) && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/546/ + #527
+            && ((isLegalNameChar(peekedChar) || peekedChar=='(') && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/546/ + #527
 			)
 	{
 		formattedLine.erase(startNum + 1, 1);
