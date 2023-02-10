@@ -4478,8 +4478,6 @@ void ASFormatter::formatPointerOrReferenceToName()
 	}
 	appendSequence(sequenceToInsert, false);
 
-std::cerr <<"peekedChar "<<peekedChar<<"\n";
-
 	// if old pointer or reference is centered, remove a space
 	if (isOldPRCentered
 	        && formattedLine.length() > startNum + 1
