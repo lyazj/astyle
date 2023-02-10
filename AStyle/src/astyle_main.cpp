@@ -663,7 +663,18 @@ string ASConsole::findProjectOptionFilePath(const string& fileName_) const
 {
 	string parent;
 	if (!fileNameVector.empty()) {
-		parent = getFullPathName(fileNameVector.front());
+
+		string first = fileNameVector.front();
+		if (first.find_first_of("*?") != string::npos) {
+			// First item has wildcards - get rid of them for now
+			size_t endPath = first.find_last_of(g_fileSeparator);
+			if (endPath != string::npos) {
+				first.erase(endPath + 1, string::npos);
+				first += ".";
+			}
+		}
+
+		parent = getFullPathName(first);
 	}
 	else if (!stdPathIn.empty()) {
 		parent = getFullPathName(stdPathIn);
@@ -672,7 +683,7 @@ string ASConsole::findProjectOptionFilePath(const string& fileName_) const
 		parent = getFullPathName(getCurrentDirectory(fileName_));
 	}
 
-    if (parent.size()) {
+	if (parent.size()) {
 		parent.push_back(g_fileSeparator);
 	}
 
