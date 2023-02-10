@@ -662,13 +662,16 @@ void ASConsole::formatFile(const string& fileName_)
 string ASConsole::findProjectOptionFilePath(const string& fileName_) const
 {
 	string parent;
-	if (!fileNameVector.empty()) {
+	if (!fileNameVector.empty())
+	{
 
 		string first = fileNameVector.front();
-		if (first.find_first_of("*?") != string::npos) {
+		if (first.find_first_of("*?") != string::npos)
+		{
 			// First item has wildcards - get rid of them for now
 			size_t endPath = first.find_last_of(g_fileSeparator);
-			if (endPath != string::npos) {
+			if (endPath != string::npos)
+			{
 				first.erase(endPath + 1, string::npos);
 				first += ".";
 			}
@@ -676,14 +679,17 @@ string ASConsole::findProjectOptionFilePath(const string& fileName_) const
 
 		parent = getFullPathName(first);
 	}
-	else if (!stdPathIn.empty()) {
+	else if (!stdPathIn.empty())
+	{
 		parent = getFullPathName(stdPathIn);
 	}
-	else {
+	else
+	{
 		parent = getFullPathName(getCurrentDirectory(fileName_));
 	}
 
-	if (parent.size()) {
+	if (parent.size())
+	{
 		parent.push_back(g_fileSeparator);
 	}
 
@@ -1384,7 +1390,7 @@ void ASConsole::getFileNames(const string& directory, const vector<string>& wild
 // Return the full path name or an empty string if failed.
 string ASConsole::getFullPathName(const string& relativePath) const
 {
-	char *fullPath = realpath(relativePath.c_str(), nullptr);
+	char* fullPath = realpath(relativePath.c_str(), nullptr);
 	if (fullPath == nullptr)
 		return string();
 	const string p(fullPath);

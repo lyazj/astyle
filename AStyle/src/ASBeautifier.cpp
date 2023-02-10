@@ -2598,7 +2598,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 				char prevCh = i > 0 ? line[i - 1] : ' ';
 
 				// https://sourceforge.net/p/astyle/bugs/535/
-				if (isCStyle() && prevCh == 'R' && !(isalpha(prevNonSpaceCh) || prevNonSpaceCh=='('  ))
+				if (isCStyle() && prevCh == 'R' && !(isalpha(prevNonSpaceCh) || prevNonSpaceCh == '('  ))
 				{
 					int parenPos = line.find('(', i);
 					if (parenPos != -1)
@@ -2836,7 +2836,9 @@ void ASBeautifier::parseCurrentLine(const string& line)
 
 				if (currentHeader != nullptr)
 					registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, minConditionalIndent, true);
-				else if (!isInObjCMethodDefinition)
+				else if (!isInObjCMethodDefinition
+				         //&& xxxCondition && shouldForceTabIndentation  // only count one opening parenthese per line #498
+				        )
 					registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, true);
 			}
 			else if (ch == ')' || ch == ']')
@@ -3218,12 +3220,14 @@ void ASBeautifier::parseCurrentLine(const string& line)
 			if (parenDepth == 0 && findKeyword(line, i, AS_ENUM) && line.find_first_of(AS_OPEN_PAREN, i) == string::npos)
 				isInEnum = true;
 
-			if (parenDepth == 0 && (findKeyword(line, i, AS_TYPEDEF_STRUCT) || findKeyword(line, i, AS_STRUCT))) {
+			if (parenDepth == 0 && (findKeyword(line, i, AS_TYPEDEF_STRUCT) || findKeyword(line, i, AS_STRUCT)))
+			{
 				isInStruct = true;
 			}
 
 			// avoid regression with neovim test dataset
-			if (parenDepth == 0 && findKeyword(line, i, AS_UNION) ) {
+			if (parenDepth == 0 && findKeyword(line, i, AS_UNION) )
+			{
 				isInStruct = false;
 			}
 
@@ -3672,7 +3676,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 		             || headerStack->empty() || isInObjCInterface)
 		         && ASBase::peekNextChar(line, i) != '-'
 		         && ASBase::peekNextChar(line, i) != '+'
-				 && !isCStyle() // we need one to determine Objective C
+		         && !isCStyle() // we need one to determine Objective C
 		         && line.find_first_not_of(" \t") == i)
 		{
 			if (isInObjCInterface)

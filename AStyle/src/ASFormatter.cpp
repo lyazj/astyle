@@ -602,14 +602,14 @@ string ASFormatter::nextLine()
 		if ((currentChar == '#')
 		        && currentLine.find_first_not_of(" \t") == (size_t) charNum)
 		{
-			isInContinuedPreProc = currentLine[currentLine.size()-1] == '\\';
+			isInContinuedPreProc = currentLine[currentLine.size() - 1] == '\\';
 
 			/*
 			string preproc = trim(currentLine.c_str() + charNum + 1);
 			if (preproc.length() > 0
 			        && isCharPotentialHeader(preproc, 0)
-                    && getFileType() != C_TYPE
-                    && (findKeyword(preproc, 0, "region")
+			        && getFileType() != C_TYPE
+			        && (findKeyword(preproc, 0, "region")
 			            || findKeyword(preproc, 0, "endregion")
 			            || findKeyword(preproc, 0, "error")
 			            || findKeyword(preproc, 0, "warning")
@@ -681,9 +681,9 @@ string ASFormatter::nextLine()
 			        && (isBraceType(braceTypeStack->back(), NULL_TYPE)
 			            || isBraceType(braceTypeStack->back(), NAMESPACE_TYPE)
 
-						/* #521 enables preprocessor indent within { ... } block, but disables indent of code between #ifdefs  */
-						//|| getFileType() == C_TYPE
-						)
+			            /* #521 enables preprocessor indent within { ... } block, but disables indent of code between #ifdefs  */
+			            //|| getFileType() == C_TYPE
+			           )
 			        && !foundClassHeader
 			        && !isInClassInitializer
 			        && sourceIterator->tellg() > preprocBlockEnd)
@@ -1487,7 +1487,7 @@ string ASFormatter::nextLine()
 				        && currentHeader != &AS_DEFAULT
 				        && !isHeaderInMultiStatementLine
 				        && parenStack->back() == 0
-						)
+				   )
 				{
 					isAppendPostBlockEmptyLineRequested = true;
 				}
@@ -1523,7 +1523,7 @@ string ASFormatter::nextLine()
 			         && !isDigit(peekNextChar())    // not a bit field
 			         && !isInEnum                   // not an enum with a base type
 			         && !isInStruct                 // not an struct
-					 && !isInContinuedPreProc           // not in preprocessor line
+			         && !isInContinuedPreProc           // not in preprocessor line
 			         && !isInAsm                    // not in extended assembler
 			         && !isInAsmOneLine             // not in extended assembler
 			         && !isInAsmBlock)              // not in extended assembler
@@ -1550,7 +1550,8 @@ string ASFormatter::nextLine()
 					currentLine.insert(charNum + 1, " ");
 			}
 
-			if (isClassInitializer()) {
+			if (isClassInitializer())
+			{
 				isInClassInitializer = true;
 			}
 
@@ -1592,7 +1593,8 @@ string ASFormatter::nextLine()
 
 				if (firstNum == string::npos
 				        || currentLine[firstNum] == '{'
-				        || currentLine[firstNum] == '/') {
+				        || currentLine[firstNum] == '/')
+				{
 					isInStruct = true;
 				}
 			}
@@ -1804,7 +1806,8 @@ string ASFormatter::nextLine()
 		        && isPointerOrReference())
 		{
 
-			if (!isDereferenceOrAddressOf() && !isOperatorPaddingDisabled()) {
+			if (!isDereferenceOrAddressOf() && !isOperatorPaddingDisabled())
+			{
 				formatPointerOrReference();
 			}
 
@@ -2672,7 +2675,8 @@ bool ASFormatter::getNextLine(bool emptyLineWasDeleted /*false*/)
 	isImmediatelyPostEmptyLine = lineIsEmpty;
 	previousChar = ' ';
 
-	if (currentLine.length() == 0) {
+	if (currentLine.length() == 0)
+	{
 		isInContinuedPreProc = false;
 		currentLine = string(" ");        // a null is inserted if this is not done
 	}
@@ -4069,7 +4073,7 @@ void ASFormatter::padOperators(const string* newOperator)
 	                           || isInObjCSelector || squareBracketCount != 0))
 	                  && !(newOperator == &AS_MINUS && isInExponent())
 	                  && !(newOperator == &AS_PLUS && isInExponent())
-                      && !(newOperator == &AS_GR && previousChar=='-') //https://sourceforge.net/p/astyle/bugs/544/
+	                  && !(newOperator == &AS_GR && previousChar == '-') //https://sourceforge.net/p/astyle/bugs/544/
 	                  && !((newOperator == &AS_PLUS || newOperator == &AS_MINUS)	// check for unary plus or minus
 	                       && (previousNonWSChar == '('
 	                           || previousNonWSChar == '['
@@ -4108,9 +4112,10 @@ void ASFormatter::padOperators(const string* newOperator)
 	             && (!foundQuestionMark && !isInEnum) && currentHeader != &AS_FOR)
 	        && !(newOperator == &AS_QUESTION && isSharpStyle() // check for C# nullable type (e.g. int?)
 	             && currentLine.find(':', charNum + 1) == string::npos)
-	   ) {
+	   )
+	{
 		appendSpacePad();
-	   }
+	}
 
 	appendOperator(*newOperator);
 	goForward(newOperator->length() - 1);
@@ -4164,7 +4169,8 @@ void ASFormatter::formatPointerOrReference()
 			peekedChar = currentLine[nextChar];
 
 		//https://sourceforge.net/p/astyle/bugs/543/
-		if (currentChar=='&' /*&& itemAlignment == PTR_ALIGN_NAME*/) {
+		if (currentChar == '&' /*&& itemAlignment == PTR_ALIGN_NAME*/)
+		{
 			itemAlignment = PTR_ALIGN_NONE;
 		}
 	}
@@ -4240,7 +4246,7 @@ void ASFormatter::formatPointerOrReferenceToType()
 	}
 
 	// https://sourceforge.net/p/astyle/bugs/537/
-	if (previousNonWSChar==',' && currentChar!=' ')
+	if (previousNonWSChar == ',' && currentChar != ' ')
 		appendSpacePad();
 
 	formattedLine.append(sequenceToInsert);
@@ -4484,8 +4490,8 @@ void ASFormatter::formatPointerOrReferenceToName()
 	        && isWhiteSpace(formattedLine[startNum + 1])
 	        && peekedChar != '*'		// check for '* *'
 	        && !isBeforeAnyComment()
-            && ((isLegalNameChar(peekedChar) || peekedChar=='(') && pointerAlignment==PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/546/ + #527
-			)
+	        && ((isLegalNameChar(peekedChar) || peekedChar == '(') && pointerAlignment == PTR_ALIGN_NAME) //https://sourceforge.net/p/astyle/bugs/546/ + #527
+	   )
 	{
 		formattedLine.erase(startNum + 1, 1);
 		spacePadNum--;
@@ -4664,9 +4670,10 @@ void ASFormatter::padParens()
 			         || lastChar == '/'
 			         || lastChar == '%'
 			         || lastChar == '^'
-			        ) {
-						spacesOutsideToDelete--;
-					}
+			        )
+			{
+				spacesOutsideToDelete--;
+			}
 
 
 			if (spacesOutsideToDelete > 0)
