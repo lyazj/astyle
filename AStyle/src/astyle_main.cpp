@@ -662,6 +662,7 @@ void ASConsole::formatFile(const string& fileName_)
 string ASConsole::findProjectOptionFilePath(const string& fileName_) const
 {
 	string parent;
+
 	if (!fileNameVector.empty())
 	{
 
@@ -678,19 +679,20 @@ string ASConsole::findProjectOptionFilePath(const string& fileName_) const
 		}
 
 		parent = getFullPathName(first);
+
 	}
 	else if (!stdPathIn.empty())
 	{
 		parent = getFullPathName(stdPathIn);
+
 	}
 	else
 	{
 		parent = getFullPathName(getCurrentDirectory(fileName_));
-	}
-
-	if (parent.size())
-	{
-		parent.push_back(g_fileSeparator);
+		if (parent.size())
+		{
+			parent.push_back(g_fileSeparator);
+		}
 	}
 
 	// remove filename from path
@@ -701,7 +703,6 @@ string ASConsole::findProjectOptionFilePath(const string& fileName_) const
 	while (!parent.empty())
 	{
 		string filepath = parent + fileName_;
-
 		if (fileExists(filepath.c_str()))
 			return filepath;
 		if (fileName_ == ".astylerc")
@@ -1212,7 +1213,7 @@ bool ASConsole::isHomeOrInvalidAbsPath(const string& absPath) const
 	if (absPath.c_str() == env)
 		return true;
 
-	if (absPath.compare(0, strlen(env), env) != 0)
+	if (absPath.compare(0, strlen(env), env) == 0)
 		return true;
 
 	return false;
