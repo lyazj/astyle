@@ -34,10 +34,10 @@ import libtest
 # SHARPDEVELOP      # C# - Compile on Windows only
 # SHARPMAIN         # C# - 1000 files from SharpDevelop
 # TESTPROJECT
-__project = libastyle.LSOF
+__project = libastyle.LIBSBASE
 
 # select OPT0 thru OPT3, or use customized options
-__options = libastyle.OPT4
+__options = libastyle.OPT2
 
 # options_x are for BOTH executables
 __options_x = ""

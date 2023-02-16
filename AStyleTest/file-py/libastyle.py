@@ -523,10 +523,10 @@ def get_project_filepaths(project):
 #		filepaths.append(test_directory + "/MonoDevelop/src/*.cs")
     elif project == LIBSBASE:
         if USE_MULTIPLE_EXTENSIONS:
-            filepaths.append(test_directory + "/libsBase/*.m,*.h")
+            filepaths.append(test_directory + "/libsBase/Source/*.m,*.h")
         else:
-            filepaths.append(test_directory + "/libsBase/*.m")
-            filepaths.append(test_directory + "/libsBase/*.h")
+            filepaths.append(test_directory + "/libsBase/Source/*.m")
+            filepaths.append(test_directory + "/libsBase/Source/*.h")
     elif project == SCITE:
         if USE_MULTIPLE_EXTENSIONS:
             filepaths.append(test_directory + "/SciTE/*.cxx,*.h")
