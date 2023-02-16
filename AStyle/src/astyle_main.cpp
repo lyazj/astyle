@@ -2189,6 +2189,9 @@ void ASConsole::printHelp() const
 	cout << "    --mode=cs\n";
 	cout << "    Indent a C# source file.\n";
 	cout << endl;
+	cout << "    --mode=objc\n";
+	cout << "    Indent an Objective-C source file.\n";
+	cout << endl;
 	cout << "    --mode=js\n";
 	cout << "    Indent a JavaScript source file (experimental).\n";
 	cout << endl;
@@ -3191,6 +3194,11 @@ void ASOptions::parseOption(const string& arg, const string& errorInfo)
 		formatter.setJSStyle();
 		formatter.setModeManuallySet(true);
 	}
+	else if (isOption(arg, "mode=objc"))
+    {
+    		formatter.setObjCStyle();
+    		formatter.setModeManuallySet(true);
+    }
 	else if (isParamOption(arg, "t", "indent=tab="))
 	{
 		int spaceNum = 4;
