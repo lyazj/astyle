@@ -2212,10 +2212,10 @@ void ASConsole::printHelp() const
 	cout << "    Remove all space padding after the Objective-C return type.\n";
 	cout << endl;
 	cout << "    --pad-param-type  OR  -xS\n";
-	cout << "    Insert space padding after the Objective-C return type.\n";
+	cout << "    Insert space padding after the Objective-C param type.\n";
 	cout << endl;
 	cout << "    --unpad-param-type  OR  -xs\n";
-	cout << "    Remove all space padding after the Objective-C return type.\n";
+	cout << "    Remove all space padding after the Objective-C param type.\n";
 	cout << endl;
 	cout << "    --align-method-colon  OR  -xM\n";
 	cout << "    Align the colons in an Objective-C method definition.\n";
