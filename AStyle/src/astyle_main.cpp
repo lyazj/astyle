@@ -1214,13 +1214,7 @@ bool ASConsole::isHomeOrInvalidAbsPath(const string& absPath) const
 	if (env == nullptr)
 		return true;
 
-	if (absPath.c_str() == env)
-		return true;
-
-	if (absPath.compare(0, strlen(env), env) == 0)
-		return true;
-
-	return false;
+	return (absPath.compare(env) == 0);
 }
 
 /**
@@ -1499,16 +1493,10 @@ string ASConsole::getNumberFormat(int num, const char* groupingArg, const char* 
 bool ASConsole::isHomeOrInvalidAbsPath(const string& absPath) const
 {
 	const char* const env = getenv("HOME");
-	if (env == nullptr)
-		return true;
 
-	if (absPath.c_str() == env)
-		return true;
+	//cerr<<"isHomeOrInvalidAbsPath absPath "<< absPath << " ENV " <<env<<  "\n";
 
-	if (absPath.compare(0, strlen(env), env) != 0)
-		return true;
-
-	return false;
+	return (absPath.compare(env) == 0 || absPath=="/" );
 }
 
 /**
