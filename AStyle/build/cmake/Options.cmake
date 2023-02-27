@@ -25,6 +25,9 @@ list(APPEND DOCS
     doc/notes.html
     doc/styles.css)
 
+list(APPEND MAN
+    man/astyle.1)
+
 # Define java as a shared library
  if(BUILD_JAVA_LIBS)
     set(BUILD_SHARED_LIBS ON)
