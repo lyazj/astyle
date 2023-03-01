@@ -957,6 +957,7 @@ private:  // variables
 	bool isInClassInitializer;
 	bool isInQuote;
 	bool isInVerbatimQuote;
+	bool checkInterpolation;
 	bool haveLineContinuationChar;
 	bool isInQuoteContinuation;
 	bool isHeaderInMultiStatementLine;
