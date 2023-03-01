@@ -86,7 +86,7 @@ ASFormatter::ASFormatter()
 	shouldUnPadParamType = false;
 
 	// initialize ASFormatter member vectors
-	formatterFileType = 9;		// reset to an invalid type
+	formatterFileType = INVALID_TYPE;		// reset to an invalid type
 	headers = new vector<const string*>;
 	nonParenHeaders = new vector<const string*>;
 	preDefinitionHeaders = new vector<const string*>;
@@ -112,7 +112,7 @@ ASFormatter::~ASFormatter()
 	deleteContainer(questionMarkStack);
 
 	// delete ASFormatter member vectors
-	formatterFileType = 9;		// reset to an invalid type
+	formatterFileType = INVALID_TYPE;		// reset to an invalid type
 	delete headers;
 	delete nonParenHeaders;
 	delete preDefinitionHeaders;
