@@ -2836,7 +2836,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 					if (squareBracketCount == 1 && isObjCStyle())
 					{
 						isInObjCMethodCall = true;
-						isInObjCMethodCallFirst = true;
+						// isInObjCMethodCallFirst = true; // #525
 					}
 				}
 
