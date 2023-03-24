@@ -1495,6 +1495,7 @@ string ASFormatter::nextLine()
 				}
 			}
 			if (currentChar != ';'
+					|| foundStructHeader // #518
 			        || (needHeaderOpeningBrace && parenStack->back() == 0))
 				currentHeader = nullptr;
 
