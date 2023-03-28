@@ -1,7 +1,7 @@
 #!/usr/bin/env lua
 
-# Based on the generator script written by Paul Ouellette for highlight:
-# https://gitlab.com/saalen/highlight/-/merge_requests/137
+-- Based on the generator script written by Paul Ouellette for highlight:
+-- https://gitlab.com/saalen/highlight/-/merge_requests/137
 
 local argparse = require "argparse"
 
