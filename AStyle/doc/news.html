@@ -14,10 +14,7 @@
 
     <h1>Artistic Style News</h1>
 
-    <p>
-        &nbsp;</p>
-
-    <h3>Artistic Style 3.2&nbsp; (January 2023. pending)</h3>
+    <h3>Artistic Style 3.2 (March 2023)</h3>
 
     <p>
         The Artistic Style source code has been updated to use C++11 features. It will need Visual Studio 2015 or GCC
@@ -31,8 +28,11 @@
     <p>
         Deprecated options have been removed.
     </p>
+    <p>
+        Maintainer list was updated.
+    </p>
 
-    <h3>Artistic Style 3.1&nbsp; (January 2018)</h3>
+    <h3>Artistic Style 3.1  (January 2018)</h3>
 
     <p>
         The Windows default option file location has been changed from USERPROFILE to APPDATA. This
@@ -55,7 +55,7 @@
         Several changes have been made to Objective-C which will improve formatting in certain cases.</p>
     <p>
         CMake can now be used to compile the AStyle builds. It is run from the top level folder instead of the
-        &quot;build&quot; folder, and builds a Release configuration by default. The &quot;Install&nbsp;Information&quot;
+        &quot;build&quot; folder, and builds a Release configuration by default. The &quot;Install Information&quot;
         contains additional information. </p>
     <p>
         When formatting files from the command line, multiple file extensions may now be used. The file
@@ -87,7 +87,7 @@
         When making changes to more than one file in a project, it may be desirable to format an entire folder. Wildcards
         may be used in a single folder without recursive. The current directory is used if a path is not given. So,
         for example, to format all changed files in the current directory using the project options, use the command:
-        &quot;astyle&nbsp;--project&nbsp;-A9s&nbsp;*.cpp,*.h&quot;. This example uses the project option file .astylerc
+        &quot;astyle --project -A9s *.cpp,*.h&quot;. This example uses the project option file .astylerc
         or _astylerc and overrides the project options with the command line -A9s options.</p>
     <p>
         Language translations have been added for the new project option file. A few of the other messages were changed
@@ -112,7 +112,7 @@
     <p>
         Thanks to Rian Quinn, David Haney, and Tam&aacute;s Kurucsai for their contributions.</p>
 
-    <h3>Artistic Style 3.0&nbsp; (April 2017)</h3>
+    <h3>Artistic Style 3.0  (April 2017)</h3>
 
     <p>
         Release 3.0.1 (May 2017) is a maintenance release and no new features were added. A list of changes is in
@@ -290,7 +290,7 @@
         method for finding the style options.
     </p>
 
-    <h3>Artistic Style 2.06&nbsp; (December 2016)</h3>
+    <h3>Artistic Style 2.06  (December 2016)</h3>
 
     <p>
         A new bracket style option, &quot;style=mozilla&quot;, has been added. It uses linux brackets with
@@ -372,7 +372,7 @@
 
     <p>
         In order to be used on both Linux and Windows, the ASLocalizer.cpp UTF-8 file in Artistic Style does not
-        contain a Byte Order Mark (BOM).&nbsp; With Visual Studio 2015 there has been a change in how UTF-8 files
+        contain a Byte Order Mark (BOM).  With Visual Studio 2015 there has been a change in how UTF-8 files
         without a BOM are processed. The new procedure is described
         <a href="https://blogs.msdn.microsoft.com/vcblog/2016/02/22/new-options-for-managing-character-sets-in-the-microsoft-cc-compiler/"
             target="_blank" title="open new window">here</a>. It affects only the language translations in the &quot;.exe&quot;
@@ -462,7 +462,7 @@
         To compile using XP there may need to be additional include and library directories added. If the compile gets
         errors add the appropriate directories to the project properties.</p>
 
-    <h3>Artistic Style 2.05&nbsp; (November 2014)</h3>
+    <h3>Artistic Style 2.05  (November 2014)</h3>
 
     <p>
         Release 2.05.1 (December 2014) is a maintenance release and no new features were added. A list of changes is in
@@ -517,13 +517,13 @@
         More information is in the "Command Line Only" section of the documentation.</p>
     <p>
         The "html" option on Linux uses the script "xdg-open" from the install package "xdg-utils" to find the default
-        browser. This should be available on most systems. &nbsp;If it is not available on your system you can file a
+        browser. This should be available on most systems.  If it is not available on your system you can file a
         bug report requesting a change. It would be helpful if you could determine how it is done before filing the report.
         You can also file a bug report if the documentation is not installed to the above "default" directories. The HTML
         documentation takes quite a bit of effort to maintain and I would like to make it easily available.</p>
     <p>
         The "help" option has been changed to send the output to stdout instead of stderr. This will allow piping and
-        redirection of the output. A common way to use the option on Linux is "astyle --help&nbsp;|&nbsp;less", which
+        redirection of the output. A common way to use the option on Linux is "astyle --help | less", which
         will page the display. The "version" option has also been changed to stdout.</p>
     <p>
         A shared library error handler argument has been changed from &quot;char*&quot; to &quot;const char*&quot;. In
@@ -561,19 +561,14 @@
         Thanks to Peter A. Bigot, HyungKi Jeong, David Faure, and Carl Moore for their contributions.</p>
 
     <p>
-        &nbsp;</p>
-    <p>
         <strong>Previous releases are available in the
-            <a href="http://astyle.sourceforge.net/newsArchives.html">News Archives</a>.</strong></p>
-    <p>
-        &nbsp;</p>
+            <a href="http://astyle.sourceforge.net/newsArchives.html">News Archives</a>.</strong>
+    </p>
 
     <p style="margin-left: -0.4in; text-align: center;">
         <a href="http://sourceforge.net/projects/astyle">
-            <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=2319&type=16" alt="" /></a></p>
-
-    <p>
-        &nbsp;</p>
+            <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=2319&type=16" alt="" /></a>
+        </p>
 
 </body>
 
