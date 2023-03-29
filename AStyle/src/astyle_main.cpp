@@ -431,6 +431,69 @@ void ASConsole::convertLineEnds(ostringstream& out, int lineEnd)
 	out.str(outStr);
 }
 
+
+/*
+void ASConsole::convertLineEnds(std::ostringstream& out, int lineEnd) {
+    assert(lineEnd == LINEEND_WINDOWS || lineEnd == LINEEND_LINUX || lineEnd == LINEEND_MACOLD);
+
+    const std::string inStr = out.str();
+    std::ostringstream outStream;
+
+    for (std::string::size_type i = 0; i < inStr.length(); ++i) {
+        const char currChar = inStr[i];
+        const char nextChar = i < inStr.length() - 1 ? inStr[i + 1] : 0;
+
+        if (currChar == '\r') {
+            if (nextChar == '\n') {
+                // CRLF
+                if (lineEnd == LINEEND_CR) {
+                    outStream << currChar;  // Delete the LF
+                    ++i;
+                }
+                else if (lineEnd == LINEEND_LF) {
+                    outStream << nextChar;  // Delete the CR
+                    ++i;
+                }
+                else {
+                    outStream << currChar << nextChar;  // Do not change
+                    ++i;
+                }
+            }
+            else {
+                // CR
+                if (lineEnd == LINEEND_CRLF) {
+                    outStream << currChar << '\n';  // Insert the LF
+                }
+                else if (lineEnd == LINEEND_LF) {
+                    outStream << '\n';  // Insert the LF
+                }
+                else {
+                    outStream << currChar;  // Do not change
+                }
+            }
+        }
+        else if (currChar == '\n') {
+            // LF
+            if (lineEnd == LINEEND_CRLF) {
+                outStream << '\r' << currChar;  // Insert the CR and LF
+            }
+            else if (lineEnd == LINEEND_CR) {
+                outStream << '\r';  // Insert the CR
+            }
+            else {
+                outStream << currChar;  // Do not change
+            }
+        }
+        else {
+            outStream << currChar;  // Write the current character
+        }
+    }
+
+    out.str(outStream.str());  // Replace the stream
+}
+
+*/
+
 void ASConsole::correctMixedLineEnds(ostringstream& out)
 {
 	LineEndFormat lineEndFormat = LINEEND_DEFAULT;
@@ -1494,7 +1557,8 @@ bool ASConsole::isHomeOrInvalidAbsPath(const string& absPath) const
 {
 	const char* const env = getenv("HOME");
 
-	//cerr<<"isHomeOrInvalidAbsPath absPath "<< absPath << " ENV " <<env<<  "\n";
+	if (env == nullptr)
+		return true;
 
 	return (absPath.compare(env) == 0 || absPath=="/" );
 }
