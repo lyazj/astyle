@@ -3229,7 +3229,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 			if (parenDepth == 0 && findKeyword(line, i, AS_ENUM) && line.find_first_of(AS_OPEN_PAREN, i) == string::npos)
 				isInEnum = true;
 
-			if (parenDepth == 0 && (findKeyword(line, i, AS_TYPEDEF_STRUCT) || findKeyword(line, i, AS_STRUCT)))
+			if (parenDepth == 0 && (findKeyword(line, i, AS_TYPEDEF_STRUCT) || findKeyword(line, i, AS_STRUCT)) && line.find_first_of(AS_SEMICOLON, i) == string::npos)
 			{
 				isInStruct = true;
 			}
