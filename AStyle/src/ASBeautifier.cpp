@@ -3272,11 +3272,6 @@ void ASBeautifier::parseCurrentLine(const string& line)
 				if (i == 0)
 					indentCount += classInitializerIndents;
 			}
-			else if (isInStruct && !isInCase)
-			{
-				if (i == 0)
-					indentCount += classInitializerIndents;
-			}
 			else if ((isCStyle() || isSharpStyle())
 			         && !isInCase
 			         && (prevNonSpaceCh == ')' || foundPreCommandHeader))
@@ -3284,6 +3279,11 @@ void ASBeautifier::parseCurrentLine(const string& line)
 				// found a 'class' c'tor initializer
 				isInClassInitializer = true;
 				registerContinuationIndentColon(line, i, tabIncrementIn);
+				if (i == 0)
+					indentCount += classInitializerIndents;
+			}
+			else if (isInStruct && !isInCase)
+			{
 				if (i == 0)
 					indentCount += classInitializerIndents;
 			}
