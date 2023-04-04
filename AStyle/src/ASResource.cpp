@@ -668,6 +668,7 @@ const string* ASBase::findHeader(const string& line, int i,
 // check if a specific line position contains a keyword.
 bool ASBase::findKeyword(const string& line, int i, const string& keyword) const
 {
+	//std::cerr << "findKeyword "<< i << " "<< line << " -< "<< keyword << "\n";
 	assert(isCharPotentialHeader(line, i));
 	// check the word
 	const size_t keywordLength = keyword.length();
@@ -677,14 +678,19 @@ bool ASBase::findKeyword(const string& line, int i, const string& keyword) const
 	if (line.compare(i, keywordLength, keyword) != 0)
 		return false;
 	// check that this is not part of a longer word
-	if (wordEnd == line.length())
+	if (wordEnd == line.length()) {
+		//std::cerr << "findKeyword t1 \n";
 		return true;
+	}
+
 	if (isLegalNameChar(line[wordEnd]))
 		return false;
 	// is not a keyword if part of a definition
 	const char peekChar = peekNextChar(line, (int) wordEnd - 1);
 	if (peekChar == ',' || peekChar == ')')
 		return false;
+
+	//std::cerr << "findKeyword t2 \n";
 	return true;
 }
 

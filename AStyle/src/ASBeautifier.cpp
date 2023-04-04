@@ -2817,7 +2817,7 @@ void ASBeautifier::parseCurrentLine(const string& line)
 				{
 					headerStack->pop_back();
 					isInClassHeader = false;
-					if (line.find(AS_STRUCT, 0) > i)	// if not on this line
+					if ( !findKeyword(line, i, AS_STRUCT) )	// if not on this line #526
 						indentCount -= classInitializerIndents;
 					if (indentCount < 0)
 						indentCount = 0;
