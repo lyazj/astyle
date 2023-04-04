@@ -573,6 +573,7 @@ private:  // variables
 	int  classInitializerIndents;
 	int  templateDepth;
 	int  squareBracketCount;
+	int  roundBracketCount;
 	int  prevFinalLineSpaceIndentCount;
 	int  prevFinalLineIndentCount;
 	int  defineIndentCount;
@@ -889,6 +890,7 @@ private:  // variables
 	int  tabIncrementIn;
 	int  templateDepth;
 	int  squareBracketCount;
+
 	size_t checksumIn;
 	size_t checksumOut;
 	size_t currentLineFirstBraceNum;	// first brace location on currentLine

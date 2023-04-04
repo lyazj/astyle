@@ -253,6 +253,7 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	classInitializerIndents = other.classInitializerIndents;
 	templateDepth = other.templateDepth;
 	squareBracketCount = other.squareBracketCount;
+	roundBracketCount = other.roundBracketCount;
 	prevFinalLineSpaceIndentCount = other.prevFinalLineSpaceIndentCount;
 	prevFinalLineIndentCount = other.prevFinalLineIndentCount;
 	defineIndentCount = other.defineIndentCount;
@@ -371,6 +372,7 @@ void ASBeautifier::init(ASSourceIterator* iter)
 	lineClosingBlocksNum = 0;
 	templateDepth = 0;
 	squareBracketCount = 0;
+	roundBracketCount = 0;
 	parenDepth = 0;
 	blockTabCount = 0;
 	prevFinalLineSpaceIndentCount = 0;
@@ -2839,6 +2841,9 @@ void ASBeautifier::parseCurrentLine(const string& line)
 						isInObjCMethodCall = true;
 						isInObjCMethodCallFirst = true;
 					}
+				} else
+				{
+					++roundBracketCount;
 				}
 
 				continuationIndentStackSizeStack->emplace_back(continuationIndentStack->size());
@@ -2854,6 +2859,9 @@ void ASBeautifier::parseCurrentLine(const string& line)
 			{
 				if (ch == ']')
 					--squareBracketCount;
+				else
+					--roundBracketCount;
+
 				if (squareBracketCount <= 0)
 				{
 					squareBracketCount = 0;
@@ -2938,6 +2946,10 @@ void ASBeautifier::parseCurrentLine(const string& line)
 						break;
 					}
 			}
+
+			// #121 fix indent of lambda bodies (need more checks or just assume { } within parens is sufficient?)
+			if (isCStyle() && roundBracketCount>0)
+				isBlockOpener = false;
 
 			// do not use emplace_back on vector<bool> until supported by macOS
 			braceBlockStateStack->push_back(isBlockOpener);
@@ -3219,9 +3231,9 @@ void ASBeautifier::parseCurrentLine(const string& line)
 					foundPreCommandHeader = true;
 
 			// Objective-C NSException macros are preCommandHeaders
-			if (isCStyle() && findKeyword(line, i, AS_NS_DURING))
+			if (isObjCStyle() && findKeyword(line, i, AS_NS_DURING))
 				foundPreCommandMacro = true;
-			if (isCStyle() && findKeyword(line, i, AS_NS_HANDLER))
+			if (isObjCStyle() && findKeyword(line, i, AS_NS_HANDLER))
 				foundPreCommandMacro = true;
 
 			//https://sourceforge.net/p/astyle/bugs/550/
