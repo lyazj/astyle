@@ -234,6 +234,8 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	shouldAlignMethodColon = other.shouldAlignMethodColon;
 	shouldIndentPreprocDefine = other.shouldIndentPreprocDefine;
 	shouldIndentPreprocConditional = other.shouldIndentPreprocConditional;
+    lambdaIndicator = other.lambdaIndicator;
+
 	indentCount = other.indentCount;
 	spaceIndentCount = other.spaceIndentCount;
 	spaceIndentObjCMethodAlignment = other.spaceIndentObjCMethodAlignment;
@@ -253,7 +255,6 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	classInitializerIndents = other.classInitializerIndents;
 	templateDepth = other.templateDepth;
 	squareBracketCount = other.squareBracketCount;
-	roundBracketCount = other.roundBracketCount;
 	prevFinalLineSpaceIndentCount = other.prevFinalLineSpaceIndentCount;
 	prevFinalLineIndentCount = other.prevFinalLineIndentCount;
 	defineIndentCount = other.defineIndentCount;
@@ -362,6 +363,7 @@ void ASBeautifier::init(ASSourceIterator* iter)
 	isInTemplate = false;
 	isInConditional = false;
 	isInTrailingReturnType = false;
+	lambdaIndicator = false;
 
 	indentCount = 0;
 	spaceIndentCount = 0;
@@ -372,7 +374,6 @@ void ASBeautifier::init(ASSourceIterator* iter)
 	lineClosingBlocksNum = 0;
 	templateDepth = 0;
 	squareBracketCount = 0;
-	roundBracketCount = 0;
 	parenDepth = 0;
 	blockTabCount = 0;
 	prevFinalLineSpaceIndentCount = 0;
@@ -2841,9 +2842,11 @@ void ASBeautifier::parseCurrentLine(const string& line)
 						isInObjCMethodCall = true;
 						isInObjCMethodCallFirst = true;
 					}
-				} else
-				{
-					++roundBracketCount;
+
+					// #121
+					if (!isLegalNameChar(prevNonSpaceCh) && prevNonSpaceCh != ']' && prevNonSpaceCh != ')') {
+						lambdaIndicator = true;
+					}
 				}
 
 				continuationIndentStackSizeStack->emplace_back(continuationIndentStack->size());
@@ -2859,8 +2862,6 @@ void ASBeautifier::parseCurrentLine(const string& line)
 			{
 				if (ch == ']')
 					--squareBracketCount;
-				else
-					--roundBracketCount;
 
 				if (squareBracketCount <= 0)
 				{
@@ -2947,9 +2948,10 @@ void ASBeautifier::parseCurrentLine(const string& line)
 					}
 			}
 
-			// #121 fix indent of lambda bodies (need more checks or just assume { } within parens is sufficient?)
-			if (isCStyle() && roundBracketCount>0)
+			// #121 fix indent of lambda bodies
+			if (isCStyle() && lambdaIndicator ) {
 				isBlockOpener = false;
+			}
 
 			// do not use emplace_back on vector<bool> until supported by macOS
 			braceBlockStateStack->push_back(isBlockOpener);
@@ -3402,6 +3404,9 @@ void ASBeautifier::parseCurrentLine(const string& line)
 		{
 			if (ch == '}')
 			{
+
+				lambdaIndicator = false;
+
 				// first check if this '}' closes a previous block, or a static array...
 				if (braceBlockStateStack->size() > 1)
 				{

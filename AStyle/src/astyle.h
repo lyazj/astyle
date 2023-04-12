@@ -554,6 +554,7 @@ private:  // variables
 	bool foundPreCommandMacro;
 	bool shouldAlignMethodColon;
 	bool shouldIndentPreprocConditional;
+	bool lambdaIndicator;
 	int  indentCount;
 	int  spaceIndentCount;
 	int  spaceIndentObjCMethodAlignment;
@@ -573,7 +574,6 @@ private:  // variables
 	int  classInitializerIndents;
 	int  templateDepth;
 	int  squareBracketCount;
-	int  roundBracketCount;
 	int  prevFinalLineSpaceIndentCount;
 	int  prevFinalLineIndentCount;
 	int  defineIndentCount;
