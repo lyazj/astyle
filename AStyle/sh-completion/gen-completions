@@ -34,7 +34,6 @@ parser:flag "--attach-extern-c"
 parser:flag "--attach-closing-while"
    :description "Attach closing while of do-while to the closing brace"
 
-
 parser:flag "--indent-classes"
    :description "Indent 'class' blocks so that the entire block is indented"
 
@@ -256,6 +255,9 @@ parser:option "--stdin"
 
 parser:option "--stdout"
    :description "Use the file path as output from single file formatting"
+
+parser:option "--squeeze-ws"
+   :description "Remove superfluous whitespace"
 
 local p = argparse "gen-completions"
 p:argument "shell"

@@ -1246,7 +1246,7 @@ std::string ASConsole::getNumberFormat(int num, size_t lcid) const
 	// The C locale should be set but not the C++.
 	// This function is not necessary if the C++ locale is set.
 	// The locale().name() return value is not portable to all compilers.
-	assert(locale().name() == "C");
+	assert(std::locale().name() == "C");
 #endif
 	// convert num to a string
 	std::stringstream alphaNum;
@@ -2247,6 +2247,9 @@ void ASConsole::printHelp() const
 	std::cout << "    first on the new line. The option break-after-logical will\n";
 	std::cout << "    cause the logical conditional to be placed last on the\n";
 	std::cout << "    previous line.\n";
+	std::cout << std::endl;
+	std::cout << "    --squeeze-ws\n";
+	std::cout << "    Remove superfluous whitespace (experimental).\n";
 	std::cout << std::endl;
 	std::cout << "    --mode=c\n";
 	std::cout << "    Indent a C or C++ source file (this is the default).\n";
@@ -3632,6 +3635,10 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 	{
 		formatter.setAttachReturnTypeDecl(true);
 	}
+	else if (isOption(arg, "squeeze-ws"))
+    {
+        formatter.setSqueezeWhitespace(true);
+    }
 	// To avoid compiler limit of blocks nested too deep.
 	else if (!parseOptionContinued(arg, errorInfo))
 	{

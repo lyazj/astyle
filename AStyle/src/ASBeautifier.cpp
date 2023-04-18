@@ -59,6 +59,7 @@ ASBeautifier::ASBeautifier()
 	setModifierIndent(false);
 	setSwitchIndent(false);
 	setCaseIndent(false);
+	setSqueezeWhitespace(false);
 	setBlockIndent(false);
 	setBraceIndent(false);
 	setBraceIndentVtk(false);
@@ -205,6 +206,7 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	modifierIndent = other.modifierIndent;
 	switchIndent = other.switchIndent;
 	caseIndent = other.caseIndent;
+	squeezeWhitespace = other.squeezeWhitespace;
 	namespaceIndent = other.namespaceIndent;
 	braceIndent = other.braceIndent;
 	braceIndentVtk = other.braceIndentVtk;
@@ -749,6 +751,12 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 	// parse characters in the current line.
 	parseCurrentLine(line);
 
+	for (auto it = squeezeWSStack.rbegin(); it != squeezeWSStack.rend(); ++it)
+	{
+		line.erase(it->first, it->second);
+	}
+	squeezeWSStack.clear();
+
 	// handle special cases of indentation
 	adjustParsedLineIndentation(iPrelim, isInExtraHeaderIndent);
 
@@ -789,7 +797,6 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 		indentCount = spaceIndentCount = 0;
 
 	// finally, insert indentations into beginning of line
-
 	std::string indentedLine = preLineWS(indentCount, spaceIndentCount) + line;
 	indentedLine = getIndentedLineReturn(indentedLine, originalLine);
 
@@ -1100,6 +1107,17 @@ void ASBeautifier::setEmptyLineFill(bool state)
 void ASBeautifier::setAlignMethodColon(bool state)
 {
 	shouldAlignMethodColon = state;
+}
+
+/**
+ * set the state of the squeeze whitespace option. If true,
+ * superfluous whitespace will be removed
+ *
+ * @param   state             state of option.
+ */
+void ASBeautifier::setSqueezeWhitespace(bool state)
+{
+	squeezeWhitespace = state;
 }
 
 /**
@@ -2555,6 +2573,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 	        && !isInVerbatimQuote
 	        && !isInAsm)
 		isInQuote = false;				// missing closing quote
+
 	haveLineContinuationChar = false;
 
 	for (size_t i = 0; i < line.length(); i++)
@@ -2592,6 +2611,12 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 		// bypass whitespace here
 		if (isWhiteSpace(ch))
 		{
+			if (squeezeWhitespace && !isInComment && !isInQuote && isWhiteSpace(line[i+1]) && !isWhiteSpace(line[i-1])) {
+				size_t wsSpanEnd = line.find_first_not_of(" \t", i+1);
+				std::pair<size_t, size_t> wsSpan(i, wsSpanEnd - i - 1);
+				squeezeWSStack.emplace_back(wsSpan);
+			}
+
 			if (ch == '\t')
 				tabIncrementIn += convertTabToSpaces(i, tabIncrementIn);
 			continue;
@@ -2606,6 +2631,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 			{
 				quoteChar = ch;
 				isInQuote = true;
+
 				char prevCh = i > 0 ? line[i - 1] : ' ';
 
 				// https://sourceforge.net/p/astyle/bugs/535/

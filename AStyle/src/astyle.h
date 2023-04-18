@@ -354,6 +354,7 @@ public:
 	void setJavaStyle();
 	void setJSStyle();
     void setObjCStyle();
+    void setSharpStyle();
 
 	void setLabelIndent(bool state);
 	void setMaxContinuationIndentLength(int max);
@@ -364,12 +365,12 @@ public:
 	void setModifierIndent(bool state);
 	void setNamespaceIndent(bool state);
 	void setAlignMethodColon(bool state);
-	void setSharpStyle();
 	void setSpaceIndentation(int length = 4);
 	void setSwitchIndent(bool state);
 	void setTabIndentation(int length = 4, bool forceTabs = false);
 	void setPreprocDefineIndent(bool state);
 	void setPreprocConditionalIndent(bool state);
+	void setSqueezeWhitespace(bool state);
 	int  getBeautifierFileType() const;
 	int  getFileType() const;
 	int  getIndentLength() const;
@@ -478,6 +479,7 @@ private:  // variables
 	std::vector<size_t>* continuationIndentStackSizeStack;
 	std::vector<int>* parenIndentStack;
 	std::vector<std::pair<int, int> >* preprocIndentStack;
+	std::vector<std::pair<size_t, size_t> > squeezeWSStack;
 
 	ASSourceIterator* sourceIterator;
 	const std::string* currentHeader;
@@ -553,6 +555,7 @@ private:  // variables
 	bool shouldAlignMethodColon;
 	bool shouldIndentPreprocConditional;
 	bool lambdaIndicator;
+	bool squeezeWhitespace;
 	int  indentCount;
 	int  spaceIndentCount;
 	int  spaceIndentObjCMethodAlignment;

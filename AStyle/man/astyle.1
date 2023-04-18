@@ -1,4 +1,4 @@
-.TH astyle 1 "2023-02-23" "Andre Simon" "user documentation"
+.TH astyle 1 "2023-04-18" "Andre Simon" "user documentation"
 
 .SH NAME
 astyle - C syntax indenter and formatter
@@ -320,6 +320,9 @@ If the line contains logical conditionals they will be placed
 first on the new line. The option break-after-logical will
 cause the logical conditional to be placed last on the
 previous line.
+
+.IP "--squeeze-ws"
+Remove superfluous whitespace (experimental).
 
 .IP "--mode=c"
 Indent a C or C++ source file (this is the default).
