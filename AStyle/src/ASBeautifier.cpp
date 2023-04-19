@@ -2958,7 +2958,8 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					clearObjCMethodDefinitionAlignment();
 			}
 
-			if (!isBlockOpener && !isContinuation && !isInClassInitializer && !isInEnum && !isInStruct)
+			//fix for https://gitlab.com/saalen/astyle/-/issues/3
+			if (!isBlockOpener && !isContinuation && !isInClassInitializer && !isInEnum /*&& !isInStruct*/)
 			{
 				if (isTopLevel())
 					isBlockOpener = true;
