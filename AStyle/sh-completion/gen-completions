@@ -256,7 +256,10 @@ parser:option "--stdin"
 parser:option "--stdout"
    :description "Use the file path as output from single file formatting"
 
-parser:option "--squeeze-ws"
+parser:option "--squeeze-lines"
+   :description "Remove superfluous empty lines exceeding the given number"
+
+parser:flag "--squeeze-ws"
    :description "Remove superfluous whitespace"
 
 local p = argparse "gen-completions"

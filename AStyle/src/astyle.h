@@ -736,7 +736,7 @@ public:	// functions
 	void setAddOneLineBracketsMode(bool state);
 	void setRemoveBracketsMode(bool state);
 	void setBreakClosingHeaderBracketsMode(bool state);
-
+	void setSqueezeEmptyLinesNumber(int);
 
 private:  // functions
 	template<typename T> void deleteContainer(T& container);
@@ -891,6 +891,8 @@ private:  // variables
 	int  tabIncrementIn;
 	int  templateDepth;
 	int  squareBracketCount;
+	int  squeezeEmptyLineNum;
+	int  squeezeEmptyLineCount;
 
 	size_t checksumIn;
 	size_t checksumOut;

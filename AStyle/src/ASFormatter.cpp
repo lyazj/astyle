@@ -197,6 +197,8 @@ void ASFormatter::init(ASSourceIterator* si)
 	objCColonAlign = 0;
 	templateDepth = 0;
 	squareBracketCount = 0;
+	squeezeEmptyLineCount = 0;
+
 	runInIndentChars = 0;
 	tabIncrementIn = 0;
 	previousBraceType = NULL_TYPE;
@@ -2468,6 +2470,12 @@ void ASFormatter::setAttachReturnTypeDecl(bool state)
 	shouldAttachReturnTypeDecl = state;
 }
 
+void ASFormatter::setSqueezeEmptyLinesNumber(int num)
+{
+	squeezeEmptyLineNum = num;
+}
+
+
 /**
  * set the pointer alignment.
  *
@@ -2739,6 +2747,13 @@ bool ASFormatter::getNextLine(bool emptyLineWasDeleted /*false*/)
 			return getNextLine(true);
 		}
 	}
+
+	if ( ++squeezeEmptyLineCount > squeezeEmptyLineNum && lineIsEmpty && isImmediatelyPostEmptyLine)
+	{
+		isInPreprocessor = isImmediatelyPostPreprocessor;		// restore
+		return getNextLine(true);
+	}
+
 	return true;
 }
 
@@ -2852,6 +2867,9 @@ void ASFormatter::initNewLine()
 	else if (isWhiteSpace(currentLine[charNum]) && !(charNum + 1 < (int) currentLine.length()))
 	{
 		lineIsEmpty = true;
+		if (!isImmediatelyPostEmptyLine  ) {
+			squeezeEmptyLineCount = 0;
+		}
 	}
 
 	// do not trim indented preprocessor define (except for comment continuation lines)

@@ -2248,6 +2248,9 @@ void ASConsole::printHelp() const
 	std::cout << "    cause the logical conditional to be placed last on the\n";
 	std::cout << "    previous line.\n";
 	std::cout << std::endl;
+	std::cout << "    --squeeze-lines=#\n";
+	std::cout << "    Remove superfluous empty lines exceeding the given number (experimental).\n";
+	std::cout << std::endl;
 	std::cout << "    --squeeze-ws\n";
 	std::cout << "    Remove superfluous whitespace (experimental).\n";
 	std::cout << std::endl;
@@ -3638,6 +3641,17 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 	else if (isOption(arg, "squeeze-ws"))
     {
         formatter.setSqueezeWhitespace(true);
+    }
+	else if (isParamOption(arg, "squeeze-lines="))
+    {
+		int keepEmptyLines = 2;
+		std::string keepEmptyLinesParam = getParam(arg, "squeeze-lines=");
+		if (keepEmptyLinesParam.length() > 0)
+			keepEmptyLines = atoi(keepEmptyLinesParam.c_str());
+		if (keepEmptyLines < 1)
+			isOptionError(arg, errorInfo);
+		else
+			formatter.setSqueezeEmptyLinesNumber(keepEmptyLines);
     }
 	// To avoid compiler limit of blocks nested too deep.
 	else if (!parseOptionContinued(arg, errorInfo))
