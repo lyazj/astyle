@@ -2870,7 +2870,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					}
 
 					// #121
-					if (!isLegalNameChar(prevNonSpaceCh) && prevNonSpaceCh != ']' && prevNonSpaceCh != ')') {
+					if (!isLegalNameChar(prevNonSpaceCh) && prevNonSpaceCh != ']' && prevNonSpaceCh != ')' && line.find(AS_AUTO, 0 ) == std::string::npos) {
 						lambdaIndicator = true;
 					}
 				}
@@ -2958,7 +2958,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					clearObjCMethodDefinitionAlignment();
 			}
 
-			//fix for https://gitlab.com/saalen/astyle/-/issues/3
+			// !isInStruct omitted: fix for https://gitlab.com/saalen/astyle/-/issues/3
 			if (!isBlockOpener && !isContinuation && !isInClassInitializer && !isInEnum /*&& !isInStruct*/)
 			{
 				if (isTopLevel())
@@ -3323,11 +3323,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				if (i == 0)
 					indentCount += classInitializerIndents;
 			}
-			else if (isInStruct && !isInCase)
-			{
-				if (i == 0)
-					indentCount += classInitializerIndents;
-			}
+
 			else if (isInClassHeader || isInObjCInterface)
 			{
 				// is in a 'class A : public B' definition
@@ -3362,6 +3358,12 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 			{
 				// found a java for-each statement
 				// so do nothing special
+			}
+			// do not trigger this in class definitions https://gitlab.com/saalen/astyle/-/issues/4
+			else if (isInStruct && !isInCase)
+			{
+				if (i == 0)
+					indentCount += classInitializerIndents;
 			}
 			else
 			{
