@@ -262,6 +262,12 @@ Attach a reference operator (&) to either
 the operator type (left), middle, or operator name (right).
 If not set, follow pointer alignment.
 
+.IP "--squeeze-lines=#"
+Remove superfluous empty lines exceeding the given number (experimental).
+
+.IP "--squeeze-ws"
+Remove superfluous whitespace (experimental).
+
 .SH  Formatting Options
 
 .IP "--break-closing-braces OR -y"
@@ -320,12 +326,6 @@ If the line contains logical conditionals they will be placed
 first on the new line. The option break-after-logical will
 cause the logical conditional to be placed last on the
 previous line.
-
-.IP "--squeeze-lines=#"
-Remove superfluous empty lines exceeding the given number (experimental).
-
-.IP "--squeeze-ws"
-Remove superfluous whitespace (experimental).
 
 .IP "--mode=c"
 Indent a C or C++ source file (this is the default).

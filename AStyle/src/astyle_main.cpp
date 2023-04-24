@@ -2173,6 +2173,12 @@ void ASConsole::printHelp() const
 	std::cout << "    Fill empty lines with the white space of their\n";
 	std::cout << "    previous lines.\n";
 	std::cout << std::endl;
+	std::cout << "    --squeeze-lines=#\n";
+	std::cout << "    Remove superfluous empty lines exceeding the given number (experimental).\n";
+	std::cout << std::endl;
+	std::cout << "    --squeeze-ws\n";
+	std::cout << "    Remove superfluous whitespace (experimental).\n";
+	std::cout << std::endl;
 	std::cout << "    --align-pointer=type    OR  -k1\n";
 	std::cout << "    --align-pointer=middle  OR  -k2\n";
 	std::cout << "    --align-pointer=name    OR  -k3\n";
@@ -2247,12 +2253,6 @@ void ASConsole::printHelp() const
 	std::cout << "    first on the new line. The option break-after-logical will\n";
 	std::cout << "    cause the logical conditional to be placed last on the\n";
 	std::cout << "    previous line.\n";
-	std::cout << std::endl;
-	std::cout << "    --squeeze-lines=#\n";
-	std::cout << "    Remove superfluous empty lines exceeding the given number (experimental).\n";
-	std::cout << std::endl;
-	std::cout << "    --squeeze-ws\n";
-	std::cout << "    Remove superfluous whitespace (experimental).\n";
 	std::cout << std::endl;
 	std::cout << "    --mode=c\n";
 	std::cout << "    Indent a C or C++ source file (this is the default).\n";
