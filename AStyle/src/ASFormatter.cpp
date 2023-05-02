@@ -197,6 +197,7 @@ void ASFormatter::init(ASSourceIterator* si)
 	objCColonAlign = 0;
 	templateDepth = 0;
 	squareBracketCount = 0;
+	parenthesesCount = 0;
 	squeezeEmptyLineCount = 0;
 
 	runInIndentChars = 0;
@@ -988,6 +989,10 @@ std::string ASFormatter::nextLine()
 				if (getAlignMethodColon() && squareBracketCount == 1 && isCStyle())
 					objCColonAlign = findObjCColonAlignment();
 			}
+			if (currentChar == '(')
+			{
+				++parenthesesCount;
+			}
 		}
 		else if (currentChar == ')' || currentChar == ']' || (isInTemplate && currentChar == '>'))
 		{
@@ -1029,6 +1034,7 @@ std::string ASFormatter::nextLine()
 			}
 			if (currentChar == ')')
 			{
+				--parenthesesCount;
 				foundCastOperator = false;
 				if (parenStack->back() == 0)
 					endOfAsmReached = true;
@@ -3383,12 +3389,12 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 
 	//TODO FIXME
 	// https://sourceforge.net/p/astyle/bugs/537/
-	/* if ( previousNonWSChar == ',') {
+	 if ( previousNonWSChar == ',' && parenthesesCount <= 0) {
 		return false;
-	}*/
+	}
 
 	if (previousNonWSChar == '='
-	        || previousNonWSChar == ','
+	        //|| previousNonWSChar == ','  // #537
 	        || previousNonWSChar == '.'
 	        || previousNonWSChar == '{'
 	        || previousNonWSChar == '>'
@@ -3398,7 +3404,6 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 	        || isCharImmediatelyPostComment
 	        || isCharImmediatelyPostReturn)
 		return true;
-
 
 	char nextChar = peekNextChar();
 	if (currentChar == '*' && nextChar == '*')

@@ -891,6 +891,7 @@ private:  // variables
 	int  tabIncrementIn;
 	int  templateDepth;
 	int  squareBracketCount;
+	int  parenthesesCount;
 	int  squeezeEmptyLineNum;
 	int  squeezeEmptyLineCount;
 
