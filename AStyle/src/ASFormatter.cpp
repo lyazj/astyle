@@ -84,6 +84,9 @@ ASFormatter::ASFormatter()
 	shouldUnPadReturnType = false;
 	shouldPadParamType = false;
 	shouldUnPadParamType = false;
+	shouldPadBracketsOutside = false;
+	shouldPadBracketsInside = false;
+	shouldUnPadBrackets = false;
 
 	// initialize ASFormatter member std::vectors
 	formatterFileType = INVALID_TYPE;		// reset to an invalid type
@@ -1031,6 +1034,7 @@ std::string ASFormatter::nextLine()
 					squareBracketCount = 0;
 					objCColonAlign = 0;
 				}
+
 			}
 			if (currentChar == ')')
 			{
@@ -1887,7 +1891,7 @@ std::string ASFormatter::nextLine()
 			}
 
 			if (shouldPadParensOutside || shouldPadParensInside || shouldUnPadParens || shouldPadFirstParen)
-				padParens();
+				padParensOrBrackets('(', ')', shouldPadParensOutside, shouldPadParensInside, shouldUnPadParens, shouldPadFirstParen);
 			else
 				appendCurrentChar();
 
@@ -1910,6 +1914,12 @@ std::string ASFormatter::nextLine()
 				         && (shouldPadParamType || shouldUnPadParamType))
 					padObjCParamType();
 			}
+			continue;
+		}
+
+		if ((currentChar == '[' || currentChar == ']' ) && (shouldPadBracketsOutside || shouldPadBracketsInside || shouldUnPadBrackets) )
+		{
+			padParensOrBrackets('[', ']', shouldPadBracketsOutside, shouldPadBracketsInside, shouldUnPadBrackets, false);
 			continue;
 		}
 
@@ -2185,6 +2195,32 @@ void ASFormatter::setParensInsidePaddingMode(bool state)
 }
 
 /**
+ * set square brackets outside padding mode.
+ * options:
+ *    true     square brackets will be padded with spaces around them.
+ *    false    square brackets will not be padded.
+ *
+ * @param state         the padding mode.
+ */
+void ASFormatter::setBracketsOutsidePaddingMode(bool state)
+{
+	shouldPadBracketsOutside = state;
+}
+
+/**
+ * set square brackets inside padding mode.
+ * options:
+ *    true     square brackets will be padded with spaces around them.
+ *    false    square brackets will not be padded.
+ *
+ * @param state         the padding mode.
+ */
+void ASFormatter::setBracketsInsidePaddingMode(bool state)
+{
+	shouldPadBracketsInside = state;
+}
+
+/**
  * set padding mode before one or more open parentheses.
  * options:
  *    true     first open parenthesis will be padded with a space before.
@@ -2221,6 +2257,19 @@ void ASFormatter::setParensHeaderPaddingMode(bool state)
 void ASFormatter::setParensUnPaddingMode(bool state)
 {
 	shouldUnPadParens = state;
+}
+
+/**
+ * set square brackets unpadding mode.
+ * options:
+ *    true     square brackets will be unpadded with spaces removed around them.
+ *    false    square brackets will not be unpadded.
+ *
+ * @param state         the padding mode.
+ */
+void ASFormatter::setBracketsUnPaddingMode(bool state)
+{
+	shouldUnPadBrackets = state;
 }
 
 /**
@@ -4625,15 +4674,14 @@ void ASFormatter::formatPointerOrReferenceCast()
  * the parens and necessary padding will be appended to formattedLine
  * the calling function should have a continue statement after calling this method
  */
-void ASFormatter::padParens()
+void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool shouldPadParensOutside, bool shouldPadParensInside, bool shouldUnPadParens, bool shouldPadFirstParen)
 {
-	assert(currentChar == '(' || currentChar == ')');
-	assert(shouldPadParensOutside || shouldPadParensInside || shouldUnPadParens || shouldPadFirstParen);
+	assert(currentChar == openDelim || currentChar == closeDelim);
 
 	int spacesOutsideToDelete = 0;
 	int spacesInsideToDelete = 0;
 
-	if (currentChar == '(')
+	if (currentChar ==openDelim)
 	{
 		spacesOutsideToDelete = formattedLine.length() - 1;
 		spacesInsideToDelete = 0;
@@ -4684,7 +4732,7 @@ void ASFormatter::padParens()
 			else if (lastChar == '|'          // check for ||
 			         || lastChar == '&'       // check for &&
 			         || lastChar == ','
-			         || (lastChar == '(' && shouldPadParensInside)
+			         || (lastChar == openDelim && shouldPadParensInside)
 			         || (lastChar == '>' && !foundCastOperator)
 			         || lastChar == '<'
 			         || lastChar == '?'
@@ -4702,7 +4750,6 @@ void ASFormatter::padParens()
 				spacesOutsideToDelete--;
 			}
 
-
 			if (spacesOutsideToDelete > 0)
 			{
 				formattedLine.erase(i + 1, spacesOutsideToDelete);
@@ -4712,11 +4759,11 @@ void ASFormatter::padParens()
 
 		// pad open paren outside
 		char peekedCharOutside = peekNextChar();
-		if (shouldPadFirstParen && previousChar != '(' && peekedCharOutside != ')')
+		if (shouldPadFirstParen && previousChar != openDelim && peekedCharOutside != closeDelim)
 			appendSpacePad();
 		else if (shouldPadParensOutside)
 		{
-			if (!(currentChar == '(' && peekedCharOutside == ')'))
+			if (!(currentChar == openDelim && peekedCharOutside == closeDelim))
 				appendSpacePad();
 		}
 
@@ -4745,10 +4792,10 @@ void ASFormatter::padParens()
 		// pad open paren inside
 		char peekedCharInside = peekNextChar();
 		if (shouldPadParensInside)
-			if (!(currentChar == '(' && peekedCharInside == ')'))
+			if (!(currentChar == openDelim && peekedCharInside == closeDelim))
 				appendSpaceAfter();
 	}
-	else if (currentChar == ')')
+	else if (currentChar == closeDelim)
 	{
 		// unpad close paren inside
 		if (shouldUnPadParens)
@@ -4768,28 +4815,10 @@ void ASFormatter::padParens()
 
 		// pad close paren inside
 		if (shouldPadParensInside)
-			if (!(previousChar == '(' && currentChar == ')'))
+			if (!(previousChar == openDelim && currentChar == closeDelim))
 				appendSpacePad();
 
 		appendCurrentChar();
-
-		// unpad close paren outside
-		// close parens outside are left unchanged
-		if (shouldUnPadParens)
-		{
-			//spacesOutsideToDelete = 0;
-			//size_t j = currentLine.find_first_not_of(" \t", charNum + 1);
-			//if (j != std::string::npos)
-			//	spacesOutsideToDelete = j - charNum - 1;
-			//if (shouldPadParensOutside)
-			//	spacesOutsideToDelete--;
-
-			//if (spacesOutsideToDelete > 0)
-			//{
-			//	currentLine.erase(charNum + 1, spacesOutsideToDelete);
-			//	spacePadNum -= spacesOutsideToDelete;
-			//}
-		}
 
 		// pad close paren outside
 		char peekedCharOutside = peekNextChar();
@@ -4807,8 +4836,8 @@ void ASFormatter::padParens()
 /**
 * add or remove space padding to objective-c method prefix (- or +)
 * if this is a '(' it begins a return type
-* these options have precedence over the padParens methods
-* the padParens method has already been called, this method adjusts
+* these options have precedence over the padParensOrBrackets methods
+* the padParensOrBrackets method has already been called, this method adjusts
 */
 void ASFormatter::padObjCMethodPrefix()
 {
@@ -4850,8 +4879,8 @@ void ASFormatter::padObjCMethodPrefix()
 
 /**
 * add or remove space padding to objective-c parens
-* these options have precedence over the padParens methods
-* the padParens method has already been called, this method adjusts
+* these options have precedence over the padParensOrBrackets methods
+* the padParensOrBrackets method has already been called, this method adjusts
 */
 void ASFormatter::padObjCReturnType()
 {
@@ -4900,8 +4929,8 @@ void ASFormatter::padObjCReturnType()
 
 /**
 * add or remove space padding to objective-c parens
-* these options have precedence over the padParens methods
-* the padParens method has already been called, this method adjusts
+* these options have precedence over the padParensOrBrackets methods
+* the padParensOrBrackets method has already been called, this method adjusts
 */
 void ASFormatter::padObjCParamType()
 {

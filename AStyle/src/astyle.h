@@ -720,6 +720,11 @@ public:	// functions
 	void setParensInsidePaddingMode(bool state);
 	void setParensHeaderPaddingMode(bool state);
 	void setParensUnPaddingMode(bool state);
+
+	void setBracketsOutsidePaddingMode(bool state);
+	void setBracketsInsidePaddingMode(bool state);
+	void setBracketsUnPaddingMode(bool state);
+
 	void setPointerAlignment(PointerAlign alignment);
 	void setPreprocBlockIndent(bool state);
 	void setReferenceAlignment(ReferenceAlign alignment);
@@ -834,7 +839,7 @@ private:  // functions
 	void padObjCParamType();
 	void padObjCReturnType();
 	void padOperators(const std::string* newOperator);
-	void padParens();
+	void padParensOrBrackets(char openDelim, char closeDelim, bool shouldPadParensOutside, bool shouldPadParensInside, bool shouldUnPadParens, bool shouldPadFirstParen);
 	void processPreprocessor();
 	void resetEndOfStatement();
 	void setAttachClosingBraceMode(bool state);
@@ -1040,6 +1045,9 @@ private:  // variables
 	bool shouldBreakReturnTypeDecl;
 	bool shouldAttachReturnType;
 	bool shouldAttachReturnTypeDecl;
+	bool shouldPadBracketsOutside;
+	bool shouldPadBracketsInside;
+	bool shouldUnPadBrackets;
 	bool needHeaderOpeningBrace;
 	bool shouldBreakLineAtNextChar;
 	bool shouldKeepLineUnbroken;

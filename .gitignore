@@ -7,4 +7,4 @@ AStyleTest/file-py/*.tmp
 AStyleTest/file-py/*.pyc
 AStyleTest/file-py/test-diff.txt
 AStyleTest/file-py/test.txt
-
+AStyle/src/.idea/

@@ -2165,6 +2165,15 @@ void ASConsole::printHelp() const
 	std::cout << "    Remove unnecessary space padding around parenthesis. This\n";
 	std::cout << "    can be used in combination with the 'pad' options above.\n";
 	std::cout << std::endl;
+
+	std::cout << "    --pad-brackets\n";
+	std::cout << "    Insert space padding around square brackets on both the outside\n";
+	std::cout << "    and the inside (experimental).\n";
+	std::cout << std::endl;
+	std::cout << "    --unpad-brackets\n";
+	std::cout << "    Remove unnecessary space padding around square brackets (experimental).\n";
+	std::cout << std::endl;
+
 	std::cout << "    --delete-empty-lines  OR  -xe\n";
 	std::cout << "    Delete empty lines within a function or method.\n";
 	std::cout << "    It will NOT delete lines added by the break-blocks options.\n";
@@ -3638,21 +3647,6 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 	{
 		formatter.setAttachReturnTypeDecl(true);
 	}
-	else if (isOption(arg, "squeeze-ws"))
-    {
-        formatter.setSqueezeWhitespace(true);
-    }
-	else if (isParamOption(arg, "squeeze-lines="))
-    {
-		int keepEmptyLines = 2;
-		std::string keepEmptyLinesParam = getParam(arg, "squeeze-lines=");
-		if (keepEmptyLinesParam.length() > 0)
-			keepEmptyLines = atoi(keepEmptyLinesParam.c_str());
-		if (keepEmptyLines < 1)
-			isOptionError(arg, errorInfo);
-		else
-			formatter.setSqueezeEmptyLinesNumber(keepEmptyLines);
-    }
 	// To avoid compiler limit of blocks nested too deep.
 	else if (!parseOptionContinued(arg, errorInfo))
 	{
@@ -3801,6 +3795,30 @@ bool ASOptions::parseOptionContinued(const std::string& arg, const std::string& 
 			formatter.setLineEndFormat(LINEEND_LINUX);
 		else if (lineendType == 3)
 			formatter.setLineEndFormat(LINEEND_MACOLD);
+	}
+	else if (isOption(arg, "squeeze-ws"))
+    {
+        formatter.setSqueezeWhitespace(true);
+    }
+	else if (isParamOption(arg, "squeeze-lines="))
+    {
+		int keepEmptyLines = 2;
+		std::string keepEmptyLinesParam = getParam(arg, "squeeze-lines=");
+		if (keepEmptyLinesParam.length() > 0)
+			keepEmptyLines = atoi(keepEmptyLinesParam.c_str());
+		if (keepEmptyLines < 1)
+			isOptionError(arg, errorInfo);
+		else
+			formatter.setSqueezeEmptyLinesNumber(keepEmptyLines);
+    }
+	else if (isOption(arg, "pad-brackets"))
+	{
+		formatter.setBracketsOutsidePaddingMode(true);
+		formatter.setBracketsInsidePaddingMode(true);
+	}
+	else if (isOption(arg, "unpad-brackets"))
+	{
+		formatter.setBracketsUnPaddingMode(true);
 	}
 	else
 	{
