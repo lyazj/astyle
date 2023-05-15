@@ -2945,7 +2945,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 			                      || isSharpDelegate
 			                      || isInExternC
 			                      || isInAsmBlock
-			                      || getNextWord(line, i) == AS_NEW
+			                      //|| (getNextWord(line, i) == AS_NEW // #487
 			                      || (isInDefine
 			                          && (prevNonSpaceCh == '('
 			                              || isLegalNameChar(prevNonSpaceCh))));
