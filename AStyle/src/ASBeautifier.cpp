@@ -2888,7 +2888,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					     && !isLegalNameChar(prevNonSpaceCh)
 						 && prevNonSpaceCh != ']'
 						 && prevNonSpaceCh != ')'
-						 //&& prevNonSpaceCh != '*'  // GH #11
+						 && prevNonSpaceCh != '*'  // GH #11
 						 && line.find(AS_AUTO, 0 ) == std::string::npos) {
 							lambdaIndicator = true;
 					}
