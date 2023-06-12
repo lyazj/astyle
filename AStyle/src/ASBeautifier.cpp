@@ -60,6 +60,7 @@ ASBeautifier::ASBeautifier()
 	setSwitchIndent(false);
 	setCaseIndent(false);
 	setSqueezeWhitespace(false);
+	setLambdaIndentation(false);
 	setBlockIndent(false);
 	setBraceIndent(false);
 	setBraceIndentVtk(false);
@@ -207,6 +208,7 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	switchIndent = other.switchIndent;
 	caseIndent = other.caseIndent;
 	squeezeWhitespace = other.squeezeWhitespace;
+	attemptLambdaIndentation = other.attemptLambdaIndentation;
 	namespaceIndent = other.namespaceIndent;
 	braceIndent = other.braceIndent;
 	braceIndentVtk = other.braceIndentVtk;
@@ -1118,6 +1120,18 @@ void ASBeautifier::setAlignMethodColon(bool state)
 void ASBeautifier::setSqueezeWhitespace(bool state)
 {
 	squeezeWhitespace = state;
+}
+
+/**
+ * set the state of the lambda indentation option. If true,
+ * the parser tries to recognize lambda code. Indentation
+ * is bad if the lambda code is more complex (if/switch etc)
+ *
+ * @param   state             state of option.
+ */
+void ASBeautifier::setLambdaIndentation(bool state)
+{
+	attemptLambdaIndentation = state;
 }
 
 /**
@@ -2870,8 +2884,13 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					}
 
 					// #121
-					if (!isLegalNameChar(prevNonSpaceCh) && prevNonSpaceCh != ']' && prevNonSpaceCh != ')' && line.find(AS_AUTO, 0 ) == std::string::npos) {
-						lambdaIndicator = true;
+					if (attemptLambdaIndentation // GH #7
+					     && !isLegalNameChar(prevNonSpaceCh)
+						 && prevNonSpaceCh != ']'
+						 && prevNonSpaceCh != ')'
+						 //&& prevNonSpaceCh != '*'  // GH #11
+						 && line.find(AS_AUTO, 0 ) == std::string::npos) {
+							lambdaIndicator = true;
 					}
 				}
 
@@ -2945,7 +2964,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 			                      || isSharpDelegate
 			                      || isInExternC
 			                      || isInAsmBlock
-			                      //|| (getNextWord(line, i) == AS_NEW // #487
+			                      //|| getNextWord(line, i) == AS_NEW // #487
 			                      || (isInDefine
 			                          && (prevNonSpaceCh == '('
 			                              || isLegalNameChar(prevNonSpaceCh))));

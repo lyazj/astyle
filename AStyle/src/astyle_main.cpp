@@ -2114,6 +2114,9 @@ void ASConsole::printHelp() const
 	std::cout << "    --indent-col1-comments  OR  -Y\n";
 	std::cout << "    Indent line comments that start in column one.\n";
 	std::cout << std::endl;
+	std::cout << "    --indent-lambda\n";
+	std::cout << "    Indent C++ lambda functions (experimental, broken for complex fct bodies)\n";
+	std::cout << std::endl;
 	std::cout << "    --min-conditional-indent=#  OR  -m#\n";
 	std::cout << "    Indent a minimal # spaces in a continuous conditional\n";
 	std::cout << "    belonging to a conditional header.\n";
@@ -3819,6 +3822,10 @@ bool ASOptions::parseOptionContinued(const std::string& arg, const std::string& 
 	else if (isOption(arg, "unpad-brackets"))
 	{
 		formatter.setBracketsUnPaddingMode(true);
+	}
+	else if (isOption(arg, "indent-lambda"))
+	{
+		formatter.setLambdaIndentation(true);
 	}
 	else
 	{
