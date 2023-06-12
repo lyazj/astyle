@@ -3827,7 +3827,8 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					        && prevNonSpaceCh != ']'		// an array
 					        && statementEndsWithComma(line, i))
 					{
-						if (!haveAssignmentThisLine)		// only one assignment indent per line
+						// only one assignment indent per line + GH #10
+						if (!haveAssignmentThisLine && line.find(AS_SCOPE_RESOLUTION) == std::string::npos)
 						{
 							// register indent at previous word
 							haveAssignmentThisLine = true;
