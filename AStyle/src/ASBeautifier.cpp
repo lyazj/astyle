@@ -3285,6 +3285,12 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 			if (isObjCStyle() && findKeyword(line, i, AS_NS_HANDLER))
 				foundPreCommandMacro = true;
 
+			//https://sourceforge.net/p/astyle/bugs/353/
+			// new is ending the line?
+			if (isJavaStyle() && findKeyword(line, i, AS_NEW) && line.length()-3 == i) {
+				headerStack->emplace_back(&AS_OPEN_BRACE);
+			}
+
 			//https://sourceforge.net/p/astyle/bugs/550/
 			//enum can be function return value
 			if (parenDepth == 0 && findKeyword(line, i, AS_ENUM) && line.find_first_of(AS_OPEN_PAREN, i) == std::string::npos)
