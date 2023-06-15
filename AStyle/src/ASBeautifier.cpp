@@ -3288,7 +3288,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 			//https://sourceforge.net/p/astyle/bugs/353/
 			// new is ending the line?
 			if (isJavaStyle() && findKeyword(line, i, AS_NEW) && line.length()-3 == i) {
-				headerStack->emplace_back(&AS_OPEN_BRACE);
+				headerStack->emplace_back(&AS_FIXED); // needs to be something which will not match - need to define a token which will never match
 			}
 
 			//https://sourceforge.net/p/astyle/bugs/550/
