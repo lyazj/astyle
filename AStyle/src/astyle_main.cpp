@@ -94,7 +94,7 @@ namespace astyle {
 	jmethodID g_mid;
 #endif
 
-const char* g_version = "3.4";
+const char* g_version = "3.4.1";
 
 //-----------------------------------------------------------------------------
 // ASStreamIterator class

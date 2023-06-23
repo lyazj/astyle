@@ -3436,14 +3436,14 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 	if (isCharImmediatelyPostTemplate)
 		return false;
 
-	//TODO FIXME
 	// https://sourceforge.net/p/astyle/bugs/537/
-	 if ( previousNonWSChar == ',' && parenthesesCount <= 0) {
+	// https://sourceforge.net/p/astyle/bugs/552/
+	 if ( previousNonWSChar == ',' && parenthesesCount <= 0 && currentChar != '&') {
 		return false;
 	}
 
 	if (previousNonWSChar == '='
-	        //|| previousNonWSChar == ','  // #537
+	        || (previousNonWSChar == ',' && currentChar == '&')  // #537, #552
 	        || previousNonWSChar == '.'
 	        || previousNonWSChar == '{'
 	        || previousNonWSChar == '>'
