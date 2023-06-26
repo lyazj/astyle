@@ -6815,6 +6815,14 @@ void ASFormatter::findReturnTypeSplitPoint(const std::string& firstLine)
 				i = line.length();
 				continue;
 			}
+
+			// https://sourceforge.net/p/astyle/bugs/504/
+			if (line[line.length()-1] == ':')
+			{
+				i = line.length();
+				foundSplitPoint = true;
+				continue;
+			}
 			// not in quote or comment
 			if (!foundSplitPoint)
 			{
