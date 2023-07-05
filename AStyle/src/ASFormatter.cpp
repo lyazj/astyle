@@ -309,6 +309,8 @@ void ASFormatter::init(ASSourceIterator* si)
 	isImmediatelyPostHeader = false;
 	isInHeader = false;
 	isInCase = false;
+    isInAllocator = false;
+
 	isFirstPreprocConditional = false;
 	processedFirstConditional = false;
 	isJavaStaticConstructor = false;
@@ -1110,6 +1112,7 @@ std::string ASFormatter::nextLine()
 				isInAsmOneLine = isInQuote = false;
 				shouldKeepLineUnbroken = false;
 				squareBracketCount = 0;
+				isInAllocator = false;
 
 				if (braceTypeStack->size() > 1)
 				{
@@ -1584,6 +1587,12 @@ std::string ASFormatter::nextLine()
 				isImmediatelyPostNewDelete = true;
 			}
 
+			//https://sourceforge.net/p/astyle/bugs/464/
+			if (isSharpStyle() && findKeyword(currentLine, charNum, AS_NEW))
+			{
+				isInAllocator = true;
+			}
+
 			if (findKeyword(currentLine, charNum, AS_RETURN))
 			{
 				isInPotentialCalculation = true;
@@ -1641,10 +1650,13 @@ std::string ASFormatter::nextLine()
 				        && !isInObjCMethodDefinition
 				        // bypass objective-C and java @ character
 				        && charNum == (int) currentLine.find_first_not_of(" \t")
+
+						// possibly related to #504
 				        && !(isCStyle() && isCharPotentialHeader(currentLine, charNum)
 				             && (findKeyword(currentLine, charNum, AS_PUBLIC)
 				                 || findKeyword(currentLine, charNum, AS_PRIVATE)
-				                 || findKeyword(currentLine, charNum, AS_PROTECTED))))
+				                 || findKeyword(currentLine, charNum, AS_PROTECTED)))
+					)
 				{
 					findReturnTypeSplitPoint(currentLine);
 					returnTypeChecked = true;
@@ -3116,7 +3128,7 @@ BraceType ASFormatter::getBraceType()
 		bool isCommandType = (foundPreCommandHeader
 		                      || foundPreCommandMacro
 		                      || (currentHeader != nullptr && isNonParenHeader)
-		                      || (previousCommandChar == ')')
+		                      || (previousCommandChar == ')' && !isInAllocator)
 		                      || (previousCommandChar == ':' && !foundQuestionMark)
 		                      || (previousCommandChar == ';')
 		                      || ((previousCommandChar == '{' || previousCommandChar == '}')
@@ -6823,6 +6835,7 @@ void ASFormatter::findReturnTypeSplitPoint(const std::string& firstLine)
 				foundSplitPoint = true;
 				continue;
 			}
+
 			// not in quote or comment
 			if (!foundSplitPoint)
 			{
