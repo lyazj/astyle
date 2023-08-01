@@ -6269,7 +6269,7 @@ void ASFormatter::formatQuoteBody()
 				checkInterpolation = false;
 			}
 		}
-		else if (isSharpStyle() && !checkInterpolation )
+		else if (isSharpStyle() /*&& !checkInterpolation*/ )       // GH16
 		{
 			if ((int) currentLine.length() > charNum + 1
 			        && currentLine[charNum + 1] == '"')			// check consecutive quotes
@@ -6278,7 +6278,10 @@ void ASFormatter::formatQuoteBody()
 				goForward(1);
 				return;
 			}
-			isInQuote = false;
+
+			if (!checkInterpolation)
+				isInQuote = false;
+
 			isInVerbatimQuote = false;
 			checkInterpolation = false;
 		}
