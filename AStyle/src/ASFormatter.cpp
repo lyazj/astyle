@@ -3515,9 +3515,9 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 		return true;
 	if (isPointerOrReferenceVariable(lastWord))
 		return false;
-	bool isDA = (!(isLegalNameChar(previousNonWSChar) || previousNonWSChar == '>')
+	bool isDA = (!(isLegalNameChar(previousNonWSChar) || previousNonWSChar == '>')          // TODO GH14
 	             || (nextText.length() > 0 && !isLegalNameChar(nextText[0]) && nextText[0] != '/')
-	             || (ispunct((unsigned char)previousNonWSChar) && previousNonWSChar != '.')
+	             || (ispunct((unsigned char)previousNonWSChar) && previousNonWSChar != '.') // TODO GH14
 	             || isCharImmediatelyPostReturn);
 
 	return isDA;

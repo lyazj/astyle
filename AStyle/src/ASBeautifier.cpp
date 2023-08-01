@@ -2680,7 +2680,9 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				else if (isSharpStyle())
 				{
 					if (line.compare(i, 2, "\"\"") == 0)
+					{
 						i++;
+					}
 					else
 					{
 						isInQuote = false;
