@@ -3417,6 +3417,17 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 	{
 		formatter.setDeleteEmptyLinesMode(true);
 	}
+	else if (isParamOption(arg, "squeeze-lines="))
+	{
+		int keepEmptyLines = 2;
+		std::string keepEmptyLinesParam = getParam(arg, "squeeze-lines=");
+		if (keepEmptyLinesParam.length() > 0)
+			keepEmptyLines = atoi(keepEmptyLinesParam.c_str());
+		if (keepEmptyLines < 1)
+			isOptionError(arg, errorInfo);
+		else
+			formatter.setSqueezeEmptyLinesNumber(keepEmptyLines);
+	}
 	else if (isOption(arg, "E", "fill-empty-lines"))
 	{
 		formatter.setEmptyLineFill(true);
@@ -3742,17 +3753,6 @@ bool ASOptions::parseOptionContinued(const std::string& arg, const std::string& 
 	else if (isOption(arg, "squeeze-ws"))
 	{
 		formatter.setSqueezeWhitespace(true);
-	}
-	else if (isParamOption(arg, "squeeze-lines="))
-	{
-		int keepEmptyLines = 2;
-		std::string keepEmptyLinesParam = getParam(arg, "squeeze-lines=");
-		if (keepEmptyLinesParam.length() > 0)
-			keepEmptyLines = atoi(keepEmptyLinesParam.c_str());
-		if (keepEmptyLines < 1)
-			isOptionError(arg, errorInfo);
-		else
-			formatter.setSqueezeEmptyLinesNumber(keepEmptyLines);
 	}
 	else if (isOption(arg, "pad-brackets"))
 	{
