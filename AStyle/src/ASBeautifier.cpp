@@ -2904,7 +2904,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				if (currentHeader != nullptr)
 					registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, minConditionalIndent, true);
 				else if (!isInObjCMethodDefinition
-				         //&& xxxCondition && shouldForceTabIndentation  // only count one opening parenthese per line #498
+				         //&& xxxCondition && shouldForceTabIndentation  // only count one opening parentheses per line #498
 				        )
 					registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, true);
 			}

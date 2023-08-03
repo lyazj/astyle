@@ -317,7 +317,7 @@ void ASFormatter::init(ASSourceIterator* si)
 }
 
 /**
- * build std::vectors for each programing language
+ * build std::vectors for each programming language
  * depending on the file extension.
  */
 void ASFormatter::buildLanguageVectors()
