@@ -6279,10 +6279,12 @@ void ASFormatter::formatQuoteBody()
 				return;
 			}
 
-			if (!checkInterpolation)
+			//if (!checkInterpolation)
 				isInQuote = false;
 
-			isInVerbatimQuote = false;
+			if (checkInterpolation)
+				isInVerbatimQuote = false;
+
 			checkInterpolation = false;
 		}
 	}
