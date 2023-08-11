@@ -142,7 +142,7 @@ const std::string ASResource::AS_OR = std::string("||");
 const std::string ASResource::AS_SCOPE_RESOLUTION = std::string("::");
 const std::string ASResource::AS_SPACESHIP = std::string("<=>");
 const std::string ASResource::AS_EQUAL_JS = std::string("===");
-const std::string ASResource::AS_COALESCE_CS = std::string("??").append("="); // Avoid trigraph
+const std::string ASResource::AS_COALESCE_CS = std::string("?" "?="); // Avoid trigraph
 
 const std::string ASResource::AS_PLUS = std::string("+");
 const std::string ASResource::AS_MINUS = std::string("-");
