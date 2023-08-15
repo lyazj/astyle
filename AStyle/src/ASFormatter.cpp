@@ -1587,8 +1587,8 @@ std::string ASFormatter::nextLine()
 				isImmediatelyPostNewDelete = true;
 			}
 
-			//https://sourceforge.net/p/astyle/bugs/464/
-			if (isSharpStyle() && findKeyword(currentLine, charNum, AS_NEW))
+			//https://sourceforge.net/p/astyle/bugs/464/ + GH16
+			if (isSharpStyle() && findKeyword(currentLine, charNum, AS_NEW) && currentLine.find('<', charNum) != std::string::npos && currentLine.find('>', charNum) != std::string::npos )
 			{
 				isInAllocator = true;
 			}
