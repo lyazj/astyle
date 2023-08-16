@@ -863,6 +863,7 @@ std::string ASFormatter::nextLine()
 
 		if (passedSemicolon)    // need to break the formattedLine
 		{
+			isInAllocator = false; // GH16
 			passedSemicolon = false;
 			if (parenStack->back() == 0 && !isCharImmediatelyPostComment && currentChar != ';') // allow ;;
 			{
@@ -1047,6 +1048,8 @@ std::string ASFormatter::nextLine()
 			}
 		}
 
+
+//TODO GH16
 		// handle braces
 		if (currentChar == '{' || currentChar == '}')
 		{
@@ -1068,15 +1071,14 @@ std::string ASFormatter::nextLine()
 				isImmediatelyPostObjCMethodPrefix = false;
 				isInObjCInterface = false;
 				isInEnum = false;
-				//isInStruct = false;
+
 				isJavaStaticConstructor = false;
 				isCharImmediatelyPostNonInStmt = false;
 				needHeaderOpeningBrace = false;
 				shouldKeepLineUnbroken = false;
 				returnTypeChecked = false;
 				objCColonAlign = 0;
-				//assert(methodBreakCharNum == std::string::npos);	// comment out
-				//assert(methodBreakLineNum == 0);				// comment out
+
 				methodBreakCharNum = std::string::npos;
 				methodBreakLineNum = 0;
 				methodAttachCharNum = std::string::npos;
@@ -1588,7 +1590,12 @@ std::string ASFormatter::nextLine()
 			}
 
 			//https://sourceforge.net/p/astyle/bugs/464/ + GH16
-			if (isSharpStyle() && findKeyword(currentLine, charNum, AS_NEW) && currentLine.find('<', charNum) != std::string::npos && currentLine.find('>', charNum) != std::string::npos )
+			if (isSharpStyle() && findKeyword(currentLine, charNum, AS_NEW)
+								&& currentHeader != &AS_FOREACH
+								&& currentHeader != &AS_FOR
+								&& currentHeader != &AS_WHILE
+								&& currentHeader != &AS_IF
+								&& currentHeader != &AS_WHILE )
 			{
 				isInAllocator = true;
 			}
@@ -3141,7 +3148,6 @@ BraceType ASFormatter::getBraceType()
 		                      || isInObjCInterface
 		                      || isJavaStaticConstructor
 		                      || isSharpDelegate);
-
 		// C# methods containing 'get', 'set', 'add', and 'remove' do NOT end with parens
 		if (!isCommandType && isSharpStyle() && isNextWordSharpNonParenHeader(charNum + 1))
 		{
@@ -3181,6 +3187,7 @@ BraceType ASFormatter::getBraceType()
 		if (isUniformInitializerBrace())
 			returnVal = (BraceType)(returnVal | INIT_TYPE);
 	}
+
 
 	return returnVal;
 }
