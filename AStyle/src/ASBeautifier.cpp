@@ -161,6 +161,7 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	isInBeautifySQL = other.isInBeautifySQL;
 	isInIndentableStruct = other.isInIndentableStruct;
 	isInIndentablePreproc = other.isInIndentablePreproc;
+	isNewInIfCondition = other.isNewInIfCondition;
 
 	// private variables
 	sourceIterator = other.sourceIterator;
@@ -368,6 +369,7 @@ void ASBeautifier::init(ASSourceIterator* iter)
 	isInConditional = false;
 	isInTrailingReturnType = false;
 	lambdaIndicator = false;
+	isNewInIfCondition = false;
 
 	indentCount = 0;
 	spaceIndentCount = 0;
@@ -420,6 +422,8 @@ void ASBeautifier::init(ASSourceIterator* iter)
 	isInBeautifySQL = false;
 	isInIndentableStruct = false;
 	isInIndentablePreproc = false;
+	isNewInIfCondition = false;
+
 	inLineNumber = 0;
 	runInIndentContinuation = 0;
 	nonInStatementBrace = 0;
@@ -2205,6 +2209,8 @@ void ASBeautifier::computePreliminaryIndentation()
 		--indentCount;
 	if (g_preprocessorCppExternCBrace >= 4)
 		--indentCount;
+
+
 }
 
 void ASBeautifier::adjustParsedLineIndentation(size_t iPrelim, bool isInExtraHeaderIndent)
@@ -2921,6 +2927,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				}
 				foundPreCommandHeader = false;
 				parenDepth--;
+
 				if (parenDepth == 0)
 				{
 					if (!parenStatementStack->empty())      // in case of unmatched closing parens
@@ -2945,6 +2952,14 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 							spaceIndentCount = poppedIndent;
 					}
 				}
+
+				// GH16
+				if (ch == ')' && spaceIndentCount<=0 && parenDepth == 0 && isNewInIfCondition)
+				{
+                	spaceIndentCount+=2;
+                	isNewInIfCondition = false;
+               	}
+
 			}
 			continue;
 		}
@@ -3295,6 +3310,16 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 			if (isJavaStyle() && findKeyword(line, i, AS_NEW) && line.length() - 3 == i)
 			{
 				headerStack->emplace_back(&AS_FIXED); // needs to be something which will not match - need to define a token which will never match
+			}
+
+			// GH16
+			if (isSharpStyle() && findKeyword(line, i, AS_NEW)
+				&& headerStack->size() >= 1
+				&& (*headerStack)[headerStack->size() - 1] == &AS_IF )
+			{
+				headerStack->emplace_back(&AS_FIXED); // needs to be something which will not match - need to define a token which will never match
+				headerStack->emplace_back(&AS_FIXED);
+				isNewInIfCondition = true;
 			}
 
 			//https://sourceforge.net/p/astyle/bugs/550/

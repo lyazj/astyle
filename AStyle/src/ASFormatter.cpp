@@ -1594,8 +1594,7 @@ std::string ASFormatter::nextLine()
 								&& currentHeader != &AS_FOREACH
 								&& currentHeader != &AS_FOR
 								&& currentHeader != &AS_WHILE
-								&& currentHeader != &AS_IF
-								&& currentHeader != &AS_WHILE )
+								&& currentHeader != &AS_IF )
 			{
 				isInAllocator = true;
 			}

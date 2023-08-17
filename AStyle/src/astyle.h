@@ -417,6 +417,7 @@ protected:
 	bool isInBeautifySQL;
 	bool isInIndentableStruct;
 	bool isInIndentablePreproc;
+	bool isNewInIfCondition;
 
 private:  // functions
 	void adjustObjCMethodDefinitionIndentation(const std::string& line_);
@@ -1083,7 +1084,7 @@ private:  // variables
 	bool isFirstPreprocConditional;
 	bool processedFirstConditional;
 	bool isJavaStaticConstructor;
-    bool isInAllocator;
+	bool isInAllocator;
 
 private:  // inline functions
 	// append the CURRENT character (curentChar) to the current formatted line.
