@@ -2956,8 +2956,8 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				// GH16
 				if (ch == ')' && spaceIndentCount<=0 && parenDepth == 0 && isNewInIfCondition)
 				{
-                	spaceIndentCount+=2;
-                	isNewInIfCondition = false;
+					spaceIndentCount += 2;
+					isNewInIfCondition = false;
                	}
 
 			}

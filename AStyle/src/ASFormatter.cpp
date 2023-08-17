@@ -6262,7 +6262,7 @@ void ASFormatter::formatQuoteBody()
 		else
 			isSpecialChar = true;
 	}
-	else if (isInVerbatimQuote && currentChar == '"')
+	else if (isInVerbatimQuote && currentChar == '"' )
 	{
 		if (isCStyle())
 		{
@@ -6285,7 +6285,7 @@ void ASFormatter::formatQuoteBody()
 				return;
 			}
 
-			//if (!checkInterpolation)
+			if ( charNum>0 && currentLine[charNum - 1] != '\\') // with: string above os OK
 				isInQuote = false;
 
 			if (checkInterpolation)
