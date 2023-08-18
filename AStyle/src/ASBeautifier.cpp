@@ -3314,8 +3314,10 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 			// GH16
 			if (isSharpStyle() && findKeyword(line, i, AS_NEW)
 				&& headerStack->size() >= 1
+				&& line.find("[]") != std::string::npos
 				&& (*headerStack)[headerStack->size() - 1] == &AS_IF )
 			{
+				//only if braces follow new
 				headerStack->emplace_back(&AS_FIXED); // needs to be something which will not match - need to define a token which will never match
 				headerStack->emplace_back(&AS_FIXED);
 				isNewInIfCondition = true;

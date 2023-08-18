@@ -1593,6 +1593,7 @@ std::string ASFormatter::nextLine()
 			if (isSharpStyle() && findKeyword(currentLine, charNum, AS_NEW)
 								&& currentHeader != &AS_FOREACH
 								&& currentHeader != &AS_FOR
+								&& currentHeader != &AS_USING
 								&& currentHeader != &AS_WHILE
 								&& currentHeader != &AS_IF )
 			{
