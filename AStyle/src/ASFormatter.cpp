@@ -5867,13 +5867,17 @@ bool ASFormatter::isCurrentBraceBroken() const
 	{
 		if (currentLineBeginsWithBrace
 		        || braceFormatMode == RUN_IN_MODE)
+		{
 			breakBrace = true;
+		}
 	}
 	else if (braceFormatMode == NONE_MODE)
 	{
 		if (currentLineBeginsWithBrace
 		        && currentLineFirstBraceNum == (size_t) charNum)
-			breakBrace = true;
+			{
+				breakBrace = true;
+			}
 	}
 	else if (braceFormatMode == BREAK_MODE || braceFormatMode == RUN_IN_MODE)
 	{
@@ -5887,7 +5891,9 @@ bool ASFormatter::isCurrentBraceBroken() const
 			if (formattingStyle != STYLE_STROUSTRUP
 			        && formattingStyle != STYLE_MOZILLA
 			        && formattingStyle != STYLE_WEBKIT)
-				breakBrace = true;
+				{
+					breakBrace = true;
+				}
 		}
 		// break a class or interface
 		else if (isBraceType((*braceTypeStack)[stackEnd], CLASS_TYPE)
@@ -5895,13 +5901,17 @@ bool ASFormatter::isCurrentBraceBroken() const
 		{
 			if (formattingStyle != STYLE_STROUSTRUP
 			        && formattingStyle != STYLE_WEBKIT)
-				breakBrace = true;
+				{
+					breakBrace = true;
+				}
 		}
 		// break a struct if mozilla - an enum is processed as an array brace
 		else if (isBraceType((*braceTypeStack)[stackEnd], STRUCT_TYPE))
 		{
 			if (formattingStyle == STYLE_MOZILLA)
-				breakBrace = true;
+				{
+					breakBrace = true;
+				}
 		}
 		// break the first brace if a function
 		else if (isBraceType((*braceTypeStack)[stackEnd], COMMAND_TYPE))
@@ -5915,15 +5925,18 @@ bool ASFormatter::isCurrentBraceBroken() const
 				// break the first brace after these if a function
 				if (isBraceType((*braceTypeStack)[stackEnd - 1], NAMESPACE_TYPE)
 				        || isBraceType((*braceTypeStack)[stackEnd - 1], CLASS_TYPE)
-				        || isBraceType((*braceTypeStack)[stackEnd - 1], ARRAY_TYPE)
+				        || (isBraceType((*braceTypeStack)[stackEnd - 1], ARRAY_TYPE) && !lambdaIndicator)
 				        || isBraceType((*braceTypeStack)[stackEnd - 1], STRUCT_TYPE)
-				        || isBraceType((*braceTypeStack)[stackEnd - 1], EXTERN_TYPE))
+				        || isBraceType((*braceTypeStack)[stackEnd - 1], EXTERN_TYPE)
+						)
 				{
 					breakBrace = true;
 				}
 			}
 		}
 	}
+
+	//breakBrace = false;
 	return breakBrace;
 }
 
@@ -6275,7 +6288,7 @@ void ASFormatter::formatQuoteBody()
 				checkInterpolation = false;
 			}
 		}
-		else if (isSharpStyle() /*&& !checkInterpolation*/ )       // GH16
+		else if (isSharpStyle() )       // GH16
 		{
 			if ((int) currentLine.length() > charNum + 1
 			        && currentLine[charNum + 1] == '"')			// check consecutive quotes
@@ -6285,7 +6298,7 @@ void ASFormatter::formatQuoteBody()
 				return;
 			}
 
-			if ( charNum>0 && currentLine[charNum - 1] != '\\') // with: string above os OK
+			if ( charNum>0 && currentLine[charNum - 1] != '\\')
 				isInQuote = false;
 
 			if (checkInterpolation)

@@ -2894,8 +2894,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					}
 
 					// #121
-					if (attemptLambdaIndentation // GH #7
-					        && !isLegalNameChar(prevNonSpaceCh)
+					if (   !isLegalNameChar(prevNonSpaceCh)
 					        && prevNonSpaceCh != ']'
 					        && prevNonSpaceCh != ')'
 					        && prevNonSpaceCh != '*'  // GH #11
@@ -3014,8 +3013,8 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					}
 			}
 
-			// #121 fix indent of lambda bodies
-			if (isCStyle() && lambdaIndicator )
+			// #121 fix indent of lambda bodies, also GH #7
+			if (isCStyle() && lambdaIndicator && attemptLambdaIndentation )
 			{
 				isBlockOpener = false;
 			}

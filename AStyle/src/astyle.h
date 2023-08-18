@@ -418,6 +418,8 @@ protected:
 	bool isInIndentableStruct;
 	bool isInIndentablePreproc;
 	bool isNewInIfCondition;
+	bool lambdaIndicator;
+
 
 private:  // functions
 	void adjustObjCMethodDefinitionIndentation(const std::string& line_);
@@ -556,7 +558,6 @@ private:  // variables
 	bool foundPreCommandMacro;
 	bool shouldAlignMethodColon;
 	bool shouldIndentPreprocConditional;
-	bool lambdaIndicator;
 	bool squeezeWhitespace;
 	bool attemptLambdaIndentation;
 	int  indentCount;
