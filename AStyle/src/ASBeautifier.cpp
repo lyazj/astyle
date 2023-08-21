@@ -2955,8 +2955,8 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				// GH16
 				if (ch == ')' && spaceIndentCount<=0 && parenDepth == 0 && isNewInIfCondition)
 				{
-					spaceIndentCount += 2;
-					isNewInIfCondition = false;
+				//	spaceIndentCount += 2;
+				//	isNewInIfCondition = false;
                	}
 
 			}
@@ -3318,9 +3318,9 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				&& (*headerStack)[headerStack->size() - 1] == &AS_IF )
 			{
 				//only if braces follow new
-				headerStack->emplace_back(&AS_FIXED); // needs to be something which will not match - need to define a token which will never match
-				headerStack->emplace_back(&AS_FIXED);
-				isNewInIfCondition = true;
+				//headerStack->emplace_back(&AS_FIXED); // needs to be something which will not match - need to define a token which will never match
+				//headerStack->emplace_back(&AS_FIXED);
+				//isNewInIfCondition = true;
 			}
 
 			//https://sourceforge.net/p/astyle/bugs/550/
@@ -3700,7 +3700,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				g_preprocessorCppExternCBrace = 0;
 
 			// "new" operator is a pointer, not a calculation
-			if (findKeyword(line, i, AS_NEW))
+			if (isCStyle() && findKeyword(line, i, AS_NEW))
 			{
 				if (isContinuation && !continuationIndentStack->empty() && prevNonSpaceCh == '=')
 					continuationIndentStack->back() = 0;

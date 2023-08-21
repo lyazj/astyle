@@ -1595,7 +1595,11 @@ std::string ASFormatter::nextLine()
 								&& currentHeader != &AS_FOR
 								&& currentHeader != &AS_USING
 								&& currentHeader != &AS_WHILE
-								&& currentHeader != &AS_IF )
+								&& currentHeader != &AS_IF
+								&& currentLine.find(AS_PUBLIC) == std::string::npos
+								&& currentLine.find(AS_PROTECTED) == std::string::npos
+								&& currentLine.find(AS_PRIVATE) == std::string::npos
+								)
 			{
 				isInAllocator = true;
 			}
