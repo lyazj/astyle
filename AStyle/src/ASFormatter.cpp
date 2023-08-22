@@ -1048,8 +1048,6 @@ std::string ASFormatter::nextLine()
 			}
 		}
 
-
-//TODO GH16
 		// handle braces
 		if (currentChar == '{' || currentChar == '}')
 		{

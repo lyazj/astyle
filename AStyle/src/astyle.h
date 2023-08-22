@@ -417,7 +417,6 @@ protected:
 	bool isInBeautifySQL;
 	bool isInIndentableStruct;
 	bool isInIndentablePreproc;
-	bool isNewInIfCondition;
 	bool lambdaIndicator;
 
 

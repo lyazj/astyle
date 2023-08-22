@@ -161,7 +161,6 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	isInBeautifySQL = other.isInBeautifySQL;
 	isInIndentableStruct = other.isInIndentableStruct;
 	isInIndentablePreproc = other.isInIndentablePreproc;
-	isNewInIfCondition = other.isNewInIfCondition;
 
 	// private variables
 	sourceIterator = other.sourceIterator;
@@ -369,7 +368,6 @@ void ASBeautifier::init(ASSourceIterator* iter)
 	isInConditional = false;
 	isInTrailingReturnType = false;
 	lambdaIndicator = false;
-	isNewInIfCondition = false;
 
 	indentCount = 0;
 	spaceIndentCount = 0;
@@ -422,7 +420,6 @@ void ASBeautifier::init(ASSourceIterator* iter)
 	isInBeautifySQL = false;
 	isInIndentableStruct = false;
 	isInIndentablePreproc = false;
-	isNewInIfCondition = false;
 
 	inLineNumber = 0;
 	runInIndentContinuation = 0;
@@ -2951,14 +2948,6 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 							spaceIndentCount = poppedIndent;
 					}
 				}
-
-				// GH16
-				if (ch == ')' && spaceIndentCount<=0 && parenDepth == 0 && isNewInIfCondition)
-				{
-				//	spaceIndentCount += 2;
-				//	isNewInIfCondition = false;
-               	}
-
 			}
 			continue;
 		}
@@ -3311,22 +3300,11 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				headerStack->emplace_back(&AS_FIXED); // needs to be something which will not match - need to define a token which will never match
 			}
 
-			// GH16
-			if (isSharpStyle() && findKeyword(line, i, AS_NEW)
-				&& headerStack->size() >= 1
-				&& line.find("[]") != std::string::npos
-				&& (*headerStack)[headerStack->size() - 1] == &AS_IF )
-			{
-				//only if braces follow new
-				//headerStack->emplace_back(&AS_FIXED); // needs to be something which will not match - need to define a token which will never match
-				//headerStack->emplace_back(&AS_FIXED);
-				//isNewInIfCondition = true;
-			}
-
 			//https://sourceforge.net/p/astyle/bugs/550/
 			//enum can be function return value
-			if (parenDepth == 0 && findKeyword(line, i, AS_ENUM) && line.find_first_of(AS_OPEN_PAREN, i) == std::string::npos)
+			if (parenDepth == 0 && findKeyword(line, i, AS_ENUM) && line.find_first_of(AS_OPEN_PAREN, i) == std::string::npos){
 				isInEnum = true;
+			}
 
 			if (parenDepth == 0 && (findKeyword(line, i, AS_TYPEDEF_STRUCT) || findKeyword(line, i, AS_STRUCT)) && line.find_first_of(AS_SEMICOLON, i) == std::string::npos)
 			{
