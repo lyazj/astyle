@@ -3134,6 +3134,12 @@ BraceType ASFormatter::getBraceType()
 	{
 		returnVal = (BraceType)(ARRAY_TYPE | ENUM_TYPE);
 	}
+	else if (isSharpStyle() &&
+				(currentHeader == &AS_IF || currentHeader == &AS_WHILE
+				|| currentHeader == &AS_USING || currentHeader == &AS_WHILE
+				|| currentHeader == &AS_FOR  || currentHeader == &AS_FOREACH) ) { // GH16
+		returnVal = (BraceType) COMMAND_TYPE;
+	}
 	else
 	{
 		bool isCommandType = (foundPreCommandHeader
