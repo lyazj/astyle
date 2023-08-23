@@ -1000,6 +1000,7 @@ std::string ASFormatter::nextLine()
 				++parenthesesCount;
 			}
 		}
+
 		else if (currentChar == ')' || currentChar == ']' || (isInTemplate && currentChar == '>'))
 		{
 			foundPreCommandHeader = false;
@@ -1023,7 +1024,8 @@ std::string ASFormatter::nextLine()
 			}
 
 			// check if this parenthesis closes a header, e.g. if (...), while (...)
-			if (isInHeader && parenStack->back() == 0)
+			//GH16
+			if ( !(isSharpStyle() && peekNextChar() == ',') && isInHeader && parenStack->back() == 0)
 			{
 				isInHeader = false;
 				isImmediatelyPostHeader = true;
@@ -1039,6 +1041,8 @@ std::string ASFormatter::nextLine()
 				}
 
 			}
+
+			// GH16 break
 			if (currentChar == ')')
 			{
 				--parenthesesCount;
@@ -6307,7 +6311,7 @@ void ASFormatter::formatQuoteBody()
 				return;
 			}
 
-			if ( charNum>0 && currentLine[charNum - 1] != '\\')
+			//if ( charNum>0 && currentLine[charNum - 1] != '\\')
 				isInQuote = false;
 
 			if (checkInterpolation)
@@ -6375,7 +6379,7 @@ void ASFormatter::formatQuoteOpener()
 			verbatimDelimiter = currentLine.substr(charNum + 1, parenPos - charNum - 1);
 		}
 	}
-	else if (isSharpStyle() && (previousChar == '@' || previousChar == '$' ))
+	else if (isSharpStyle() && (previousChar == '@' ))
 	{
 		isInVerbatimQuote = true;
 		checkInterpolation = true;
@@ -6980,6 +6984,7 @@ void ASFormatter::findReturnTypeSplitPoint(const std::string& firstLine)
 				}
 				if (line[i] == '(' && !squareCount)
 				{
+
 					// is line is already broken?
 					if (breakCharNum == firstCharNum && breakLineNum > 0)
 						isAlreadyBroken = true;

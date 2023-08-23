@@ -3678,7 +3678,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				g_preprocessorCppExternCBrace = 0;
 
 			// "new" operator is a pointer, not a calculation
-			if (isCStyle() && findKeyword(line, i, AS_NEW))
+			if (findKeyword(line, i, AS_NEW))
 			{
 				if (isContinuation && !continuationIndentStack->empty() && prevNonSpaceCh == '=')
 					continuationIndentStack->back() = 0;
