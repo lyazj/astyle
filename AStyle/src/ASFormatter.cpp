@@ -1894,7 +1894,6 @@ std::string ASFormatter::nextLine()
 			        && nextChar != '>'
 			        && nextChar != ';'
 			        && !isBeforeAnyComment()
-			        /* && !(isBraceType(braceTypeStack->back(), ARRAY_TYPE)) */
 			   )
 			{
 				appendCurrentChar();
@@ -4861,8 +4860,10 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool shou
 			        && peekedCharOutside != '.'
 			        && peekedCharOutside != '+'    // check for ++
 			        && peekedCharOutside != '-'    // check for --
-			        && peekedCharOutside != ']')
-				appendSpaceAfter();
+			        && peekedCharOutside != ']'){
+			        appendSpaceAfter();
+		}
+
 	}
 }
 

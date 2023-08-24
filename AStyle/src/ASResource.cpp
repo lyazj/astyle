@@ -743,7 +743,8 @@ bool ASBase::isLegalNameChar(char ch) const
 	if ((unsigned char) ch > 127)
 		return false;
 	return (isalnum((unsigned char) ch)
-	        || ch == '.' || ch == '_'
+	        || (!isSharpStyle() && ch == '.')
+	        || ch == '_'
 	        || (isJavaStyle() && ch == '$')
 	        || (isSharpStyle() && ch == '@'));  // may be used as a prefix
 }
