@@ -1039,7 +1039,6 @@ std::string ASFormatter::nextLine()
 					squareBracketCount = 0;
 					objCColonAlign = 0;
 				}
-
 			}
 
 			// GH16 break
@@ -1051,6 +1050,8 @@ std::string ASFormatter::nextLine()
 					endOfAsmReached = true;
 			}
 		}
+
+
 
 		// handle braces
 		if (currentChar == '{' || currentChar == '}')
@@ -1174,6 +1175,18 @@ std::string ASFormatter::nextLine()
 				else
 					formatClosingBrace(braceType);
 			}
+			continue;
+		}
+
+		// #126
+		if ( currentChar == '*' && shouldPadOperators &&
+			( currentHeader == &AS_IF || currentHeader == &AS_WHILE || currentHeader == &AS_DO || currentHeader == &AS_FOR)
+			&& ( previousChar == ')' || std::isalpha(previousChar) )
+			&& !isOperatorPaddingDisabled() ) {
+			appendSpacePad();
+			appendOperator(AS_MULT);
+			goForward(0);
+			appendSpaceAfter();
 			continue;
 		}
 
@@ -4174,7 +4187,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	                  && newOperator != &AS_PLUS_PLUS
 	                  && newOperator != &AS_MINUS_MINUS
 	                  && newOperator != &AS_NOT
-	                  && newOperator != &AS_BIT_NOT
+	                  //&& newOperator != &AS_BIT_NOT
 	                  && newOperator != &AS_ARROW
 	                  && !(newOperator == &AS_COLON && !foundQuestionMark			// objC methods
 	                       && (isInObjCMethodDefinition || isInObjCInterface
