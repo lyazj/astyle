@@ -1488,7 +1488,7 @@ std::string ASFormatter::nextLine()
 
 		if (previousNonWSChar == '}' || currentChar == ';')
 		{
-			if (currentChar == ';')
+			if (currentChar == ';' && !isInAsmBlock)
 			{
 				squareBracketCount = 0;
 				//assert(methodBreakCharNum == std::string::npos);	// comment out
