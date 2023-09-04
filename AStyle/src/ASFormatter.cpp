@@ -3103,7 +3103,9 @@ void ASFormatter::breakLine(bool isSplitLine /*false*/)
 		if (isAppendPostBlockEmptyLineRequested)
 		{
 			isAppendPostBlockEmptyLineRequested = false;
-			isPrependPostBlockEmptyLineRequested = true;
+
+			// GH18
+			isPrependPostBlockEmptyLineRequested = !(shouldBreakBlocks && shouldAttachClosingWhile);
 		}
 		else
 			isPrependPostBlockEmptyLineRequested = false;
@@ -6569,7 +6571,7 @@ void ASFormatter::appendClosingHeader()
 	if (firstBrace != std::string::npos)
 		previousLineIsOneLineBlock = isOneLineBlockReached(formattedLine, firstBrace);
 	if (!previousLineIsEmpty
-	        && previousLineIsOneLineBlock == 0)
+	    && previousLineIsOneLineBlock == 0)
 	{
 		isInLineBreak = false;
 		appendSpacePad();
