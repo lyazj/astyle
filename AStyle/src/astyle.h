@@ -277,7 +277,7 @@ public:
 	static const std::string AS_SCOPE_RESOLUTION;
 	static const std::string AS_PLUS, AS_MINUS, AS_MULT, AS_DIV, AS_MOD, AS_GR, AS_LS;
 	static const std::string AS_NOT, AS_BIT_XOR, AS_BIT_OR, AS_BIT_AND, AS_BIT_NOT;
-	static const std::string AS_QUESTION, AS_COLON, AS_SEMICOLON, AS_COMMA;
+	static const std::string AS_QUESTION, AS_COLON, AS_SEMICOLON, AS_COMMA, AS_DOT;
 	static const std::string AS_ASM, AS__ASM__, AS_MS_ASM, AS_MS__ASM;
 	static const std::string AS_QFOREACH, AS_QFOREVER, AS_FOREVER;
 	static const std::string AS_FOREACH, AS_LOCK, AS_UNSAFE, AS_FIXED;

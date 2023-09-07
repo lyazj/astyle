@@ -159,6 +159,8 @@ const std::string ASResource::AS_BIT_XOR = std::string("^");
 const std::string ASResource::AS_QUESTION = std::string("?");
 const std::string ASResource::AS_COLON = std::string(":");
 const std::string ASResource::AS_COMMA = std::string(",");
+
+const std::string ASResource::AS_DOT = std::string(".");
 const std::string ASResource::AS_SEMICOLON = std::string(";");
 
 
@@ -357,7 +359,7 @@ void ASResource::buildIndentableMacros(std::vector<const std::pair<const std::st
  */
 void ASResource::buildNonAssignmentOperators(std::vector<const std::string*>* nonAssignmentOperators)
 {
-	const size_t elements = 15;
+	const size_t elements = 16;
 	nonAssignmentOperators->reserve(elements);
 
 	nonAssignmentOperators->emplace_back(&AS_EQUAL);
@@ -374,6 +376,7 @@ void ASResource::buildNonAssignmentOperators(std::vector<const std::string*>* no
 	nonAssignmentOperators->emplace_back(&AS_AND);
 	nonAssignmentOperators->emplace_back(&AS_OR);
 	nonAssignmentOperators->emplace_back(&AS_LAMBDA);
+	nonAssignmentOperators->emplace_back(&AS_DOT);
 
 	assert(nonAssignmentOperators->size() < elements);
 	sort(nonAssignmentOperators->begin(), nonAssignmentOperators->end(), sortOnLength);
@@ -743,7 +746,7 @@ bool ASBase::isLegalNameChar(char ch) const
 	if ((unsigned char) ch > 127)
 		return false;
 	return (isalnum((unsigned char) ch)
-	        || (!isSharpStyle() && ch == '.')
+	        //|| (!isSharpStyle() && ch == '.')
 	        || ch == '_'
 	        || (isJavaStyle() && ch == '$')
 	        || (isSharpStyle() && ch == '@'));  // may be used as a prefix
