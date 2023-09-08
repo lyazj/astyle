@@ -159,7 +159,6 @@ const std::string ASResource::AS_BIT_XOR = std::string("^");
 const std::string ASResource::AS_QUESTION = std::string("?");
 const std::string ASResource::AS_COLON = std::string(":");
 const std::string ASResource::AS_COMMA = std::string(",");
-
 const std::string ASResource::AS_DOT = std::string(".");
 const std::string ASResource::AS_SEMICOLON = std::string(";");
 
@@ -732,7 +731,9 @@ std::string ASBase::getCurrentWord(const std::string& line, size_t index) const
 	size_t i;
 	for (i = index; i < lineLength; i++)
 	{
-		if (!isLegalNameChar(line[i]))
+		if (!isLegalNameChar(line[i])
+			|| ( (isCStyle() || isJavaStyle()) && i > index && line[i]=='.')
+			)
 			break;
 	}
 	return line.substr(index, i - index);
@@ -746,7 +747,7 @@ bool ASBase::isLegalNameChar(char ch) const
 	if ((unsigned char) ch > 127)
 		return false;
 	return (isalnum((unsigned char) ch)
-	        //|| (!isSharpStyle() && ch == '.')
+	        || (!isSharpStyle() && ch == '.')
 	        || ch == '_'
 	        || (isJavaStyle() && ch == '$')
 	        || (isSharpStyle() && ch == '@'));  // may be used as a prefix

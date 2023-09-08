@@ -3815,7 +3815,6 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				if (foundNonAssignmentOp->length() > 1)
 					i += foundNonAssignmentOp->length() - 1;
 
-
 				// For C++ input/output, operator<<, >> and . method calls should be
 				// aligned, if we are not in a statement already and
 				// also not in the "operator<<(...)" header line
