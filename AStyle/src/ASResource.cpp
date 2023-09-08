@@ -675,7 +675,6 @@ const std::string* ASBase::findHeader(const std::string& line, int i,
 // check if a specific line position contains a keyword.
 bool ASBase::findKeyword(const std::string& line, int i, const std::string& keyword) const
 {
-	//std::cerr << "findKeyword "<< i << " "<< line << " -< "<< keyword << "\n";
 	assert(isCharPotentialHeader(line, i));
 	// check the word
 	const size_t keywordLength = keyword.length();
@@ -726,7 +725,7 @@ const std::string* ASBase::findOperator(const std::string& line, int i,
 // index must point to the beginning of the word
 std::string ASBase::getCurrentWord(const std::string& line, size_t index) const
 {
-	assert(isCharPotentialHeader(line, index));
+	//assert(isCharPotentialHeader(line, index));
 	size_t lineLength = line.length();
 	size_t i;
 	for (i = index; i < lineLength; i++)

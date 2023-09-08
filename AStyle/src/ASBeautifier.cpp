@@ -3823,7 +3823,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				        && isCStyle()
 				        && (foundNonAssignmentOp == &AS_GR_GR
 				            || foundNonAssignmentOp == &AS_LS_LS
-                            || foundNonAssignmentOp == &AS_DOT))
+                            || (foundNonAssignmentOp == &AS_DOT && line.find(AS_OPEN_PAREN, i) != std::string::npos)))
 				{
 					// this will be true if the line begins with the operator
 					if (i < foundNonAssignmentOp->length() && spaceIndentCount == 0)
