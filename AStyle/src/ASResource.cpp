@@ -315,8 +315,6 @@ void ASResource::buildHeaders(std::vector<const std::string*>* headers, int file
 void ASResource::buildIndentableHeaders(std::vector<const std::string*>* indentableHeaders)
 {
 	indentableHeaders->emplace_back(&AS_RETURN);
-
-//	sort(indentableHeaders->begin(), indentableHeaders->end(), sortOnName);
 }
 
 /**
@@ -746,8 +744,8 @@ bool ASBase::isLegalNameChar(char ch) const
 	if ((unsigned char) ch > 127)
 		return false;
 	return (isalnum((unsigned char) ch)
-	        || (!isSharpStyle() && ch == '.')
-	        || ch == '_'
+            || ch == '_'
+            || (!isSharpStyle() && ch == '.' )
 	        || (isJavaStyle() && ch == '$')
 	        || (isSharpStyle() && ch == '@'));  // may be used as a prefix
 }
