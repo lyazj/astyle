@@ -3105,7 +3105,7 @@ void ASFormatter::breakLine(bool isSplitLine /*false*/)
 			isAppendPostBlockEmptyLineRequested = false;
 
 			// GH18
-			isPrependPostBlockEmptyLineRequested = !(shouldBreakBlocks && shouldAttachClosingWhile);
+			isPrependPostBlockEmptyLineRequested = true;//!(shouldBreakBlocks && shouldAttachClosingWhile);
 		}
 		else
 			isPrependPostBlockEmptyLineRequested = false;
@@ -5284,7 +5284,7 @@ void ASFormatter::formatClosingBrace(BraceType braceType)
 				isAppendPostBlockEmptyLineRequested = true;
 		}
 		else
-			isAppendPostBlockEmptyLineRequested = true;
+			isAppendPostBlockEmptyLineRequested = !(shouldBreakBlocks && shouldAttachClosingWhile); ///xx
 	}
 }
 
