@@ -3103,9 +3103,7 @@ void ASFormatter::breakLine(bool isSplitLine /*false*/)
 		if (isAppendPostBlockEmptyLineRequested)
 		{
 			isAppendPostBlockEmptyLineRequested = false;
-
-			// GH18
-			isPrependPostBlockEmptyLineRequested = true;//!(shouldBreakBlocks && shouldAttachClosingWhile);
+			isPrependPostBlockEmptyLineRequested = true;
 		}
 		else
 			isPrependPostBlockEmptyLineRequested = false;
@@ -4810,8 +4808,9 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool shou
 			appendSpacePad();
 		else if (shouldPadParensOutside)
 		{
-			if (!(currentChar == openDelim && peekedCharOutside == closeDelim))
-				appendSpacePad();
+			// GH19
+			//if (!(currentChar == openDelim && peekedCharOutside == closeDelim))
+			appendSpacePad();
 		}
 
 		appendCurrentChar();
@@ -5284,7 +5283,7 @@ void ASFormatter::formatClosingBrace(BraceType braceType)
 				isAppendPostBlockEmptyLineRequested = true;
 		}
 		else
-			isAppendPostBlockEmptyLineRequested = !(shouldBreakBlocks && shouldAttachClosingWhile); ///xx
+			isAppendPostBlockEmptyLineRequested = !(shouldBreakBlocks && shouldAttachClosingWhile); // GH 18
 	}
 }
 
