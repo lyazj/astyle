@@ -5282,8 +5282,12 @@ void ASFormatter::formatClosingBrace(BraceType braceType)
 			        && nextText.substr(0, 5) != "break")
 				isAppendPostBlockEmptyLineRequested = true;
 		}
-		else
-			isAppendPostBlockEmptyLineRequested = !(shouldBreakBlocks && shouldAttachClosingWhile); // GH 18
+		else {
+			// GH18
+			isAppendPostBlockEmptyLineRequested = !(shouldBreakBlocks && shouldAttachClosingWhile)
+                                                    || currentHeader != &AS_DO;
+		}
+
 	}
 }
 
