@@ -1389,7 +1389,7 @@ void ASBeautifier::registerContinuationIndent(const std::string& line, int i, in
 	// this is not done for an in-statement array
 	if (continuationIndentCount > maxContinuationIndent
 	        && !(prevNonLegalCh == '=' && currentNonLegalCh == '{'))
-		continuationIndentCount = indentLength * 2 + spaceIndentCount_;
+		continuationIndentCount = indentLength /* * 2*/ + spaceIndentCount_; // GH16
 
 	if (!continuationIndentStack->empty()
 	        && continuationIndentCount < continuationIndentStack->back())
