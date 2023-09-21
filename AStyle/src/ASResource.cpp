@@ -663,7 +663,7 @@ const std::string* ASBase::findHeader(const std::string& line, int i,
 		if ((header == &AS_GET
 		        || header == &AS_SET
 		        || header == &AS_DEFAULT)
-		        && (peekChar == ';' || peekChar == '(' || peekChar == '='))
+		        && (peekChar == '.' || peekChar == ';' || peekChar == '(' || peekChar == '='))
 			break;
 		return header;
 	}
