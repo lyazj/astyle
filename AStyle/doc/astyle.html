@@ -155,6 +155,7 @@
         <a class="contents" href="#_pad-paren-in">pad-paren-in</a>
         <a class="contents" href="#_pad-header">pad-header</a>
         <a class="contents" href="#_unpad-paren">unpad-paren</a>
+        <a class="contents" href="#_pad-empty-paren">pad-empty-paren</a>
         <a class="contents" href="#_pad-brackets">pad-brackets</a>
         <a class="contents" href="#_unpad-brackets">unpad-brackets</a>
         <a class="contents" href="#_delete-empty-lines">delete-empty-lines</a>
@@ -1785,6 +1786,25 @@ isBar = false;
 </pre>
     </div>
 
+
+    <p id="_pad-empty-paren">
+        <code class="title">--pad-empty-paren / -xo </code>
+        <br />
+        Apply padding to empty parenthesis pairs; combine with other
+        parentheses padding options.
+    </p>
+    <div class="code">
+        <pre>if (isFoo())
+    bar(a, b);
+</pre>
+        <p class="code">
+            becomes:</p>
+        <pre>if ( isFoo () )
+    bar( a, b );
+</pre>
+    </div>
+    <p>
+        &nbsp;</p>
 
     <p id="_pad-brackets">
         <code class="title">--pad-brackets</code>

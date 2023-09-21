@@ -722,6 +722,9 @@ public:	// functions
 	void setOperatorPaddingMode(bool state);
 	void setParensOutsidePaddingMode(bool state);
 	void setParensFirstPaddingMode(bool state);
+
+	void setEmptyParensPaddingMode(bool state);
+
 	void setParensInsidePaddingMode(bool state);
 	void setParensHeaderPaddingMode(bool state);
 	void setParensUnPaddingMode(bool state);
@@ -942,6 +945,8 @@ private:  // variables
 	bool shouldPadOperators;
 	bool shouldPadParensOutside;
 	bool shouldPadFirstParen;
+
+	bool shouldPadEmptyParens;
 	bool shouldPadParensInside;
 	bool shouldPadHeader;
 	bool shouldStripCommentPrefix;

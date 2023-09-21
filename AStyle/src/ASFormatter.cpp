@@ -47,6 +47,7 @@ ASFormatter::ASFormatter()
 	shouldPadOperators = false;
 	shouldPadParensOutside = false;
 	shouldPadFirstParen = false;
+	shouldPadEmptyParens = false;
 	shouldPadParensInside = false;
 	shouldPadHeader = false;
 	shouldStripCommentPrefix = false;
@@ -2268,6 +2269,19 @@ void ASFormatter::setBracketsInsidePaddingMode(bool state)
 void ASFormatter::setParensFirstPaddingMode(bool state)
 {
 	shouldPadFirstParen = state;
+}
+
+/**
+ * set padding mode for empty parentheses.
+ * options:
+ *    true     padding will be applied
+ *    false    no padding (default)
+ *
+ * @param state         the padding mode.
+ */
+void ASFormatter::setEmptyParensPaddingMode(bool state)
+{
+	shouldPadEmptyParens = state;
 }
 
 /**
@@ -4804,13 +4818,13 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool shou
 
 		// pad open paren outside
 		char peekedCharOutside = peekNextChar();
-		if (shouldPadFirstParen && previousChar != openDelim && peekedCharOutside != closeDelim)
+		if (shouldPadFirstParen && ( (previousChar != openDelim && peekedCharOutside != closeDelim)  || shouldPadEmptyParens ) )
 			appendSpacePad();
 		else if (shouldPadParensOutside)
 		{
 			// GH19
-			//if (!(currentChar == openDelim && peekedCharOutside == closeDelim))
-			appendSpacePad();
+			if (!(currentChar == openDelim && peekedCharOutside == closeDelim) || shouldPadEmptyParens)
+				appendSpacePad();
 		}
 
 		appendCurrentChar();
