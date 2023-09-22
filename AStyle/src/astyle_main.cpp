@@ -2102,7 +2102,7 @@ void ASConsole::printHelp() const
 	std::cout << "    Insert space padding around parenthesis on the inside only.\n";
 	std::cout << std::endl;
 	std::cout << "    --pad-empty-paren  OR  -xo\n";
-	std::cout << "    Apply padding to empty parenthesis pairs; combine with other\n";
+	std::cout << "    Apply padding to empty pairs of parentheses; combine with other\n";
 	std::cout << "    parenthesis padding options.\n";
 	std::cout << std::endl;
 	std::cout << "    --pad-header  OR  -H\n";
