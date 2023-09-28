@@ -855,7 +855,9 @@ std::string ASFormatter::nextLine()
 				}
 				else
 				{
-					isInLineBreak = true;
+					// GH16 only break if header is present
+					if (currentHeader)
+						isInLineBreak = true;
 				}
 			}
 
