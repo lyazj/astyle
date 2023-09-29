@@ -3165,6 +3165,7 @@ BraceType ASFormatter::getBraceType()
 		returnVal = (BraceType)(ARRAY_TYPE | ENUM_TYPE);
 	}
 	else if (isSharpStyle() &&
+				!isOneLineBlockReached(currentLine, charNum) &&
 				(currentHeader == &AS_IF || currentHeader == &AS_WHILE
 				|| currentHeader == &AS_USING || currentHeader == &AS_WHILE
 				|| currentHeader == &AS_FOR  || currentHeader == &AS_FOREACH) ) { // GH16
