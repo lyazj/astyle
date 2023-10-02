@@ -3,7 +3,7 @@
 Artistic Style is a source code indenter, formatter, and beautifier for the C, pass:[C++], pass:[C++]/CLI, Objective‑C, C# and Java programming languages. 
 Written in pass:[C++], it can be used from the command line or incorporated as a library in another program. 
 Options can be entered from the command line or from an option file. 
-The library version can be called from programs written in languages other that pass:[C++].
+The library version can be called from programs written in languages other than pass:[C++].
 
 == Repositories
 
