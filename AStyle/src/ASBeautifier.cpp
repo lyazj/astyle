@@ -2466,6 +2466,34 @@ int ASBeautifier::findObjCColonAlignment(const std::string& line) const
 	return -1;
 }
 
+/* chatgpt
+
+int ASBeautifier::findObjCColonAlignment(const std::string& line) const
+{
+    bool haveTernary = false;
+    for (char c : line)
+    {
+        if (c == ':' || c == '?')
+        {
+            if (c == '?')
+            {
+                haveTernary = true;
+                continue;
+            }
+
+            if (haveTernary)
+            {
+                haveTernary = false;
+                continue;
+            }
+
+            return &c - line.c_str(); // Calculate the index of the found character
+        }
+    }
+    return -1;
+}
+*/
+
 /**
  * Compute the spaceIndentCount necessary to align the current line colon
  * with the colon position in the argument.
@@ -2517,7 +2545,8 @@ int ASBeautifier::getObjCFollowingKeyword(const std::string& line, int bracePos)
 	size_t keyPos = line.find_first_not_of(" \t", objectEnd + 1);
 	if (keyPos == std::string::npos)
 		return 0;
-	return keyPos - firstText;
+
+    return static_cast<int>(keyPos - firstText); // Cast to int for return value
 }
 
 /**
