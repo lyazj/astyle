@@ -2846,7 +2846,9 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 
 		prevNonSpaceCh = currentNonSpaceCh;
 		currentNonSpaceCh = ch;
-		if (!isLegalNameChar(ch) && ch != ',' && ch != ';')
+
+		// #SF 97
+		if (!isLegalNameChar(ch) /*&& ch != ',' && ch != ';'*/)
 		{
 			prevNonLegalCh = currentNonLegalCh;
 			currentNonLegalCh = ch;
@@ -3897,6 +3899,11 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					{
 						if (i == 0 && spaceIndentCount == 0)
 							spaceIndentCount += indentLength;
+
+						// #SF 97
+						if (prevNonLegalCh == '=' && currentNonLegalCh == '=')
+							spaceIndentCount = 0;
+
 						registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, false);
 						isContinuation = true;
 					}

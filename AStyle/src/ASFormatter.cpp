@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <set>
 
 //-----------------------------------------------------------------------------
 // astyle namespace
@@ -3445,14 +3446,11 @@ bool ASFormatter::isPointerOrReference() const
 	}
 
 	// checks on operators in parens with following '('
+	std::set<char> disallowedChars = {',', '(', '!', '&', '*', '|'};
+
 	if (parenStack->back() > 0
 	        && nextChar == '('
-	        && previousNonWSChar != ','
-	        && previousNonWSChar != '('
-	        && previousNonWSChar != '!'
-	        && previousNonWSChar != '&'
-	        && previousNonWSChar != '*'
-	        && previousNonWSChar != '|')
+	        && disallowedChars.find(previousNonWSChar) == disallowedChars.end())
 		return false;
 
 	if (nextChar == '-'
@@ -3504,13 +3502,10 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 		return false;
 	}
 
-	if (previousNonWSChar == '='
+	std::set<char> allowedChars = {'=', '.', '{', '>', '<', '?'};
+
+	if ( allowedChars.find(previousNonWSChar) != allowedChars.end()
 	        || (previousNonWSChar == ',' && currentChar == '&')  // #537, #552
-	        || previousNonWSChar == '.'
-	        || previousNonWSChar == '{'
-	        || previousNonWSChar == '>'
-	        || previousNonWSChar == '<'
-	        || previousNonWSChar == '?'
 	        || isCharImmediatelyPostLineComment
 	        || isCharImmediatelyPostComment
 	        || isCharImmediatelyPostReturn)
@@ -4200,6 +4195,8 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	assert(newOperator != nullptr);
 
 	char nextNonWSChar = ASBase::peekNextChar(currentLine, charNum);
+	std::set<char> allowedChars = {'(', '[', '=', ',', ':', '{'};
+
 	bool shouldPad = (newOperator != &AS_SCOPE_RESOLUTION
 	                  && newOperator != &AS_PLUS_PLUS
 	                  && newOperator != &AS_MINUS_MINUS
@@ -4213,12 +4210,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	                  && !(newOperator == &AS_PLUS && isInExponent())
 	                  && !(newOperator == &AS_GR && previousChar == '-') //https://sourceforge.net/p/astyle/bugs/544/
 	                  && !((newOperator == &AS_PLUS || newOperator == &AS_MINUS)	// check for unary plus or minus
-	                       && (previousNonWSChar == '('
-	                           || previousNonWSChar == '['
-	                           || previousNonWSChar == '='
-	                           || previousNonWSChar == ','
-	                           || previousNonWSChar == ':'
-	                           || previousNonWSChar == '{'))
+	                       && (allowedChars.find(previousNonWSChar) != allowedChars.end()))
 	                  && !(newOperator == &AS_MULT
 	                       && (previousNonWSChar == '.'
 	                           || previousNonWSChar == '>'))    // check for ->
