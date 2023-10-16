@@ -1184,6 +1184,7 @@ std::string ASFormatter::nextLine()
 
 		// #126
 		if ( currentChar == '*' && shouldPadOperators &&
+			pointerAlignment == PTR_ALIGN_NONE &&  // SF 557
 			( currentHeader == &AS_IF || currentHeader == &AS_WHILE || currentHeader == &AS_DO || currentHeader == &AS_FOR)
 			&& ( previousChar == ')' || std::isalpha(previousChar) )
 			&& !isOperatorPaddingDisabled() ) {
