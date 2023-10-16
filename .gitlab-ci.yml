@@ -10,7 +10,7 @@ before_script:
 compile:
   script:
     - cd AStyle/
-    - mkdir build_local
+    - mkdir build_local && cd build_local
     - cmake .. && make
     - cd ../../AStyleTest/regression-sh/
     # Verify that our compiled app works properly with a custom "test" script
