@@ -1097,7 +1097,7 @@ private:  // variables
 	bool isInAllocator;
 
 private:  // inline functions
-	// append the CURRENT character (curentChar) to the current formatted line.
+	// append the CURRENT character (currentChar) to the current formatted line.
 	void appendCurrentChar(bool canBreakLine = true)
 	{ appendChar(currentChar, canBreakLine); }
 
