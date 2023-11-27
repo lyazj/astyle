@@ -751,7 +751,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 	size_t iPrelim = headerStack->size();
 
 	// calculate preliminary indentation based on headerStack and data from past lines
-	computePreliminaryIndentation();
+	computePreliminaryIndentation(line);
 
 	// parse characters in the current line.
 	parseCurrentLine(line);
@@ -1389,7 +1389,7 @@ void ASBeautifier::registerContinuationIndent(const std::string& line, int i, in
 		continuationIndentCount = minIndent + spaceIndentCount_;
 
 	// this is not done for an in-statement array
-	int multiplier = isInAssignment ? 1 : 2; // GH16 - no multiply in assignments
+	int multiplier = isInAssignment ? 1 : 2; // GL16 - no multiply in assignments
 	if (continuationIndentCount > maxContinuationIndent
 	        && !(prevNonLegalCh == '=' && currentNonLegalCh == '{'))
 		continuationIndentCount = indentLength * multiplier + spaceIndentCount_;
@@ -1435,7 +1435,7 @@ void ASBeautifier::registerContinuationIndentColon(const std::string& line, int 
  */
 std::pair<int, int> ASBeautifier::computePreprocessorIndent()
 {
-	computePreliminaryIndentation();
+	computePreliminaryIndentation("");
 	std::pair<int, int> entry(indentCount, spaceIndentCount);
 	if (!headerStack->empty()
 	        && entry.first > 0
@@ -2080,7 +2080,7 @@ void ASBeautifier::processPreprocessor(const std::string& preproc, const std::st
 // Compute the preliminary indentation based on data in the headerStack
 // and data from previous lines.
 // Update the class variable indentCount.
-void ASBeautifier::computePreliminaryIndentation()
+void ASBeautifier::computePreliminaryIndentation(const std::string& line)
 {
 	indentCount = 0;
 	spaceIndentCount = 0;
@@ -2109,9 +2109,17 @@ void ASBeautifier::computePreliminaryIndentation()
 			        || (*headerStack)[i] == &AS_STATIC))
 				++indentCount;
 		}
-		else if (!(i > 0 && (*headerStack)[i - 1] != &AS_OPEN_BRACE
-		           && (*headerStack)[i] == &AS_OPEN_BRACE))
-			++indentCount;
+
+		// GL26 check if line is a label....
+		else {
+			size_t lastCharPos = line.find_last_not_of(" \t");
+			if (!(i > 0 && (*headerStack)[i - 1] != &AS_OPEN_BRACE
+		           && (*headerStack)[i] == &AS_OPEN_BRACE)
+				   && (line[lastCharPos]!=':') ) {
+				++indentCount;
+			}
+		}
+
 
 		if (!isJavaStyle() && !namespaceIndent && i > 0
 		        && ((*headerStack)[i - 1] == &AS_NAMESPACE
@@ -2928,7 +2936,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					if (   !isLegalNameChar(prevNonSpaceCh)
 					        && prevNonSpaceCh != ']'
 					        && prevNonSpaceCh != ')'
-					        && prevNonSpaceCh != '*'  // GH #11
+					        && prevNonSpaceCh != '*'  // GL #11
 					        //&& line.find(AS_AUTO, 0 ) == std::string::npos
 					   )
 					{

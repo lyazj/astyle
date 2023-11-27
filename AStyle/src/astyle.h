@@ -52,7 +52,7 @@
 	#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #endif
 
-#define ASTYLE_VERSION "3.4.10"
+#define ASTYLE_VERSION "3.4.11"
 
 //-----------------------------------------------------------------------------
 // astyle namespace
@@ -426,7 +426,7 @@ private:  // functions
 	void adjustObjCMethodDefinitionIndentation(const std::string& line_);
 	void adjustObjCMethodCallIndentation(const std::string& line_);
 	void adjustParsedLineIndentation(size_t iPrelim, bool isInExtraHeaderIndent);
-	void computePreliminaryIndentation();
+	void computePreliminaryIndentation(const std::string& line);
 	void parseCurrentLine(const std::string& line);
 	void popLastContinuationIndent();
 	void processPreprocessor(const std::string& preproc, const std::string& line);
