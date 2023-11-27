@@ -2108,18 +2108,20 @@ void ASBeautifier::computePreliminaryIndentation(const std::string& line)
 			        || (*headerStack)[i] == &AS_THROWS
 			        || (*headerStack)[i] == &AS_STATIC))
 				++indentCount;
-		}
-
-		// GL26 check if line is a label....
-		else {
-			size_t lastCharPos = line.find_last_not_of(" \t");
+		} else {
 			if (!(i > 0 && (*headerStack)[i - 1] != &AS_OPEN_BRACE
-		           && (*headerStack)[i] == &AS_OPEN_BRACE)
-				   && (line[lastCharPos]!=':') ) {
-				++indentCount;
+                && (*headerStack)[i] == &AS_OPEN_BRACE))
+                ++indentCount;
+
+			// GL26 check if line is a label.... do not indent
+			size_t lastCharPos = line.find_last_not_of(" \t");
+			if ((isCStyle() || isJavaStyle())
+				&& line[lastCharPos] == ':'
+				&& line.find("case ") == std::string::npos
+				&& line.find("default") == std::string::npos) {
+				indentCount = 0;
 			}
 		}
-
 
 		if (!isJavaStyle() && !namespaceIndent && i > 0
 		        && ((*headerStack)[i - 1] == &AS_NAMESPACE
