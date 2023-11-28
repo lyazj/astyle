@@ -2115,11 +2115,15 @@ void ASBeautifier::computePreliminaryIndentation(const std::string& line)
 
 			// GL26 check if line is a label.... do not indent
 			size_t lastCharPos = line.find_last_not_of(" \t");
-			if ((isCStyle() || isJavaStyle())
+			if (   isCStyle()
 				&& line[lastCharPos] == ':'
 				&& line.find("case ") == std::string::npos
-				&& line.find("default") == std::string::npos) {
-				indentCount = 0;
+				&& line.find("default") == std::string::npos
+				) {
+					if (labelIndent)
+						--indentCount; // unindent label by one indent
+					else
+						indentCount = 0;
 			}
 		}
 
