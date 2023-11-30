@@ -2112,19 +2112,6 @@ void ASBeautifier::computePreliminaryIndentation(const std::string& line)
 			if (!(i > 0 && (*headerStack)[i - 1] != &AS_OPEN_BRACE
                 && (*headerStack)[i] == &AS_OPEN_BRACE))
                 ++indentCount;
-
-			// GL26 check if line is a label.... do not indent
-			size_t lastCharPos = line.find_last_not_of(" \t");
-			if (   isCStyle()
-				&& line[lastCharPos] == ':'
-				&& line.find("case ") == std::string::npos
-				&& line.find("default") == std::string::npos
-				) {
-					if (labelIndent)
-						--indentCount; // unindent label by one indent
-					else
-						indentCount = 0;
-			}
 		}
 
 		if (!isJavaStyle() && !namespaceIndent && i > 0
@@ -2150,6 +2137,24 @@ void ASBeautifier::computePreliminaryIndentation(const std::string& line)
 			++indentCount;
 			isInSwitch = true;
 		}
+
+		// GL26 check if line is a label.... do not indent
+		//std::cerr << "line "<<line<< "\n";
+		/*
+		if (!blockIndent) {
+
+			size_t lastCharPos = line.find_last_not_of(" \t");
+			if ( isCStyle()
+				&& line[lastCharPos] == ':'
+
+				) {
+					if (labelIndent)
+						--indentCount; // unindent label by one indent
+					else
+						indentCount = 0;
+			}
+
+		} */
 
 	}	// end of for loop
 
@@ -2879,6 +2884,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 		else
 			currentHeader = nullptr;
 
+		// TODO GL28
 		if (isCStyle() && isInTemplate
 		        && (ch == '<' || ch == '>')
 		        && !(line.length() > i + 1 && line.compare(i, 2, ">=") == 0))
