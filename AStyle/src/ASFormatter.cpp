@@ -1602,8 +1602,9 @@ std::string ASFormatter::nextLine()
 
 		if (isPotentialHeader && !isInTemplate)
 		{
-			if (findKeyword(currentLine, charNum, AS_NEW)
-			        || findKeyword(currentLine, charNum, AS_DELETE))
+			//GL30
+			if (!isGHCStyle() && (findKeyword(currentLine, charNum, AS_NEW)
+			        || findKeyword(currentLine, charNum, AS_DELETE)))
 			{
 				isInPotentialCalculation = false;
 				isImmediatelyPostNewDelete = true;
@@ -1959,7 +1960,9 @@ std::string ASFormatter::nextLine()
 			continue;
 		}
 
-		if ((currentChar == '[' || currentChar == ']' ) && (shouldPadBracketsOutside || shouldPadBracketsInside || shouldUnPadBrackets) )
+		//GL31
+		bool isDoubleOpenBrackets = isGHCStyle() && currentChar=='[' && peekNextChar() == '[';
+		if ((currentChar == '[' || currentChar == ']' ) && (shouldPadBracketsOutside || shouldPadBracketsInside || shouldUnPadBrackets) && !isDoubleOpenBrackets)
 		{
 			padParensOrBrackets('[', ']', shouldPadBracketsOutside, shouldPadBracketsInside, shouldUnPadBrackets, false);
 			continue;
