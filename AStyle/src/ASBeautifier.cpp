@@ -2702,9 +2702,12 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				isInQuote = true;
 
 				char prevCh = i > 0 ? line[i - 1] : ' ';
+				char prevPrevCh = i > 1 ? line[i - 2] : ' ';
 
+
+				// GL 32
 				// https://sourceforge.net/p/astyle/bugs/535/
-				if (isCStyle() && prevCh == 'R' && !(isalpha(prevNonSpaceCh) || prevNonSpaceCh == '('  ))
+				if (isCStyle() && prevCh == 'R' && !isalpha(prevPrevCh) && !(isalpha(prevNonSpaceCh) /*|| prevNonSpaceCh == '(' */ ))
 				{
 					int parenPos = line.find('(', i);
 					if (parenPos != -1)
