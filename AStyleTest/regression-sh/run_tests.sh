@@ -20,7 +20,7 @@ do
 	fi
 
 	# call the latest astyle here
-	../../AStyle/build_local/astyle "$arg"  < tmp.cpp > "$dir/tmp.cpp.new"
+	../../AStyle/build_local/astyle --squeeze-lines=1 "$arg"  < tmp.cpp > "$dir/tmp.cpp.new"
 	diff $dir/tmp.cpp.old $dir/tmp.cpp.new
 	if [ $? -eq 0 ]; then
 		rm "$dir/tmp.cpp.new"
