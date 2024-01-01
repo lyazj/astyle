@@ -42,7 +42,7 @@ ASFormatter::ASFormatter()
 	referenceAlignment = REF_SAME_AS_PTR;
 	objCColonPadMode = COLON_PAD_NO_CHANGE;
 	lineEnd = LINEEND_DEFAULT;
-	squeezeEmptyLineNum = 0;
+	squeezeEmptyLineNum = std::string::npos;
 	maxCodeLength = std::string::npos;
 	isInStruct = false;
 	shouldPadCommas = false;

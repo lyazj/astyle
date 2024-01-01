@@ -911,8 +911,8 @@ private:  // variables
 	int  templateDepth;
 	int  squareBracketCount;
 	int  parenthesesCount;
-	int  squeezeEmptyLineNum;
-	int  squeezeEmptyLineCount;
+	size_t  squeezeEmptyLineNum;
+	size_t  squeezeEmptyLineCount;
 
 	size_t checksumIn;
 	size_t checksumOut;
