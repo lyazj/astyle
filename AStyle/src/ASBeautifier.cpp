@@ -3884,12 +3884,23 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				// For C++ input/output, operator<<, >> and . method calls should be
 				// aligned, if we are not in a statement already and
 				// also not in the "operator<<(...)" header line
+
+				// GL28: method calls have to contain only alphanumeric identifier
+				size_t openParenPos = line.find(AS_OPEN_PAREN, i);
+				std::string methodName = getNextWord(line, i);
+				size_t methodNameEndPos =  i + methodName.length() + 1;
+				size_t firstChar = line.substr(i + methodName.length() + 1).find_first_not_of(" \t");
+				if (firstChar != std::string::npos)
+				{
+					methodNameEndPos += firstChar;
+				}
+
 				if (!isInOperator
 				        && continuationIndentStack->empty()
 				        && isCStyle()
 				        && (foundNonAssignmentOp == &AS_GR_GR
 				            || foundNonAssignmentOp == &AS_LS_LS
-                            || (foundNonAssignmentOp == &AS_DOT && line.find(AS_OPEN_PAREN, i) != std::string::npos)))
+                            || (foundNonAssignmentOp == &AS_DOT && openParenPos == methodNameEndPos)))
 				{
 					// this will be true if the line begins with the operator
 					if (i < foundNonAssignmentOp->length() && spaceIndentCount == 0)
