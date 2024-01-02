@@ -3887,19 +3887,24 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 
 				// GL28: method calls have to contain only alphanumeric identifier
 				size_t openParenPos = line.find(AS_OPEN_PAREN, i);
+
 				std::string methodName = getNextWord(line, i);
 				size_t methodNameEndPos =  i + methodName.length() + 1;
-				size_t firstChar = line.substr(i + methodName.length() + 1).find_first_not_of(" \t");
-				if (firstChar != std::string::npos)
+				size_t firstCharAfterMethod = line.substr(i + methodName.length() + 1).find_first_not_of(" \t");
+				if (firstCharAfterMethod != std::string::npos)
 				{
-					methodNameEndPos += firstChar;
+					methodNameEndPos += firstCharAfterMethod;
 				}
+
+				// GL28: do not mixup template closing ">>" with IO operator
+				std::string searchTemplatePattern = line.substr(0, i);
+				size_t countLS = std::count_if( searchTemplatePattern.begin(), searchTemplatePattern.end(), []( char c ){return c =='<';});
 
 				if (!isInOperator
 				        && continuationIndentStack->empty()
 				        && isCStyle()
-				        && (foundNonAssignmentOp == &AS_GR_GR
-				            || foundNonAssignmentOp == &AS_LS_LS
+				        && ( (foundNonAssignmentOp == &AS_GR_GR && countLS < 2 )
+				            ||  foundNonAssignmentOp == &AS_LS_LS
                             || (foundNonAssignmentOp == &AS_DOT && openParenPos == methodNameEndPos)))
 				{
 					// this will be true if the line begins with the operator
