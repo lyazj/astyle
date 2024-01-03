@@ -2894,7 +2894,6 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 		else
 			currentHeader = nullptr;
 
-		// TODO GL28
 		if (isCStyle() && isInTemplate
 		        && (ch == '<' || ch == '>')
 		        && !(line.length() > i + 1 && line.compare(i, 2, ">=") == 0))
@@ -3896,6 +3895,13 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 					methodNameEndPos += firstCharAfterMethod;
 				}
 
+				size_t firstCharOfLine = line.find_first_not_of(" \t");
+				bool lineStartsWithDot = false;
+				if (firstCharOfLine != std::string::npos)
+				{
+					lineStartsWithDot = line[firstCharOfLine] == '.';
+				}
+
 				// GL28: do not mixup template closing ">>" with IO operator
 				std::string searchTemplatePattern = line.substr(0, i);
 				size_t countLS = std::count_if( searchTemplatePattern.begin(), searchTemplatePattern.end(), []( char c ){return c =='<';});
@@ -3903,9 +3909,10 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				if (!isInOperator
 				        && continuationIndentStack->empty()
 				        && isCStyle()
+				        && !lineStartsWithDot
 				        && ( (foundNonAssignmentOp == &AS_GR_GR && countLS < 2 )
 				            ||  foundNonAssignmentOp == &AS_LS_LS
-                            || (foundNonAssignmentOp == &AS_DOT && openParenPos == methodNameEndPos)))
+				            || (foundNonAssignmentOp == &AS_DOT && openParenPos == methodNameEndPos)))
 				{
 					// this will be true if the line begins with the operator
 					if (i < foundNonAssignmentOp->length() && spaceIndentCount == 0)
