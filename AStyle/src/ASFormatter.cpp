@@ -6677,6 +6677,10 @@ bool ASFormatter::addBracesToStatement()
 		}
 
 		++closingBracesCount;
+
+		nextSemiColon = currentLine.find('{');
+		if (nextSemiColon != std::string::npos)
+			return false;
 	}
 
 	// add opening brace
