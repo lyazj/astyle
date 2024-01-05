@@ -77,7 +77,7 @@ ASFormatter::ASFormatter()
 	shouldAttachReturnTypeDecl = false;
 	shouldBreakElseIfs = false;
 	shouldBreakLineAfterLogical = false;
-	shouldAddBraces = false;
+	shouldAddBraces = 0;
 	shouldAddOneLineBraces = false;
 	shouldRemoveBraces = false;
 	shouldPadMethodColon = false;
@@ -176,6 +176,7 @@ void ASFormatter::init(ASSourceIterator* si)
 	clearFormattedLineSplitPoints();
 
 	currentHeader = nullptr;
+	previousHeader = nullptr;
 	currentLine = "";
 	readyFormattedLine = "";
 	formattedLine = "";
@@ -204,6 +205,7 @@ void ASFormatter::init(ASSourceIterator* si)
 	templateDepth = 0;
 	squareBracketCount = 0;
 	parenthesesCount = 0;
+	closingBracesCount = 0;
 	squeezeEmptyLineCount = 0;
 
 	runInIndentChars = 0;
@@ -451,7 +453,7 @@ void ASFormatter::fixOptionVariableConflicts()
 		// only shouldAddBraces should be set to true
 		if (shouldAddOneLineBraces)
 		{
-			shouldAddBraces = true;
+			shouldAddBraces = 1;
 			shouldAddOneLineBraces = false;
 		}
 	}
@@ -1138,6 +1140,7 @@ std::string ASFormatter::nextLine()
 
 				if (!preBraceHeaderStack->empty())
 				{
+					previousHeader = currentHeader;
 					currentHeader = preBraceHeaderStack->back();
 					preBraceHeaderStack->pop_back();
 				}
@@ -1324,7 +1327,7 @@ std::string ASFormatter::nextLine()
 						isAppendPostBlockEmptyLineRequested = false;
 				}
 
-				const std::string* previousHeader = currentHeader;
+				previousHeader = currentHeader;
 				currentHeader = newHeader;
 				needHeaderOpeningBrace = true;
 
@@ -2061,12 +2064,13 @@ void ASFormatter::setFormattingStyle(FormatStyle style)
 /**
  * set the add braces mode.
  * options:
- *    true     braces added to headers for single line statements.
- *    false    braces NOT added to headers for single line statements.
+ *    2    braces added to headers for (nested) single line statements.
+ *    1    braces added to headers for single line statements.
+ *    0    braces NOT added to headers for single line statements.
  *
  * @param state         the add braces state.
  */
-void ASFormatter::setAddBracesMode(bool state)
+void ASFormatter::setAddBracesMode(int state)
 {
 	shouldAddBraces = state;
 }
@@ -2081,7 +2085,7 @@ void ASFormatter::setAddBracesMode(bool state)
  */
 void ASFormatter::setAddOneLineBracesMode(bool state)
 {
-	shouldAddBraces = state;
+	shouldAddBraces = state ? 1 : 0;
 	shouldAddOneLineBraces = state;
 }
 
@@ -6623,23 +6627,58 @@ bool ASFormatter::addBracesToStatement()
 	if (currentChar == ';')
 		return false;
 
-	// do not add if a header follows
-	if (isCharPotentialHeader(currentLine, charNum))
-		if (findHeader(headers) != nullptr)
+	// old behavior
+	if (shouldAddBraces==1) {
+
+			// do not add if a header follows
+		if (isCharPotentialHeader(currentLine, charNum))
+			if (findHeader(headers) != nullptr)
+				return false;
+
+		// find the next semi-colon
+		size_t nextSemiColon = charNum;
+		if (currentChar != ';')
+			nextSemiColon = findNextChar(currentLine, ';', charNum + 1);
+		if (nextSemiColon == std::string::npos)
 			return false;
 
-	// find the next semi-colon
-	size_t nextSemiColon = charNum;
-	if (currentChar != ';')
-		nextSemiColon = findNextChar(currentLine, ';', charNum + 1);
-	if (nextSemiColon == std::string::npos)
-		return false;
+		// add closing brace before changing the line length
+		if (nextSemiColon == currentLine.length() - 1)
+			currentLine.append(" }");
+		else
+			currentLine.insert(nextSemiColon + 1, " }");
 
-	// add closing brace before changing the line length
-	if (nextSemiColon == currentLine.length() - 1)
-		currentLine.append(" }");
-	else
-		currentLine.insert(nextSemiColon + 1, " }");
+	} else { // nested single line statements
+
+		// find the next semi-colon
+		size_t nextSemiColon = charNum;
+		if (currentChar != ';')
+			nextSemiColon = findNextChar(currentLine, ';', charNum + 1);
+
+		bool currentIsForHeader = false;
+		if (nextSemiColon != std::string::npos) {
+			if (isCharPotentialHeader(currentLine, (int) currentLine.find_first_not_of(" \t") )) {
+				if (findHeader(headers) == &AS_FOR) {
+					currentIsForHeader = true;
+					--closingBracesCount;
+				}
+		}
+
+		// add closing brace before changing the line length
+		++closingBracesCount;
+		if (!currentIsForHeader)
+
+			while (closingBracesCount--) {
+				if (nextSemiColon == currentLine.length() - 1)
+					currentLine.append(" }");
+				else
+					currentLine.insert(nextSemiColon + 1, " }");
+			}
+		}
+
+		++closingBracesCount;
+	}
+
 	// add opening brace
 	currentLine.insert(charNum, "{ ");
 	assert(computeChecksumIn("{}"));

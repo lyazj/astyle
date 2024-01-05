@@ -691,7 +691,7 @@ public:	// functions
 	LineEndFormat getLineEndFormat() const;
 	bool getIsLineReady() const;
 	void setFormattingStyle(FormatStyle style);
-	void setAddBracesMode(bool state);
+	void setAddBracesMode(int state);
 	void setAddOneLineBracesMode(bool state);
 	void setRemoveBracesMode(bool state);
 	void setAttachClass(bool state);
@@ -895,6 +895,7 @@ private:  // variables
 	std::string readyFormattedLine;
 	std::string verbatimDelimiter;
 	const std::string* currentHeader;
+	const std::string* previousHeader;
 	char currentChar;
 	char previousChar;
 	char previousNonWSChar;
@@ -911,6 +912,7 @@ private:  // variables
 	int  templateDepth;
 	int  squareBracketCount;
 	int  parenthesesCount;
+	int  closingBracesCount;
 	size_t  squeezeEmptyLineNum;
 	size_t  squeezeEmptyLineCount;
 
@@ -1045,7 +1047,7 @@ private:  // variables
 	bool shouldBreakClosingHeaderBraces;
 	bool shouldBreakElseIfs;
 	bool shouldBreakLineAfterLogical;
-	bool shouldAddBraces;
+	int  shouldAddBraces;
 	bool shouldAddOneLineBraces;
 	bool shouldRemoveBraces;
 	bool shouldPadMethodColon;

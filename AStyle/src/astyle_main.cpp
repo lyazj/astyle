@@ -2165,6 +2165,7 @@ void ASConsole::printHelp() const
 	std::cout << "    statement residing on the same line.\n";
 	std::cout << std::endl;
 	std::cout << "    --add-braces  OR  -j\n";
+	std::cout << "    --add-braces=nested (experimental)\n";
 	std::cout << "    Add braces to unbraced one line conditional statements.\n";
 	std::cout << std::endl;
 	std::cout << "    --add-one-line-braces  OR  -J\n";
@@ -3473,9 +3474,13 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 	{
 		formatter.setBreakOneLineHeadersMode(true);
 	}
+	else if (isOption(arg, "add-braces=nested"))
+	{
+		formatter.setAddBracesMode(2);
+	}
 	else if (isOption(arg, "j", "add-braces"))
 	{
-		formatter.setAddBracesMode(true);
+		formatter.setAddBracesMode(1);
 	}
 	else if (isOption(arg, "J", "add-one-line-braces"))
 	{
