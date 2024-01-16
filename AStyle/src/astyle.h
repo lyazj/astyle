@@ -566,6 +566,7 @@ private:  // variables
 	bool attemptLambdaIndentation;
 
 	bool isInAssignment;
+	bool isInInitializerList;
 
 	int  indentCount;
 	int  spaceIndentCount;
