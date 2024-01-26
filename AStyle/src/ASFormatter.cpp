@@ -415,7 +415,7 @@ void ASFormatter::fixOptionVariableConflicts()
 	else if (formattingStyle == STYLE_1TBS)
 	{
 		setBraceFormatMode(LINUX_MODE);
-		setAddBracesMode(true);
+		setAddBracesMode(1);
 		setRemoveBracesMode(false);
 	}
 	else if (formattingStyle == STYLE_GOOGLE)
@@ -6627,8 +6627,11 @@ bool ASFormatter::addBracesToStatement()
 	if (currentChar == ';')
 		return false;
 
+
+	bool isLastElseBranch = shouldAddBraces == 2 && (previousHeader == &AS_IF && currentHeader == &AS_ELSE);
+
 	// old behavior
-	if (shouldAddBraces==1) {
+	if (shouldAddBraces==1 || isLastElseBranch) {
 
 			// do not add if a header follows
 		if (isCharPotentialHeader(currentLine, charNum))
