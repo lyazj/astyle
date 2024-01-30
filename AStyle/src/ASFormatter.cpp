@@ -6610,14 +6610,14 @@ bool ASFormatter::addBracesToStatement()
 	assert(isImmediatelyPostHeader);
 
 	if (currentHeader != &AS_IF
-	        && currentHeader != &AS_ELSE
-	        && currentHeader != &AS_FOR
-	        && currentHeader != &AS_WHILE
-	        && currentHeader != &AS_DO
-	        && currentHeader != &AS_FOREACH
-	        && currentHeader != &AS_QFOREACH
-	        && currentHeader != &AS_QFOREVER
-	        && currentHeader != &AS_FOREVER)
+		&& currentHeader != &AS_ELSE
+		&& currentHeader != &AS_FOR
+		&& currentHeader != &AS_WHILE
+		&& currentHeader != &AS_DO
+		&& currentHeader != &AS_FOREACH
+		&& currentHeader != &AS_QFOREACH
+		&& currentHeader != &AS_QFOREVER
+		&& currentHeader != &AS_FOREVER)
 		return false;
 
 	if (currentHeader == &AS_WHILE && foundClosingHeader)	// do-while
@@ -6682,8 +6682,28 @@ bool ASFormatter::addBracesToStatement()
 		++closingBracesCount;
 
 		nextSemiColon = currentLine.find('{');
-		if (nextSemiColon != std::string::npos)
+		if (nextSemiColon != std::string::npos){
+			--closingBracesCount;
 			return false;
+		} else {
+			ASPeekStream stream(sourceIterator);
+
+			// loop until { or other symbol is found
+			while (stream.hasMoreLines()) {
+
+				std::string nextLine = ASBeautifier::trim(stream.peekNextLine());
+				if (nextLine.empty())
+					continue;
+
+				nextSemiColon = nextLine.find_first_not_of(" \t");
+				if (nextSemiColon != std::string::npos && nextLine[nextSemiColon] == '{') {
+					--closingBracesCount;
+					return false;
+				}
+				break;
+			}
+		}
+
 	}
 
 	// add opening brace
