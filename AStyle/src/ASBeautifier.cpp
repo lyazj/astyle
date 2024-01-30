@@ -2118,6 +2118,7 @@ void ASBeautifier::computePreliminaryIndentation(const std::string& line)
 			        || (*headerStack)[i] == &AS_STATIC))
 				++indentCount;
 		} else {
+		    //GL37
 			if (!(i > 0 && (*headerStack)[i - 1] != &AS_OPEN_BRACE
                 && (*headerStack)[i] == &AS_OPEN_BRACE))
                 ++indentCount;
