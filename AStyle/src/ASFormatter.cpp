@@ -90,6 +90,7 @@ ASFormatter::ASFormatter()
 	shouldPadBracketsOutside = false;
 	shouldPadBracketsInside = false;
 	shouldUnPadBrackets = false;
+	isInMultlineStatement = false;
 
 	// initialize ASFormatter member std::vectors
 	formatterFileType = INVALID_TYPE;		// reset to an invalid type
@@ -315,6 +316,7 @@ void ASFormatter::init(ASSourceIterator* si)
 	isInHeader = false;
 	isInCase = false;
     isInAllocator = false;
+	isInMultlineStatement = false;
 
 	isFirstPreprocConditional = false;
 	processedFirstConditional = false;
@@ -871,6 +873,7 @@ std::string ASFormatter::nextLine()
 		if (passedSemicolon)    // need to break the formattedLine
 		{
 			isInAllocator = false; // GH16
+			isInMultlineStatement = false;
 			passedSemicolon = false;
 			if (parenStack->back() == 0 && !isCharImmediatelyPostComment && currentChar != ';') // allow ;;
 			{
@@ -1125,6 +1128,7 @@ std::string ASFormatter::nextLine()
 				shouldKeepLineUnbroken = false;
 				squareBracketCount = 0;
 				isInAllocator = false;
+				isInMultlineStatement = false;
 
 				if (braceTypeStack->size() > 1)
 				{
@@ -6695,11 +6699,26 @@ bool ASFormatter::addBracesToStatement()
 				if (nextLine.empty())
 					continue;
 
-				nextSemiColon = nextLine.find_first_not_of(" \t");
-				if (nextSemiColon != std::string::npos && nextLine[nextSemiColon] == '{') {
+				if (nextLine[0] == '{' || nextLine[nextLine.size()-1] == '{') {
 					--closingBracesCount;
 					return false;
 				}
+
+				if (isCharPotentialHeader(nextLine, 0) && ASBase::findHeader(nextLine, 0, headers) != nullptr ) {
+					break;
+				}
+
+				// this breaks normal if else blocks
+				if (nextLine[nextLine.size()-1] != ';' && nextLine[nextLine.size()-1] != '}') {
+					isInMultlineStatement = true;
+					continue;
+				}
+
+				if (isInMultlineStatement) {
+					--closingBracesCount;
+					return false;
+				}
+
 				break;
 			}
 		}

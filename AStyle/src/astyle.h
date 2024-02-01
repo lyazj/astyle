@@ -1101,6 +1101,7 @@ private:  // variables
 	bool processedFirstConditional;
 	bool isJavaStaticConstructor;
 	bool isInAllocator;
+	bool isInMultlineStatement;
 
 private:  // inline functions
 	// append the CURRENT character (currentChar) to the current formatted line.
