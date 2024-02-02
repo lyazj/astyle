@@ -1102,6 +1102,7 @@ private:  // variables
 	bool isJavaStaticConstructor;
 	bool isInAllocator;
 	bool isInMultlineStatement;
+	int isInExplicitBlock;
 
 private:  // inline functions
 	// append the CURRENT character (currentChar) to the current formatted line.

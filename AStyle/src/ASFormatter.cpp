@@ -91,6 +91,7 @@ ASFormatter::ASFormatter()
 	shouldPadBracketsInside = false;
 	shouldUnPadBrackets = false;
 	isInMultlineStatement = false;
+	isInExplicitBlock = 0;
 
 	// initialize ASFormatter member std::vectors
 	formatterFileType = INVALID_TYPE;		// reset to an invalid type
@@ -317,6 +318,7 @@ void ASFormatter::init(ASSourceIterator* si)
 	isInCase = false;
     isInAllocator = false;
 	isInMultlineStatement = false;
+	isInExplicitBlock = 0;
 
 	isFirstPreprocConditional = false;
 	processedFirstConditional = false;
@@ -1066,6 +1068,7 @@ std::string ASFormatter::nextLine()
 		// handle braces
 		if (currentChar == '{' || currentChar == '}')
 		{
+
 			// if appendOpeningBrace this was already done for the original brace
 			if (currentChar == '{' && !appendOpeningBrace)
 			{
@@ -1090,6 +1093,9 @@ std::string ASFormatter::nextLine()
 				needHeaderOpeningBrace = false;
 				shouldKeepLineUnbroken = false;
 				returnTypeChecked = false;
+
+				isInExplicitBlock++;
+
 				objCColonAlign = 0;
 
 				methodBreakCharNum = std::string::npos;
@@ -1129,6 +1135,7 @@ std::string ASFormatter::nextLine()
 				squareBracketCount = 0;
 				isInAllocator = false;
 				isInMultlineStatement = false;
+				isInExplicitBlock--;
 
 				if (braceTypeStack->size() > 1)
 				{
@@ -6657,6 +6664,10 @@ bool ASFormatter::addBracesToStatement()
 
 	} else { // nested single line statements
 
+		if (isInExplicitBlock > 1 && !closingBracesCount) {
+			return false;
+		}
+
 		// find the next semi-colon
 		size_t nextSemiColon = charNum;
 		if (currentChar != ';')
@@ -6690,6 +6701,7 @@ bool ASFormatter::addBracesToStatement()
 			--closingBracesCount;
 			return false;
 		} else {
+
 			ASPeekStream stream(sourceIterator);
 
 			// loop until { or other symbol is found
