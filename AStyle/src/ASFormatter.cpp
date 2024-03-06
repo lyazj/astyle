@@ -5340,12 +5340,13 @@ void ASFormatter::formatArrayBraces(BraceType braceType, bool isOpeningArrayBrac
 		// is this the first opening brace in the array?
 		if (isOpeningArrayBrace)
 		{
-			if (braceFormatMode == ATTACH_MODE
-			        || braceFormatMode == LINUX_MODE)
+			if (braceFormatMode == ATTACH_MODE || braceFormatMode == LINUX_MODE)
 			{
 				// break an enum if mozilla
 				if (isBraceType(braceType, ENUM_TYPE)
-				        && formattingStyle == STYLE_MOZILLA)
+				        && formattingStyle == STYLE_MOZILLA
+						&& !(!shouldBreakOneLineBlocks && formattedLine.find('}' != std::string::npos) ) // GL38
+					)
 				{
 					isInLineBreak = true;
 					appendCurrentChar();                // don't attach
