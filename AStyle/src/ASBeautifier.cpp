@@ -2718,6 +2718,7 @@ void ASBeautifier::parseCurrentLine(const std::string& line)
 				// https://sourceforge.net/p/astyle/bugs/535/
 				if (isCStyle() && prevCh == 'R' && !isalpha(prevPrevCh) && !(isalpha(prevNonSpaceCh) ))
 				{
+					std::cerr << "R1\n";
 					int parenPos = line.find('(', i);
 					if (parenPos != -1)
 					{

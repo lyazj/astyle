@@ -6419,7 +6419,9 @@ void ASFormatter::formatQuoteOpener()
 
 	isInQuote = true;
 	quoteChar = currentChar;
-	if (isCStyle() && previousChar == 'R')
+
+	char prevPrevCh = charNum > 2 ? currentLine[charNum - 2] : ' '; // GL39
+	if (isCStyle() && previousChar == 'R' && !isalpha(prevPrevCh))
 	{
 		int parenPos = currentLine.find('(', charNum);
 		if (parenPos != -1)
