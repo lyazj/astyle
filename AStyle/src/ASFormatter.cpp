@@ -3648,10 +3648,13 @@ bool ASFormatter::isPointerOrReferenceVariable(const std::string& word) const
 	        || word == "NSString"
 	        || word == "int"
 	        || word == "void"
+	        || word == "short"
+	        || word == "long"
+	        || word == "double"
+	        || word == "float"
 	        || (word.length() >= 6     // check end of word for _t
 	            && word.compare(word.length() - 2, 2, "_t") == 0)
-	        || word == "INT"
-	        || word == "VOID")
+		)
 		retval = true;
 
 	// check for C# object type "x is std::string"
