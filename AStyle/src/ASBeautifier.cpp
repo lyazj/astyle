@@ -605,16 +605,16 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 	        && line.length() > 0
 	        && line[0] != '#')
 	{
-		std::string indentedLine;
+		if (isIndentModeOff)
+			return originalLine;
+
 		if (isInClassHeaderTab || isInClassInitializer)
 		{
 			// parsing is turned off in ASFormatter by indent-off
 			// the originalLine will probably never be returned here
-			indentedLine = preLineWS(prevFinalLineIndentCount, prevFinalLineSpaceIndentCount) + line;
-			return getIndentedLineReturn(indentedLine, originalLine);
+			return preLineWS(prevFinalLineIndentCount, prevFinalLineSpaceIndentCount) + line;
 		}
-		indentedLine = preLineWS(preprocBlockIndent, 0) + line;
-		return getIndentedLineReturn(indentedLine, originalLine);
+		return preLineWS(preprocBlockIndent, 0) + line;
 	}
 
 	if (!isInComment
@@ -649,10 +649,18 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 				}
 				else
 					indentedLine = preLineWS(preprocBlockIndent, 0) + line;
-				return getIndentedLineReturn(indentedLine, originalLine);
+
+				if (isIndentModeOff)
+					return originalLine;
+				else
+					return indentedLine;
 			}
 			if (shouldIndentPreprocConditional && preproc.length() > 0)
 			{
+
+				if (isIndentModeOff)
+					return originalLine;
+
 				std::string indentedLine;
 				if (preproc.length() >= 2 && preproc.substr(0, 2) == "if") // #if, #ifdef, #ifndef
 				{
@@ -664,7 +672,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 					preprocIndentStack->emplace_back(entry);
 					indentedLine = preLineWS(preprocIndentStack->back().first,
 					                         preprocIndentStack->back().second) + line;
-					return getIndentedLineReturn(indentedLine, originalLine);
+					return indentedLine;
 				}
 				if (preproc == "else" || preproc == "elif")
 				{
@@ -672,7 +680,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 					{
 						indentedLine = preLineWS(preprocIndentStack->back().first,
 						                         preprocIndentStack->back().second) + line;
-						return getIndentedLineReturn(indentedLine, originalLine);
+						return indentedLine;
 					}
 				}
 				else if (preproc == "endif")
@@ -682,7 +690,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 						indentedLine = preLineWS(preprocIndentStack->back().first,
 						                         preprocIndentStack->back().second) + line;
 						preprocIndentStack->pop_back();
-						return getIndentedLineReturn(indentedLine, originalLine);
+						return indentedLine;
 					}
 				}
 			}
@@ -702,14 +710,14 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 		{
 			isInDefineDefinition = false;
 			// this could happen with invalid input
-			if (activeBeautifierStack->empty())
+			if (activeBeautifierStack->empty() || isIndentModeOff)
 				return originalLine;
 			ASBeautifier* defineBeautifier = activeBeautifierStack->back();
 			activeBeautifierStack->pop_back();
 
 			std::string indentedLine = defineBeautifier->beautify(line);
 			delete defineBeautifier;
-			return getIndentedLineReturn(indentedLine, originalLine);
+			return indentedLine;
 		}
 
 		// unless this is a multi-line #define, return this precompiler line as is.
@@ -803,8 +811,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 		indentCount = spaceIndentCount = 0;
 
 	// finally, insert indentations into beginning of line
-	std::string indentedLine = preLineWS(indentCount, spaceIndentCount) + line;
-	indentedLine = getIndentedLineReturn(indentedLine, originalLine);
+	std::string indentedLine = isIndentModeOff ? originalLine : preLineWS(indentCount, spaceIndentCount) + line;
 
 	prevFinalLineSpaceIndentCount = spaceIndentCount;
 	prevFinalLineIndentCount = indentCount;
@@ -1310,13 +1317,6 @@ bool ASBeautifier::getPreprocDefineIndent() const
 int ASBeautifier::getTabLength() const
 {
 	return tabLength;
-}
-
-const std::string& ASBeautifier::getIndentedLineReturn(const std::string& newLine, const std::string& originalLine) const
-{
-	if (isIndentModeOff)
-		return originalLine;
-	return newLine;
 }
 
 std::string ASBeautifier::preLineWS(int lineIndentCount, int lineSpaceIndentCount) const

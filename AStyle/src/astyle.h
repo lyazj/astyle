@@ -456,8 +456,6 @@ private:  // functions
 	bool isTopLevel() const;
 	bool statementEndsWithComma(std::string_view line, int index) const;
 
-	//TODO replace
-	const std::string& getIndentedLineReturn(const std::string& newLine, const std::string& originalLine) const;
 	std::string getIndentedSpaceEquivalent(std::string_view line_) const;
 	std::string preLineWS(int lineIndentCount, int lineSpaceIndentCount) const;
 	template<typename T> void deleteContainer(T& container);
