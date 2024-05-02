@@ -1424,6 +1424,7 @@ std::string ASFormatter::nextLine()
 					}
 				}
 
+				// #569
 				if (shouldBreakBlocks
 				        && isOkToBreakBlock(braceTypeStack->back())
 				        && !isHeaderInMultiStatementLine)
@@ -1534,7 +1535,7 @@ std::string ASFormatter::nextLine()
 						passedSemicolon = true;
 				}
 
-//is set in struct case? #518
+//is set in struct case? #518 #569
 				if (shouldBreakBlocks
 				        && currentHeader != nullptr
 				        && currentHeader != &AS_CASE
@@ -3755,13 +3756,15 @@ bool ASFormatter::isInSwitchStatement() const
 bool ASFormatter::isInExponent() const
 {
 	assert(currentChar == '+' || currentChar == '-');
+	std::string prevWord = getPreviousWord(currentLine, charNum, true);
 
-	if (charNum >= 2)
+	if (charNum >= 2 && prevWord.size()>2 && prevWord[0]=='0' && (prevWord[1]=='x' || prevWord[1]=='X'))
 	{
 		char prevPrevFormattedChar = currentLine[charNum - 2];
 		char prevFormattedChar = currentLine[charNum - 1];
-		return ((prevFormattedChar == 'e' || prevFormattedChar == 'E')
-		        && (prevPrevFormattedChar == '.' || isDigit(prevPrevFormattedChar)));
+		//    double x = 0x1.23ffp-11;
+		return ((prevFormattedChar == 'e' || prevFormattedChar == 'E' || prevFormattedChar == 'p' || prevFormattedChar == 'P')
+		        && (prevPrevFormattedChar == '.' || std::isxdigit(prevPrevFormattedChar)));
 	}
 	return false;
 }
@@ -4220,6 +4223,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	char nextNonWSChar = ASBase::peekNextChar(currentLine, charNum);
 	std::set<char> allowedChars = {'(', '[', '=', ',', ':', '{'};
 
+// #566
 	bool shouldPad = (newOperator != &AS_SCOPE_RESOLUTION
 	                  && newOperator != &AS_PLUS_PLUS
 	                  && newOperator != &AS_MINUS_MINUS
@@ -5320,6 +5324,7 @@ void ASFormatter::formatClosingBrace(BraceType braceType)
 		}
 		else {
 			// GH18
+			// #569
 			isAppendPostBlockEmptyLineRequested = !(shouldBreakBlocks && shouldAttachClosingWhile)
                                                     || currentHeader != &AS_DO;
 		}
@@ -6522,7 +6527,7 @@ int ASFormatter::getCurrentLineCommentAdjustment()
  *
  * @return is the previous word or an empty std::string if none found.
  */
-std::string ASFormatter::getPreviousWord(const std::string& line, int currPos) const
+std::string ASFormatter::getPreviousWord(const std::string& line, int currPos, bool allowDots) const
 {
 	// get the last legal word (may be a number)
 	if (currPos == 0)
@@ -6535,7 +6540,7 @@ std::string ASFormatter::getPreviousWord(const std::string& line, int currPos) c
 	int start;          // start of the previous word
 	for (start = end; start > -1; start--)
 	{
-		if (!isLegalNameChar(line[start]) || line[start] == '.')
+		if (!isLegalNameChar(line[start]) || (!allowDots && line[start] == '.') )
 			break;
 	}
 	start++;
