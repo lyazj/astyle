@@ -3267,11 +3267,7 @@ bool ASFormatter::isNumericVariable(std::string_view word) const
 	        || word == "float"
 	        || (word.length() >= 4     // check end of word for _t
 	            && word.compare(word.length() - 2, 2, "_t") == 0)
-// removed release 3.1
-//	        || word == "Int32"
-//	        || word == "UInt32"
-//	        || word == "Int64"
-//	        || word == "UInt64"
+
 	        || word == "BOOL"
 	        || word == "DWORD"
 	        || word == "HWND"
@@ -3298,18 +3294,9 @@ bool ASFormatter::isClassInitializer() const
 	// this should be similar to ASBeautifier::parseCurrentLine()
 	bool foundClassInitializer = false;
 
-	if (foundQuestionMark)
+	if (foundQuestionMark || parenStack->back() > 0 || isInEnum)
 	{
 		// do nothing special
-	}
-	else if (parenStack->back() > 0)
-	{
-		// found a 'for' loop or an objective-C statement
-		// so do nothing special
-	}
-	else if (isInEnum)
-	{
-		// found an enum with a base-type
 	}
 	else if (isCStyle()
 	         && !isInCase
@@ -3642,21 +3629,14 @@ bool ASFormatter::isPointerOrReferenceCentered() const
 bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 {
 	assert(currentChar == '*' || currentChar == '&' || currentChar == '^');
-	bool retval = false;
-	if (word == "char"
-	        || word == "std::string"
-	        || word == "String"
-	        || word == "NSString"
-	        || word == "int"
-	        || word == "void"
-	        || word == "short"
-	        || word == "long"
-	        || word == "double"
-	        || word == "float"
-	        || (word.length() >= 6     // check end of word for _t
-	            && word.compare(word.length() - 2, 2, "_t") == 0)
-		)
-		retval = true;
+	bool retval = true;
+
+	for (char c: word){
+		if (!isLegalNameChar(c)) {
+			retval = false;
+			break;
+		}
+	}
 
 	// check for C# object type "x is std::string"
 	if (retval && isSharpStyle())
