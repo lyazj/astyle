@@ -5329,6 +5329,8 @@ void ASFormatter::formatClosingBrace(BraceType braceType)
                                                     || currentHeader != &AS_DO;
 		}
 
+	} else {
+		isAppendPostBlockEmptyLineRequested = !currentHeader && shouldBreakBlocks;
 	}
 }
 
