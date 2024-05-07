@@ -4383,7 +4383,7 @@ void ASFormatter::formatPointerOrReferenceToType()
 	}
 
 	// https://sourceforge.net/p/astyle/bugs/537/
-	if (previousNonWSChar == ',' && currentChar != ' ')
+	if ((previousNonWSChar == ',' || previousNonWSChar == '[') && currentChar != ' ')
 		appendSpacePad();
 
 	formattedLine.append(sequenceToInsert);
