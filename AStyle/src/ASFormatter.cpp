@@ -3738,7 +3738,12 @@ bool ASFormatter::isInExponent() const
 	assert(currentChar == '+' || currentChar == '-');
 	std::string prevWord = getPreviousWord(currentLine, charNum, true);
 
-	if (charNum >= 2 && prevWord.size()>2 && prevWord[0]=='0' && (prevWord[1]=='x' || prevWord[1]=='X'))
+std::cerr << "prevWord  "<<prevWord<< " charNum " <<charNum<<"\n";
+	if (charNum && isDigit(prevWord[0])) {
+		return prevWord.find_first_not_of("0123456789.") != std::string::npos;
+	}
+
+	if (charNum > 2 && prevWord.size()>=2 && prevWord[0]=='0' && (prevWord[1]=='x' || prevWord[1]=='X'))
 	{
 		char prevPrevFormattedChar = currentLine[charNum - 2];
 		char prevFormattedChar = currentLine[charNum - 1];
