@@ -3390,6 +3390,10 @@ bool ASFormatter::isPointerOrReference() const
 		return true;
 	}
 
+	if (pointerAlignment == PTR_ALIGN_TYPE
+		&& !isPointerOrReferenceVariable(lastWord)) {
+		return false;
+	}
 
 	if (isInClassInitializer
 	        && previousNonWSChar != '('
@@ -3417,6 +3421,7 @@ bool ASFormatter::isPointerOrReference() const
 			return false;
 		return true;
 	}
+
 	if (nextChar == '*'
 	        || previousNonWSChar == '='
 	        || previousNonWSChar == '('
@@ -3426,8 +3431,10 @@ bool ASFormatter::isPointerOrReference() const
 	        || isCharImmediatelyPostTemplate
 	        || currentHeader == &AS_CATCH
 	        || currentHeader == &AS_FOREACH
-	        || currentHeader == &AS_QFOREACH)
+	        || currentHeader == &AS_QFOREACH) {
 		return true;
+	}
+
 
 	if (isBraceType(braceTypeStack->back(), ARRAY_TYPE)
 	        && isLegalNameChar(lastWord[0])
@@ -3450,8 +3457,10 @@ bool ASFormatter::isPointerOrReference() const
 		        && followingOperator != &AS_MULT
 		        && followingOperator != &AS_BIT_AND)
 		{
-			if (followingOperator == &AS_ASSIGN || followingOperator == &AS_COLON)
+			if (followingOperator == &AS_ASSIGN || followingOperator == &AS_COLON) {
 				return true;
+			}
+
 			return false;
 		}
 
@@ -3644,12 +3653,10 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 	bool retval = false;
 
 	// to avoid problem with multiplications - we need LSP
-	if (currentChar == '&' || currentChar == '*') {
-		for (char c: word){
-			if (isLegalNameChar(c)) {
-				retval = true;
-				break;
-			}
+	for (char c: word){
+		if (isLegalNameChar(c)) {
+			retval = true;
+			break;
 		}
 	}
 
@@ -3660,6 +3667,10 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 		|| currentHeader == &AS_WHILE
 		|| currentHeader == &AS_DO)) {
 		retval = false;
+	}
+
+	if (pointerAlignment == PTR_ALIGN_TYPE) {
+		return retval;
 	}
 
 	// check for C# object type "x is std::string"
