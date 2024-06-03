@@ -3438,6 +3438,10 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 	{
 		formatter.setOperatorPaddingMode(true);
 	}
+	else if (isOption(arg, "pad-negation"))
+	{
+		formatter.setNegationPaddingMode(true);
+	}
 	else if (isOption(arg, "xg", "pad-comma"))
 	{
 		formatter.setCommaPaddingMode(true);

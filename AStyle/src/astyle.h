@@ -729,6 +729,8 @@ public:	// functions
 	void setMaxCodeLength(int max);
 	void setObjCColonPaddingMode(ObjCColonPad mode);
 	void setOperatorPaddingMode(bool state);
+	void setNegationPaddingMode(bool state);
+
 	void setParensOutsidePaddingMode(bool state);
 	void setParensFirstPaddingMode(bool state);
 
@@ -954,6 +956,7 @@ private:  // variables
 	bool isInVirginLine;
 	bool shouldPadCommas;
 	bool shouldPadOperators;
+	bool shouldPadNegations;
 	bool shouldPadParensOutside;
 	bool shouldPadFirstParen;
 

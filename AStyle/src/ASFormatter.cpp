@@ -47,6 +47,7 @@ ASFormatter::ASFormatter()
 	isInStruct = false;
 	shouldPadCommas = false;
 	shouldPadOperators = false;
+	shouldPadNegations = false;
 	shouldPadParensOutside = false;
 	shouldPadFirstParen = false;
 	shouldPadEmptyParens = false;
@@ -1896,7 +1897,7 @@ std::string ASFormatter::nextLine()
 			continue;
 		}
 
-		if (shouldPadOperators && newHeader != nullptr && !isOperatorPaddingDisabled())
+		if ((shouldPadOperators || shouldPadNegations) && newHeader != nullptr && !isOperatorPaddingDisabled())
 		{
 			padOperators(newHeader);
 			continue;
@@ -2228,6 +2229,19 @@ void ASFormatter::setMaxCodeLength(int max)
 void ASFormatter::setOperatorPaddingMode(bool state)
 {
 	shouldPadOperators = state;
+}
+
+/**
+ * set negation padding mode.
+ * options:
+ *    true     negations will be padded with spaces around them.
+ *    false    negations will not be padded.
+ *
+ * @param state         the padding mode.
+ */
+void ASFormatter::setNegationPaddingMode(bool state)
+{
+	shouldPadNegations = state;
 }
 
 /**
@@ -4237,7 +4251,7 @@ void ASFormatter::appendCharInsideComments()
  */
 void ASFormatter::padOperators(const std::string* newOperator)
 {
-	assert(shouldPadOperators);
+	assert(shouldPadOperators || shouldPadNegations);
 	assert(newOperator != nullptr);
 
 	char nextNonWSChar = ASBase::peekNextChar(currentLine, charNum);
@@ -4247,7 +4261,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	bool shouldPad = (newOperator != &AS_SCOPE_RESOLUTION
 	                  && newOperator != &AS_PLUS_PLUS
 	                  && newOperator != &AS_MINUS_MINUS
-	                  && newOperator != &AS_NOT // TODO 571
+	                  && (newOperator != &AS_NOT || shouldPadNegations)  // TODO 571
 	                  && newOperator != &AS_BIT_NOT
 	                  && newOperator != &AS_ARROW
 	                  && !(newOperator == &AS_COLON && !foundQuestionMark			// objC methods
@@ -4285,6 +4299,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 
 	// pad before operator
 	if (shouldPad
+	        && newOperator != &AS_NOT
 	        && !(newOperator == &AS_COLON
 	             && (!foundQuestionMark && !isInEnum) && currentHeader != &AS_FOR)
 	        && !(newOperator == &AS_QUESTION && isSharpStyle() // check for C# nullable type (e.g. int?)
