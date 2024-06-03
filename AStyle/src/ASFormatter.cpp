@@ -3380,8 +3380,10 @@ bool ASFormatter::isPointerOrReference() const
 		return false;
 
 	if ((foundCastOperator && nextChar == '>')
-	        || isPointerOrReferenceVariable(lastWord))
+	        || isPointerOrReferenceVariable(lastWord)) {
 		return true;
+	}
+
 
 	if (isInClassInitializer
 	        && previousNonWSChar != '('
@@ -3538,7 +3540,6 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 		return false;
 	}
 
-
 	if (previousNonWSChar == '(' && currentChar == '&' && pointerAlignment == PTR_ALIGN_TYPE) {
 		return true;
 	}
@@ -3569,12 +3570,12 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 	std::string lastWord = getPreviousWord(currentLine, charNum);
 	if (lastWord == "else" || lastWord == "delete")
 		return true;
-	if (isPointerOrReferenceVariable(lastWord))
-		return false;
+
 	bool isDA = (!(isLegalNameChar(previousNonWSChar) || previousNonWSChar == '>')          // TODO GH14
 	             || (nextText.length() > 0 && !isLegalNameChar(nextText[0]) && nextText[0] != '/')
 	             || (ispunct((unsigned char)previousNonWSChar) && previousNonWSChar != '.') // TODO GH14
-	             || isCharImmediatelyPostReturn);
+	             || isCharImmediatelyPostReturn
+	             || !isPointerOrReferenceVariable(lastWord));
 
 	return isDA;
 }
@@ -3634,14 +3635,25 @@ bool ASFormatter::isPointerOrReferenceCentered() const
 bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 {
 	assert(currentChar == '*' || currentChar == '&' || currentChar == '^');
-	bool retval = true;
+	bool retval = false;
 
 	// to avoid problem with multiplications - we need LSP
-	for (char c: word){
-		if (!isLegalNameChar(c)) {
-			retval = false;
-			break;
+	if (currentChar == '&' || currentChar == '*') {
+		for (char c: word){
+			if (isLegalNameChar(c)) {
+				retval = true;
+				break;
+			}
 		}
+	}
+
+	if (currentChar == '&' &&
+		(currentHeader == &AS_IF
+		|| currentHeader == &AS_ELSE
+		|| currentHeader == &AS_FOR
+		|| currentHeader == &AS_WHILE
+		|| currentHeader == &AS_DO)) {
+		retval = false;
 	}
 
 	// check for C# object type "x is std::string"
@@ -3655,6 +3667,7 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 		if (prevWord == "is")
 			retval = false;
 	}
+
 	return retval;
 }
 
@@ -4217,7 +4230,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	bool shouldPad = (newOperator != &AS_SCOPE_RESOLUTION
 	                  && newOperator != &AS_PLUS_PLUS
 	                  && newOperator != &AS_MINUS_MINUS
-	                  && newOperator != &AS_NOT
+	                  && newOperator != &AS_NOT // TODO 571
 	                  && newOperator != &AS_BIT_NOT
 	                  && newOperator != &AS_ARROW
 	                  && !(newOperator == &AS_COLON && !foundQuestionMark			// objC methods
