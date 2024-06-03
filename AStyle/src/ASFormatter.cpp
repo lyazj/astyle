@@ -2819,6 +2819,12 @@ bool ASFormatter::getNextLine(bool emptyLineWasDeleted /*false*/)
 
 	if (currentLine.length() == 0)
 	{
+		//#574 avoid deletion of empüty lines after continuation
+		if (!isInComment && previousNonWSChar == '\\')
+		{
+			return false;
+		}
+
 		isInContinuedPreProc = false;
 		currentLine = std::string(" ");        // a null is inserted if this is not done
 	}
