@@ -2090,6 +2090,9 @@ void ASConsole::printHelp() const
 	std::cout << "    --pad-comma  OR  -xg\n";
 	std::cout << "    Insert space padding after commas.\n";
 	std::cout << std::endl;
+	std::cout << "    --pad-negation\n";
+	std::cout << "    Insert space padding after negations.\n";
+	std::cout << std::endl;
 	std::cout << "    --pad-paren  OR  -P\n";
 	std::cout << "    Insert space padding around parenthesis on both the outside\n";
 	std::cout << "    and the inside.\n";
