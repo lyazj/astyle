@@ -1695,6 +1695,23 @@ isBar = false;
 
     <p>
         &nbsp;</p>
+    <p id="_pad-negation">
+        <code class="title">--pad-negation=before</code><br />
+        Insert space padding also before negations.
+    </p>
+    <div class="code">
+        <pre>if (!isFoo(a,b))
+    bar(a,b);
+</pre>
+        <p class="code">
+            becomes:</p>
+        <pre>if ( ! isFoo(a, b))
+    bar(a, b);
+</pre>
+    </div>
+
+    <p>
+        &nbsp;</p>
     <p id="_pad-paren">
         <code class="title">--pad-paren / -P </code>
         <br />

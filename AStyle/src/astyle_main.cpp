@@ -34,6 +34,7 @@
 //-----------------------------------------------------------------------------
 
 #include "astyle_main.h"
+#include "astyle.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -2093,6 +2094,9 @@ void ASConsole::printHelp() const
 	std::cout << "    --pad-negation\n";
 	std::cout << "    Insert space padding after negations.\n";
 	std::cout << std::endl;
+	std::cout << "    --pad-negation=before\n";
+	std::cout << "    Insert space padding also before negations.\n";
+	std::cout << std::endl;
 	std::cout << "    --pad-paren  OR  -P\n";
 	std::cout << "    Insert space padding around parenthesis on both the outside\n";
 	std::cout << "    and the inside.\n";
@@ -3158,6 +3162,7 @@ bool ASOptions::parseOptions(std::vector<std::string>& optionsVector, const std:
 
 void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo)
 {
+	NegationPaddingMode negationPaddingMode = NEGATION_PAD_NO_CHANGE;
 	if (isOption(arg, "A1", "style=allman") || isOption(arg, "style=bsd") || isOption(arg, "style=break"))
 	{
 		formatter.setFormattingStyle(STYLE_ALLMAN);
@@ -3443,7 +3448,11 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 	}
 	else if (isOption(arg, "pad-negation"))
 	{
-		formatter.setNegationPaddingMode(true);
+		negationPaddingMode = NEGATION_PAD_AFTER;
+	}
+	else if (isOption(arg, "pad-negation=before"))
+	{
+		negationPaddingMode = NEGATION_PAD_BEFORE;
 	}
 	else if (isOption(arg, "xg", "pad-comma"))
 	{
@@ -3646,6 +3655,9 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 	{
 		isOptionError(arg, errorInfo);
 	}
+
+	formatter.setNegationPaddingMode(negationPaddingMode);
+
 }	// End of parseOption function
 
 // Continuation of parseOption.

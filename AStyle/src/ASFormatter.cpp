@@ -47,7 +47,7 @@ ASFormatter::ASFormatter()
 	isInStruct = false;
 	shouldPadCommas = false;
 	shouldPadOperators = false;
-	shouldPadNegations = false;
+	negationPadMode = NEGATION_PAD_NO_CHANGE;
 	shouldPadParensOutside = false;
 	shouldPadFirstParen = false;
 	shouldPadEmptyParens = false;
@@ -1897,7 +1897,7 @@ std::string ASFormatter::nextLine()
 			continue;
 		}
 
-		if ((shouldPadOperators || shouldPadNegations) && newHeader != nullptr && !isOperatorPaddingDisabled())
+		if ((shouldPadOperators || negationPadMode!=NEGATION_PAD_NO_CHANGE) && newHeader != nullptr && !isOperatorPaddingDisabled())
 		{
 			padOperators(newHeader);
 			continue;
@@ -2233,15 +2233,11 @@ void ASFormatter::setOperatorPaddingMode(bool state)
 
 /**
  * set negation padding mode.
- * options:
- *    true     negations will be padded with spaces around them.
- *    false    negations will not be padded.
- *
  * @param state         the padding mode.
  */
-void ASFormatter::setNegationPaddingMode(bool state)
+void ASFormatter::setNegationPaddingMode(NegationPaddingMode mode)
 {
-	shouldPadNegations = state;
+	negationPadMode = mode;
 }
 
 /**
@@ -4251,7 +4247,7 @@ void ASFormatter::appendCharInsideComments()
  */
 void ASFormatter::padOperators(const std::string* newOperator)
 {
-	assert(shouldPadOperators || shouldPadNegations);
+	assert(shouldPadOperators || negationPadMode != NEGATION_PAD_NO_CHANGE);
 	assert(newOperator != nullptr);
 
 	char nextNonWSChar = ASBase::peekNextChar(currentLine, charNum);
@@ -4261,7 +4257,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	bool shouldPad = (newOperator != &AS_SCOPE_RESOLUTION
 	                  && newOperator != &AS_PLUS_PLUS
 	                  && newOperator != &AS_MINUS_MINUS
-	                  && (newOperator != &AS_NOT || shouldPadNegations)  // TODO 571
+	                  && (newOperator != &AS_NOT || negationPadMode != NEGATION_PAD_NO_CHANGE)  // TODO 571
 	                  && newOperator != &AS_BIT_NOT
 	                  && newOperator != &AS_ARROW
 	                  && !(newOperator == &AS_COLON && !foundQuestionMark			// objC methods
@@ -4299,7 +4295,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 
 	// pad before operator
 	if (shouldPad
-	        && newOperator != &AS_NOT
+	        && (newOperator != &AS_NOT || (newOperator == &AS_NOT && negationPadMode == NEGATION_PAD_BEFORE ) )
 	        && !(newOperator == &AS_COLON
 	             && (!foundQuestionMark && !isInEnum) && currentHeader != &AS_FOR)
 	        && !(newOperator == &AS_QUESTION && isSharpStyle() // check for C# nullable type (e.g. int?)

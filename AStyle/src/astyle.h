@@ -176,6 +176,13 @@ enum LineEndFormat
 	LINEEND_CR   = LINEEND_MACOLD
 };
 
+enum NegationPaddingMode
+{
+	NEGATION_PAD_NO_CHANGE,
+	NEGATION_PAD_AFTER,
+	NEGATION_PAD_BEFORE
+};
+
 //-----------------------------------------------------------------------------
 // Class ASSourceIterator
 // A pure virtual class is used by ASFormatter and ASBeautifier instead of
@@ -729,7 +736,7 @@ public:	// functions
 	void setMaxCodeLength(int max);
 	void setObjCColonPaddingMode(ObjCColonPad mode);
 	void setOperatorPaddingMode(bool state);
-	void setNegationPaddingMode(bool state);
+	void setNegationPaddingMode(NegationPaddingMode mode);
 
 	void setParensOutsidePaddingMode(bool state);
 	void setParensFirstPaddingMode(bool state);
@@ -952,14 +959,14 @@ private:  // variables
 	ReferenceAlign referenceAlignment;
 	ObjCColonPad objCColonPadMode;
 	LineEndFormat lineEnd;
+	NegationPaddingMode negationPadMode;
+
 	bool isVirgin;
 	bool isInVirginLine;
 	bool shouldPadCommas;
 	bool shouldPadOperators;
-	bool shouldPadNegations;
 	bool shouldPadParensOutside;
 	bool shouldPadFirstParen;
-
 	bool shouldPadEmptyParens;
 	bool shouldPadParensInside;
 	bool shouldPadHeader;
