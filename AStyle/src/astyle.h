@@ -574,6 +574,7 @@ private:  // variables
 
 	bool isInAssignment;
 	bool isInInitializerList;
+	bool isInMultiLineString;
 
 	int  indentCount;
 	int  spaceIndentCount;
