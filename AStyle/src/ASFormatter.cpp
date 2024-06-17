@@ -2829,9 +2829,10 @@ bool ASFormatter::getNextLine(bool emptyLineWasDeleted /*false*/)
 
 	if (currentLine.length() == 0)
 	{
-		//#574 avoid deletion of empüty lines after continuation
+		//#574 avoid deletion of empty lines after continuation
 		if (!isInComment && previousNonWSChar == '\\')
 		{
+			isInPreprocessor = true;
 			return false;
 		}
 
