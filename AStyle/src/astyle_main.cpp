@@ -108,9 +108,7 @@ ASStreamIterator<T>::ASStreamIterator(T* in)
 {
 	inStream = in;
 	buffer.reserve(200);
-	eolWindows = 0;
-	eolLinux = 0;
-	eolMacOld = 0;
+
 	peekStart = 0;
 	prevLineDeleted = false;
 	checkForEmptyLine = false;
@@ -177,6 +175,9 @@ std::string ASStreamIterator<T>::nextLine(bool emptyLineWasDeleted)
 
 	int peekCh = inStream->peek();
 
+	lastOutputEOL.clear();
+	lastOutputEOL.append(1, ch);
+
 	// find input end-of-line characters
 	if (!inStream->eof())
 	{
@@ -184,50 +185,23 @@ std::string ASStreamIterator<T>::nextLine(bool emptyLineWasDeleted)
 		{
 			if (peekCh == '\n')
 			{
+				lastOutputEOL.append(1, peekCh);
 				inStream->get();
-				eolWindows++;
 			}
-			else
-				eolMacOld++;
 		}
 		else                    // LF is Linux, allow for improbable LF/CR
 		{
 			if (peekCh == '\r')
 			{
+				lastOutputEOL.append(1, peekCh);
 				inStream->get();
-				eolWindows++;
 			}
-			else
-				eolLinux++;
 		}
 	}
 	else
 	{
 		inStream->clear();
 	}
-
-	// has not detected an input end of line
-	if (!eolWindows && !eolLinux && !eolMacOld)
-	{
-#ifdef _WIN32
-		eolWindows++;
-#else
-		eolLinux++;
-#endif
-	}
-
-	// set output end of line characters
-	if (eolWindows >= eolLinux)
-	{
-		if (eolWindows >= eolMacOld)
-			outputEOL = "\r\n";     // Windows (CR+LF)
-		else
-			outputEOL = "\r";       // MacOld (CR)
-	}
-	else if (eolLinux >= eolMacOld)
-		outputEOL = "\n";           // Linux (LF)
-	else
-		outputEOL = "\r";           // MacOld (CR)
 
 	return buffer;
 }
@@ -296,33 +270,6 @@ std::streamoff ASStreamIterator<T>::tellg()
 	return inStream->tellg();
 }
 
-// check for a change in line ends
-template<typename T>
-bool ASStreamIterator<T>::getLineEndChange(int lineEndFormat) const
-{
-	assert(lineEndFormat == LINEEND_DEFAULT
-	       || lineEndFormat == LINEEND_WINDOWS
-	       || lineEndFormat == LINEEND_LINUX
-	       || lineEndFormat == LINEEND_MACOLD);
-
-	bool lineEndChange = false;
-	if (lineEndFormat == LINEEND_WINDOWS)
-		lineEndChange = (eolLinux + eolMacOld != 0);
-	else if (lineEndFormat == LINEEND_LINUX)
-		lineEndChange = (eolWindows + eolMacOld != 0);
-	else if (lineEndFormat == LINEEND_MACOLD)
-		lineEndChange = (eolWindows + eolLinux != 0);
-	else
-	{
-		if (eolWindows > 0)
-			lineEndChange = (eolLinux + eolMacOld != 0);
-		else if (eolLinux > 0)
-			lineEndChange = (eolWindows + eolMacOld != 0);
-		else if (eolMacOld > 0)
-			lineEndChange = (eolWindows + eolLinux != 0);
-	}
-	return lineEndChange;
-}
 
 //-----------------------------------------------------------------------------
 // ASConsole class
@@ -349,7 +296,6 @@ ASConsole::ASConsole(ASFormatter& formatterArg) : formatter(formatterArg)
 	bypassBrowserOpen = false;
 	hasWildcard = false;
 	filesAreIdentical = true;
-	lineEndsMixed = false;
 	origSuffix = ".orig";
 	mainDirectoryLength = 0;
 	filesFormatted = 0;
@@ -357,92 +303,7 @@ ASConsole::ASConsole(ASFormatter& formatterArg) : formatter(formatterArg)
 	linesOut = 0;
 }
 
-// rewrite a stringstream converting the line ends
-void ASConsole::convertLineEnds(std::ostringstream& out, int lineEnd)
-{
-	assert(lineEnd == LINEEND_WINDOWS || lineEnd == LINEEND_LINUX || lineEnd == LINEEND_MACOLD);
-	const std::string& inStr = out.str();	// avoids strange looking syntax
-	std::string outStr;						// the converted output
-	int inLength = (int) inStr.length();
-	for (int pos = 0; pos < inLength; pos++)
-	{
-		if (inStr[pos] == '\r')
-		{
-			if (inStr[pos + 1] == '\n')
-			{
-				// CRLF
-				if (lineEnd == LINEEND_CR)
-				{
-					outStr += inStr[pos];		// Delete the LF
-					pos++;
-					continue;
-				}
-				if (lineEnd == LINEEND_LF)
-				{
-					outStr += inStr[pos + 1];	// Delete the CR
-					pos++;
-					continue;
-				}
-				outStr += inStr[pos];			// Do not change
-				outStr += inStr[pos + 1];
-				pos++;
-				continue;
-			}
-			else                                // NOLINT
-			{
-				// CR
-				if (lineEnd == LINEEND_CRLF)
-				{
-					outStr += inStr[pos];		// Insert the CR
-					outStr += '\n';				// Insert the LF
-					continue;
-				}
-				if (lineEnd == LINEEND_LF)
-				{
-					outStr += '\n';				// Insert the LF
-					continue;
-				}
-				outStr += inStr[pos];		// Do not change
-				continue;
-			}
-		}
-		else if (inStr[pos] == '\n')
-		{
-			// LF
-			if (lineEnd == LINEEND_CRLF)
-			{
-				outStr += '\r';				// Insert the CR
-				outStr += inStr[pos];		// Insert the LF
-				continue;
-			}
-			if (lineEnd == LINEEND_CR)
-			{
-				outStr += '\r';				// Insert the CR
-				continue;
-			}
-			outStr += inStr[pos];		// Do not change
-			continue;
-		}
-		else
-		{
-			outStr += inStr[pos];		// Write the current char
-		}
-	}
-	// replace the stream
-	out.str(outStr);
-}
 
-void ASConsole::correctMixedLineEnds(std::ostringstream& out)
-{
-	LineEndFormat lineEndFormat = LINEEND_DEFAULT;
-	if (outputEOL == "\r\n")
-		lineEndFormat = LINEEND_WINDOWS;
-	if (outputEOL == "\n")
-		lineEndFormat = LINEEND_LINUX;
-	if (outputEOL == "\r")
-		lineEndFormat = LINEEND_MACOLD;
-	convertLineEnds(out, lineEndFormat);
-}
 
 // check files for 16 or 32 bit encoding
 // the file must have a Byte Order Mark (BOM)
@@ -530,14 +391,8 @@ void ASConsole::formatCinToCout()
 		inStream->get(ch);
 	}
 	ASStreamIterator<std::stringstream> streamIterator(&outStream);
-	// Windows pipe or redirection always outputs Windows line-ends.
-	// Linux pipe or redirection will output any line end.
-#ifdef _WIN32
-	LineEndFormat lineEndFormat = LINEEND_DEFAULT;
-#else
-	LineEndFormat lineEndFormat = formatter.getLineEndFormat();
-#endif // _WIN32
-	initializeOutputEOL(lineEndFormat);
+
+	initializeOutputEOL(formatter.getLineEndFormat());
 	formatter.init(&streamIterator);
 
 	while (formatter.hasMoreLines())
@@ -545,7 +400,6 @@ void ASConsole::formatCinToCout()
 		std::cout << formatter.nextLine();
 		if (formatter.hasMoreLines())
 		{
-			setOutputEOL(lineEndFormat, streamIterator.getOutputEOL());
 			std::cout << outputEOL;
 		}
 		else
@@ -553,7 +407,6 @@ void ASConsole::formatCinToCout()
 			// this can happen if the file if missing a closing brace and break-blocks is requested
 			if (formatter.getIsLineReady())
 			{
-				setOutputEOL(lineEndFormat, streamIterator.getOutputEOL());
 				std::cout << outputEOL;
 				std::cout << formatter.nextLine();
 			}
@@ -588,8 +441,8 @@ void ASConsole::formatFile(const std::string& fileName_)
 	// set line end format
 	std::string nextLine;				// next output line
 	filesAreIdentical = true;		// input and output files are identical
-	LineEndFormat lineEndFormat = formatter.getLineEndFormat();
-	initializeOutputEOL(lineEndFormat);
+
+	initializeOutputEOL(formatter.getLineEndFormat());
 	// do this AFTER setting the file mode
 	ASStreamIterator<std::stringstream> streamIterator(&in);
 	formatter.init(&streamIterator);
@@ -602,7 +455,6 @@ void ASConsole::formatFile(const std::string& fileName_)
 		linesOut++;
 		if (formatter.hasMoreLines())
 		{
-			setOutputEOL(lineEndFormat, streamIterator.getOutputEOL());
 			out << outputEOL;
 		}
 		else
@@ -611,7 +463,6 @@ void ASConsole::formatFile(const std::string& fileName_)
 			// this can happen if the file if missing a closing brace and break-blocks is requested
 			if (formatter.getIsLineReady())
 			{
-				setOutputEOL(lineEndFormat, streamIterator.getOutputEOL());
 				out << outputEOL;
 				nextLine = formatter.nextLine();
 				out << nextLine;
@@ -620,42 +471,30 @@ void ASConsole::formatFile(const std::string& fileName_)
 			}
 		}
 
-		if (filesAreIdentical)
-		{
-			if (streamIterator.checkForEmptyLine)
-			{
-				if (nextLine.find_first_not_of(" \t") != std::string::npos)
-					filesAreIdentical = false;
-			}
-			else if (!streamIterator.compareToInputBuffer(nextLine))
-				filesAreIdentical = false;
-			streamIterator.checkForEmptyLine = false;
+		if (filesAreIdentical) {
+			if (streamIterator.checkForEmptyLine) {
+				filesAreIdentical = (nextLine.find_first_not_of(" \t") == std::string::npos);
+			} else {
+				filesAreIdentical = streamIterator.compareToInputBuffer(nextLine) &&
+									(streamIterator.getLastOutputEOL() == outputEOL);
+    		}
+    		streamIterator.checkForEmptyLine = false;
 		}
-	}
-	// correct for mixed line ends
-	if (lineEndsMixed)
-	{
-		correctMixedLineEnds(out);
-		filesAreIdentical = false;
 	}
 
 	// remove targetDirectory from filename if required by print
-	std::string displayName;
+	std::string displayName(fileName_);
 	if (hasWildcard)
 		displayName = fileName_.substr(targetDirectory.length() + 1);
-	else
-		displayName = fileName_;
 
 	// if file has changed, write the new file
-	if (!filesAreIdentical || streamIterator.getLineEndChange(lineEndFormat))
+	if (!filesAreIdentical)
 	{
 		if (!isDryRun)
 			writeFile(fileName_, encoding, out);
 		printMsg(_("Formatted  %s\n"), displayName);
 		filesFormatted++;
-	}
-	else
-	{
+	} else {
 		if (!isFormattedOnly)
 			printMsg(_("Unchanged  %s\n"), displayName);
 		filesUnchanged++;
@@ -800,10 +639,6 @@ bool ASConsole::getIsVerbose() const
 { return isVerbose; }
 
 // for unit testing
-bool ASConsole::getLineEndsMixed() const
-{ return lineEndsMixed; }
-
-// for unit testing
 bool ASConsole::getNoBackup() const
 { return noBackup; }
 
@@ -919,9 +754,7 @@ void ASConsole::initializeOutputEOL(LineEndFormat lineEndFormat)
 	       || lineEndFormat == LINEEND_LINUX
 	       || lineEndFormat == LINEEND_MACOLD);
 
-	outputEOL.clear();			// current line end
-	prevEOL.clear();			// previous line end
-	lineEndsMixed = false;		// output has mixed line ends, LINEEND_DEFAULT only
+	outputEOL = "\n";
 
 	if (lineEndFormat == LINEEND_WINDOWS)
 		outputEOL = "\r\n";
@@ -929,8 +762,6 @@ void ASConsole::initializeOutputEOL(LineEndFormat lineEndFormat)
 		outputEOL = "\n";
 	else if (lineEndFormat == LINEEND_MACOLD)
 		outputEOL = "\r";
-	else
-		outputEOL.clear();
 }
 
 // read a file into the stringstream 'in'
@@ -1022,28 +853,6 @@ void ASConsole::setStdPathIn(const std::string& path)
 void ASConsole::setStdPathOut(const std::string& path)
 { stdPathOut = path; }
 
-// set outputEOL variable
-void ASConsole::setOutputEOL(LineEndFormat lineEndFormat, const std::string& currentEOL)
-{
-	if (lineEndFormat == LINEEND_DEFAULT)
-	{
-		outputEOL = currentEOL;
-		if (prevEOL.empty())
-			prevEOL = outputEOL;
-		if (prevEOL != outputEOL)
-		{
-			lineEndsMixed = true;
-			filesAreIdentical = false;
-			prevEOL = outputEOL;
-		}
-	}
-	else
-	{
-		prevEOL = currentEOL;
-		if (prevEOL != outputEOL)
-			filesAreIdentical = false;
-	}
-}
 
 #ifdef _WIN32  // Windows specific
 

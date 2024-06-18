@@ -53,7 +53,7 @@
 	#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #endif
 
-#define ASTYLE_VERSION "3.5"
+#define ASTYLE_VERSION "3.5.1"
 
 //-----------------------------------------------------------------------------
 // astyle namespace
@@ -170,10 +170,7 @@ enum LineEndFormat
 	LINEEND_DEFAULT,	// Use line break that matches most of the file
 	LINEEND_WINDOWS,
 	LINEEND_LINUX,
-	LINEEND_MACOLD,
-	LINEEND_CRLF = LINEEND_WINDOWS,
-	LINEEND_LF   = LINEEND_LINUX,
-	LINEEND_CR   = LINEEND_MACOLD
+	LINEEND_MACOLD
 };
 
 enum NegationPaddingMode
