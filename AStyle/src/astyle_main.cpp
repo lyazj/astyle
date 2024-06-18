@@ -47,6 +47,10 @@
 #ifdef _WIN32
 	#undef UNICODE		// use ASCII windows functions
 	#include <Windows.h>
+
+	#include <io.h>
+	#include <fcntl.h>
+
 #else
 	#include <dirent.h>
 	#include <sys/stat.h>
@@ -173,10 +177,11 @@ std::string ASStreamIterator<T>::nextLine(bool emptyLineWasDeleted)
 		return buffer;
 	}
 
-	int peekCh = inStream->peek();
 
 	lastOutputEOL.clear();
 	lastOutputEOL.append(1, ch);
+
+	int peekCh = inStream->peek();
 
 	// find input end-of-line characters
 	if (!inStream->eof())
@@ -382,6 +387,13 @@ void ASConsole::formatCinToCout()
 	// Copying the input sequentially to a stringstream before
 	// formatting solves the problem for both.
 	std::istream* inStream = &std::cin;
+
+	// enforce binary mode to avoid auto conversion of \n to \r\n
+#ifdef _WIN32
+	_setmode( _fileno( stdout ),  _O_BINARY );
+	_setmode( _fileno( stdin ),  _O_BINARY );
+#endif
+
 	std::stringstream outStream;
 	char ch;
 	inStream->get(ch);
@@ -395,9 +407,15 @@ void ASConsole::formatCinToCout()
 	initializeOutputEOL(formatter.getLineEndFormat());
 	formatter.init(&streamIterator);
 
+
 	while (formatter.hasMoreLines())
 	{
 		std::cout << formatter.nextLine();
+
+		if (LINEEND_DEFAULT == formatter.getLineEndFormat()){
+			outputEOL = streamIterator.getLastOutputEOL();
+		}
+
 		if (formatter.hasMoreLines())
 		{
 			std::cout << outputEOL;
@@ -453,6 +471,7 @@ void ASConsole::formatFile(const std::string& fileName_)
 		nextLine = formatter.nextLine();
 		out << nextLine;
 		linesOut++;
+
 		if (formatter.hasMoreLines())
 		{
 			out << outputEOL;
@@ -476,7 +495,7 @@ void ASConsole::formatFile(const std::string& fileName_)
 				filesAreIdentical = (nextLine.find_first_not_of(" \t") == std::string::npos);
 			} else {
 				filesAreIdentical = streamIterator.compareToInputBuffer(nextLine) &&
-									(LINEEND_DEFAULT == formatter.getLineEndFormat() || streamIterator.getLastOutputEOL() == outputEOL);
+						(LINEEND_DEFAULT == formatter.getLineEndFormat() || streamIterator.getLastOutputEOL() == outputEOL);
     		}
     		streamIterator.checkForEmptyLine = false;
 		}
