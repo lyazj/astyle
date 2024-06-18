@@ -476,7 +476,7 @@ void ASConsole::formatFile(const std::string& fileName_)
 				filesAreIdentical = (nextLine.find_first_not_of(" \t") == std::string::npos);
 			} else {
 				filesAreIdentical = streamIterator.compareToInputBuffer(nextLine) &&
-									(streamIterator.getLastOutputEOL() == outputEOL);
+									(LINEEND_DEFAULT == formatter.getLineEndFormat() || streamIterator.getLastOutputEOL() == outputEOL);
     		}
     		streamIterator.checkForEmptyLine = false;
 		}
