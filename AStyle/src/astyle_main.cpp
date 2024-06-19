@@ -472,6 +472,10 @@ void ASConsole::formatFile(const std::string& fileName_)
 		out << nextLine;
 		linesOut++;
 
+		if (LINEEND_DEFAULT == formatter.getLineEndFormat()){
+			outputEOL = streamIterator.getLastOutputEOL();
+		}
+
 		if (formatter.hasMoreLines())
 		{
 			out << outputEOL;
