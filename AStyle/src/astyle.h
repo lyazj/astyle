@@ -180,6 +180,13 @@ enum NegationPaddingMode
 	NEGATION_PAD_BEFORE
 };
 
+enum IncludeDirectivePaddingMode
+{
+	INCLUDE_PAD_NO_CHANGE,
+	INCLUDE_PAD_NONE,
+	INCLUDE_PAD_AFTER
+};
+
 //-----------------------------------------------------------------------------
 // Class ASSourceIterator
 // A pure virtual class is used by ASFormatter and ASBeautifier instead of
@@ -735,6 +742,8 @@ public:	// functions
 	void setObjCColonPaddingMode(ObjCColonPad mode);
 	void setOperatorPaddingMode(bool state);
 	void setNegationPaddingMode(NegationPaddingMode mode);
+	void setIncludeDirectivePaddingMode(IncludeDirectivePaddingMode mode);
+
 
 	void setParensOutsidePaddingMode(bool state);
 	void setParensFirstPaddingMode(bool state);
@@ -958,6 +967,7 @@ private:  // variables
 	ObjCColonPad objCColonPadMode;
 	LineEndFormat lineEnd;
 	NegationPaddingMode negationPadMode;
+	IncludeDirectivePaddingMode includeDirectivePaddingMode;
 
 	bool isVirgin;
 	bool isInVirginLine;

@@ -48,6 +48,7 @@ ASFormatter::ASFormatter()
 	shouldPadCommas = false;
 	shouldPadOperators = false;
 	negationPadMode = NEGATION_PAD_NO_CHANGE;
+	includeDirectivePaddingMode = INCLUDE_PAD_NO_CHANGE;
 	shouldPadParensOutside = false;
 	shouldPadFirstParen = false;
 	shouldPadEmptyParens = false;
@@ -2238,6 +2239,15 @@ void ASFormatter::setOperatorPaddingMode(bool state)
 void ASFormatter::setNegationPaddingMode(NegationPaddingMode mode)
 {
 	negationPadMode = mode;
+}
+
+/**
+ * set include directive padding mode.
+ * @param state         the padding mode.
+ */
+void ASFormatter::setIncludeDirectivePaddingMode(IncludeDirectivePaddingMode mode)
+{
+	includeDirectivePaddingMode = mode;
 }
 
 /**
@@ -5884,6 +5894,14 @@ void ASFormatter::processPreprocessor()
 	else if (currentLine.compare(preproc, 6, "define") == 0)
 		isInPreprocessorDefineDef = true;
 
+	//https://sourceforge.net/p/astyle/tickets/117/
+	else if (includeDirectivePaddingMode != INCLUDE_PAD_NO_CHANGE
+			&& currentLine.compare(preproc, 7, "include") == 0) {
+		currentLine.erase (std::remove (currentLine.begin(), currentLine.end(), ' '), currentLine.end());
+		if (includeDirectivePaddingMode == INCLUDE_PAD_AFTER && (currentLine[preproc+7]=='<' || currentLine[preproc+7]=='"')) {
+			currentLine.insert(preproc+7, 1, ' ');
+		}
+	}
 
 }
 
