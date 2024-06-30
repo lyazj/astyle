@@ -179,7 +179,7 @@ public:
 #endif
 	std::string getOptionErrors() const;
 	void importOptions(std::stringstream& in, std::vector<std::string>& optionsVector);
-	bool parseOptions(std::vector<std::string>& optionsVector, const std::string& errorInfo);
+	bool parseOptions(std::vector<std::string>& optionsVector);
 
 private:
 	// variables
@@ -194,11 +194,11 @@ private:
 	std::string getParam(const std::string& arg, const char* op1, const char* op2);
 	bool isOption(const std::string& arg, const char* op);
 	bool isOption(const std::string& arg, const char* op1, const char* op2);
-	void isOptionError(const std::string& arg, const std::string& errorInfo);
+	void isOptionError(const std::string& arg);
 	bool isParamOption(const std::string& arg, const char* option);
 	bool isParamOption(const std::string& arg, const char* option1, const char* option2);
-	void parseOption(const std::string& arg, const std::string& errorInfo);
-	bool parseOptionContinued(const std::string& arg, const std::string& errorInfo);
+	void parseOption(const std::string& arg);
+	bool parseOptionContinued(const std::string& arg);
 };
 
 #ifndef	ASTYLE_LIB

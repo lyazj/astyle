@@ -1952,7 +1952,7 @@ std::string ASFormatter::nextLine()
 			}
 
 			if (shouldPadParensOutside || shouldPadParensInside || shouldUnPadParens || shouldPadFirstParen)
-				padParensOrBrackets('(', ')', shouldPadParensOutside, shouldPadParensInside, shouldUnPadParens, shouldPadFirstParen);
+				padParensOrBrackets('(', ')', shouldPadFirstParen);
 			else
 				appendCurrentChar();
 
@@ -1982,7 +1982,7 @@ std::string ASFormatter::nextLine()
 		bool isDoubleOpenBrackets = isGHCStyle() && currentChar=='[' && peekNextChar() == '[';
 		if ((currentChar == '[' || currentChar == ']' ) && (shouldPadBracketsOutside || shouldPadBracketsInside || shouldUnPadBrackets) && !isDoubleOpenBrackets)
 		{
-			padParensOrBrackets('[', ']', shouldPadBracketsOutside, shouldPadBracketsInside, shouldUnPadBrackets, false);
+			padParensOrBrackets('[', ']', false);
 			continue;
 		}
 
@@ -4799,7 +4799,7 @@ void ASFormatter::formatPointerOrReferenceCast()
  * the parens and necessary padding will be appended to formattedLine
  * the calling function should have a continue statement after calling this method
  */
-void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool shouldPadParensOutside, bool shouldPadParensInside, bool shouldUnPadParens, bool shouldPadFirstParen)
+void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padFirstParen)
 {
 	assert(currentChar == openDelim || currentChar == closeDelim);
 
@@ -4884,7 +4884,7 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool shou
 
 		// pad open paren outside
 		char peekedCharOutside = peekNextChar();
-		if (shouldPadFirstParen && ( (previousChar != openDelim && peekedCharOutside != closeDelim)  || shouldPadEmptyParens ) )
+		if (padFirstParen && ( (previousChar != openDelim && peekedCharOutside != closeDelim)  || shouldPadEmptyParens ) )
 			appendSpacePad();
 		else if (shouldPadParensOutside)
 		{

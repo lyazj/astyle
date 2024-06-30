@@ -762,7 +762,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 	size_t iPrelim = headerStack->size();
 
 	// calculate preliminary indentation based on headerStack and data from past lines
-	computePreliminaryIndentation(line);
+	computePreliminaryIndentation();
 
 	// parse characters in the current line.
 	parseCurrentLine(line);
@@ -1458,7 +1458,7 @@ void ASBeautifier::registerContinuationIndentColon(std::string_view line, int i,
  */
 std::pair<int, int> ASBeautifier::computePreprocessorIndent()
 {
-	computePreliminaryIndentation("");
+	computePreliminaryIndentation();
 	std::pair<int, int> entry(indentCount, spaceIndentCount);
 	if (!headerStack->empty()
 	        && entry.first > 0
@@ -2102,7 +2102,7 @@ void ASBeautifier::processPreprocessor(std::string_view preproc, std::string_vie
 // Compute the preliminary indentation based on data in the headerStack
 // and data from previous lines.
 // Update the class variable indentCount.
-void ASBeautifier::computePreliminaryIndentation(std::string_view line)
+void ASBeautifier::computePreliminaryIndentation()
 {
 	indentCount = 0;
 	spaceIndentCount = 0;

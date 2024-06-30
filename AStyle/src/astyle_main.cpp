@@ -2409,8 +2409,7 @@ void ASConsole::processOptions(const std::vector<std::string>& argvOptions)
 			assert(strcmp(buf, "\xEF\xBB\xBF") == 0);
 		}
 		options.importOptions(optionsIn, fileOptionsVector);
-		ok = options.parseOptions(fileOptionsVector,
-		                          std::string(_("Invalid default options:")));
+		ok = options.parseOptions(fileOptionsVector);
 	}
 	else if (optionFileRequired)
 		error(_("Cannot open default option file"), optionFileName.c_str());
@@ -2436,8 +2435,7 @@ void ASConsole::processOptions(const std::vector<std::string>& argvOptions)
 			assert(strcmp(buf, "\xEF\xBB\xBF") == 0);
 		}
 		options.importOptions(projectOptionsIn, projectOptionsVector);
-		ok = options.parseOptions(projectOptionsVector,
-		                          std::string(_("Invalid project options:")));
+		ok = options.parseOptions(projectOptionsVector);
 	}
 
 	if (!ok)
@@ -2448,8 +2446,7 @@ void ASConsole::processOptions(const std::vector<std::string>& argvOptions)
 	}
 
 	// parse the command line options vector for errors
-	ok = options.parseOptions(optionsVector,
-	                          std::string(_("Invalid command line options:")));
+	ok = options.parseOptions(optionsVector);
 	if (!ok)
 	{
 		(*errorStream) << options.getOptionErrors();
@@ -2947,7 +2944,7 @@ ASOptions::ASOptions(ASFormatter& formatterArg, ASConsole& consoleArg)
  *
  * @return        true if no errors, false if errors
  */
-bool ASOptions::parseOptions(std::vector<std::string>& optionsVector, const std::string& errorInfo)
+bool ASOptions::parseOptions(std::vector<std::string>& optionsVector)
 {
 	std::vector<std::string>::iterator option;
 	std::string arg;
@@ -2959,7 +2956,7 @@ bool ASOptions::parseOptions(std::vector<std::string>& optionsVector, const std:
 		arg = *option;
 
 		if (arg.compare(0, 2, "--") == 0)
-			parseOption(arg.substr(2), errorInfo);
+			parseOption(arg.substr(2));
 		else if (arg[0] == '-')
 		{
 			size_t i;
@@ -2971,19 +2968,19 @@ bool ASOptions::parseOptions(std::vector<std::string>& optionsVector, const std:
 				        && arg[i - 1] != 'x')
 				{
 					// parse the previous option in subArg
-					parseOption(subArg, errorInfo);
+					parseOption(subArg);
 					subArg = "";
 				}
 				// append the current option to subArg
 				subArg.append(1, arg[i]);
 			}
 			// parse the last option
-			parseOption(subArg, errorInfo);
+			parseOption(subArg);
 			subArg = "";
 		}
 		else
 		{
-			parseOption(arg, errorInfo);
+			parseOption(arg);
 			subArg = "";
 		}
 	}
@@ -2992,7 +2989,7 @@ bool ASOptions::parseOptions(std::vector<std::string>& optionsVector, const std:
 	return true;
 }
 
-void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo)
+void ASOptions::parseOption(const std::string& arg)
 {
 	NegationPaddingMode negationPaddingMode = NEGATION_PAD_NO_CHANGE;
 	IncludeDirectivePaddingMode includeDirectivePaddingMode = INCLUDE_PAD_NO_CHANGE;
@@ -3099,7 +3096,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (spaceNumParam.length() > 0)
 			spaceNum = atoi(spaceNumParam.c_str());
 		if (spaceNum < 2 || spaceNum > 20)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 		{
 			formatter.setTabIndentation(spaceNum, false);
@@ -3116,7 +3113,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (spaceNumParam.length() > 0)
 			spaceNum = atoi(spaceNumParam.c_str());
 		if (spaceNum < 2 || spaceNum > 20)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 		{
 			formatter.setTabIndentation(spaceNum, true);
@@ -3133,7 +3130,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (tabNumParam.length() > 0)
 			tabNum = atoi(tabNumParam.c_str());
 		if (tabNum < 2 || tabNum > 20)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 		{
 			formatter.setForceTabXIndentation(tabNum);
@@ -3150,7 +3147,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (spaceNumParam.length() > 0)
 			spaceNum = atoi(spaceNumParam.c_str());
 		if (spaceNum < 2 || spaceNum > 20)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 		{
 			formatter.setSpaceIndentation(spaceNum);
@@ -3167,9 +3164,9 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (contIndentParam.length() > 0)
 			contIndent = atoi(contIndentParam.c_str());
 		if (contIndent < 0)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else if (contIndent > 4)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 			formatter.setContinuationIndentation(contIndent);
 	}
@@ -3180,7 +3177,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (minIndentParam.length() > 0)
 			minIndent = atoi(minIndentParam.c_str());
 		if (minIndent >= MINCOND_END)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 			formatter.setMinConditionalIndentOption(minIndent);
 	}
@@ -3191,7 +3188,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (maxIndentParam.length() > 0)
 			maxIndent = atoi(maxIndentParam.c_str());
 		if (maxIndent < 40)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 			formatter.setMaxContinuationIndentLength(maxIndent);
 	}
@@ -3311,7 +3308,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (keepEmptyLinesParam.length() > 0)
 			keepEmptyLines = atoi(keepEmptyLinesParam.c_str());
 		if (keepEmptyLines < 1)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 			formatter.setSqueezeEmptyLinesNumber(keepEmptyLines);
 	}
@@ -3383,7 +3380,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (styleParam.length() > 0)
 			align = atoi(styleParam.c_str());
 		if (align < 1 || align > 3)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else if (align == 1)
 			formatter.setPointerAlignment(PTR_ALIGN_TYPE);
 		else if (align == 2)
@@ -3414,7 +3411,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (styleParam.length() > 0)
 			align = atoi(styleParam.c_str());
 		if (align < 0 || align > 3)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else if (align == 0)
 			formatter.setReferenceAlignment(REF_ALIGN_NONE);
 		else if (align == 1)
@@ -3431,9 +3428,9 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (maxLengthParam.length() > 0)
 			maxLength = atoi(maxLengthParam.c_str());
 		if (maxLength < 50)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else if (maxLength > 200)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 			formatter.setMaxCodeLength(maxLength);
 	}
@@ -3444,7 +3441,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		if (maxLengthParam.length() > 0)
 			maxLength = atoi(maxLengthParam.c_str());
 		if (maxLength > 200)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else
 			formatter.setMaxCodeLength(maxLength);
 	}
@@ -3493,9 +3490,9 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 		formatter.setAttachReturnTypeDecl(true);
 	}
 	// To avoid compiler limit of blocks nested too deep.
-	else if (!parseOptionContinued(arg, errorInfo))
+	else if (!parseOptionContinued(arg))
 	{
-		isOptionError(arg, errorInfo);
+		isOptionError(arg);
 	}
 
 	formatter.setNegationPaddingMode(negationPaddingMode);
@@ -3507,7 +3504,7 @@ void ASOptions::parseOption(const std::string& arg, const std::string& errorInfo
 // To avoid compiler limit of blocks nested too deep.
 // Return 'true' if the option was found and processed.
 // Return 'false' if the option was not found.
-bool ASOptions::parseOptionContinued(const std::string& arg, const std::string& errorInfo)
+bool ASOptions::parseOptionContinued(const std::string& arg)
 {
 	// Objective-C options
 	if (isOption(arg, "xQ", "pad-method-prefix"))
@@ -3637,7 +3634,7 @@ bool ASOptions::parseOptionContinued(const std::string& arg, const std::string& 
 		if (lineendParam.length() > 0)
 			lineendType = atoi(lineendParam.c_str());
 		if (lineendType < 1 || lineendType > 3)
-			isOptionError(arg, errorInfo);
+			isOptionError(arg);
 		else if (lineendType == 1)
 			formatter.setLineEndFormat(LINEEND_WINDOWS);
 		else if (lineendType == 2)
@@ -3752,10 +3749,10 @@ bool ASOptions::isOption(const std::string& arg, const char* op1, const char* op
 	return (isOption(arg, op1) || isOption(arg, op2));
 }
 
-void ASOptions::isOptionError(const std::string& arg, const std::string& errorInfo)
+void ASOptions::isOptionError(const std::string& arg)
 {
 	if (optionErrors.str().length() == 0)
-		optionErrors << errorInfo << std::endl;   // need main error message
+		optionErrors << "Invalid Artistic Style options:" << std::endl;   // need main error message
 	optionErrors << "\t" << arg << std::endl;
 }
 

@@ -440,7 +440,7 @@ private:  // functions
 	void adjustObjCMethodDefinitionIndentation(std::string_view line_);
 	void adjustObjCMethodCallIndentation(std::string_view line_);
 	void adjustParsedLineIndentation(size_t iPrelim, bool isInExtraHeaderIndent);
-	void computePreliminaryIndentation(std::string_view line);
+	void computePreliminaryIndentation();
 	void parseCurrentLine(std::string_view line);
 	void popLastContinuationIndent();
 	void processPreprocessor(std::string_view preproc, std::string_view line);
@@ -872,7 +872,7 @@ private:  // functions
 	void padObjCParamType();
 	void padObjCReturnType();
 	void padOperators(const std::string* newOperator);
-	void padParensOrBrackets(char openDelim, char closeDelim, bool shouldPadParensOutside, bool shouldPadParensInside, bool shouldUnPadParens, bool shouldPadFirstParen);
+	void padParensOrBrackets(char openDelim, char closeDelim, bool padFirstParen);
 	void processPreprocessor();
 	void resetEndOfStatement();
 	void setAttachClosingBraceMode(bool state);
