@@ -2077,6 +2077,9 @@ void ASConsole::printHelp() const
 	std::cout << "    --mode=ghc\n";
 	std::cout << "    Indent a GHC source file (experimental).\n";
 	std::cout << std::endl;
+	std::cout << "    --mode=gsc\n";
+	std::cout << "    Indent a GSC source file (experimental).\n";
+	std::cout << std::endl;
 	std::cout << "Objective-C Options:\n";
 	std::cout << "--------------------\n";
 	std::cout << "    --pad-method-prefix  OR  -xQ\n";
@@ -3087,6 +3090,11 @@ void ASOptions::parseOption(const std::string& arg)
 	else if (isOption(arg, "mode=ghc"))
 	{
 		formatter.setGHCStyle();
+		formatter.setModeManuallySet(true);
+	}
+	else if (isOption(arg, "mode=gsc"))
+	{
+		formatter.setGSCStyle();
 		formatter.setModeManuallySet(true);
 	}
 	else if (isParamOption(arg, "t", "indent=tab="))

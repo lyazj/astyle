@@ -599,13 +599,13 @@ std::string ASFormatter::nextLine()
 
 		// not in quote or comment or line comment
 
-		if (isSequenceReached("//"))
+		if (isSequenceReached(AS_OPEN_LINE_COMMENT))
 		{
 			formatLineCommentOpener();
 			testForTimeToSplitFormattedLine();
 			continue;
 		}
-		if (isSequenceReached("/*"))
+		if (isSequenceReached(AS_OPEN_COMMENT) || (isGSCStyle() && isSequenceReached(AS_GSC_OPEN_COMMENT)))
 		{
 			formatCommentOpener();
 			testForTimeToSplitFormattedLine();
@@ -624,32 +624,6 @@ std::string ASFormatter::nextLine()
 		        && currentLine.find_first_not_of(" \t") == (size_t) charNum)
 		{
 			isInContinuedPreProc = currentLine[currentLine.size() - 1] == '\\';
-
-			/*
-			std::string preproc = trim(currentLine.c_str() + charNum + 1);
-			if (preproc.length() > 0
-			        && isCharPotentialHeader(preproc, 0)
-			        && getFileType() != C_TYPE
-			        && (findKeyword(preproc, 0, "region")
-			            || findKeyword(preproc, 0, "endregion")
-			            || findKeyword(preproc, 0, "error")
-			            || findKeyword(preproc, 0, "warning")
-			            || findKeyword(preproc, 0, "line")))
-			{
-				currentLine = rtrim(currentLine);	// trim the end only
-				// check for run-in
-				if (formattedLine.length() > 0 && formattedLine[0] == '{')
-				{
-					isInLineBreak = true;
-					isInBraceRunIn = false;
-				}
-				if (previousCommandChar == '}')
-					currentHeader = nullptr;
-				isInLineComment = true;
-				appendCurrentChar();
-				continue;
-			}
-			*/
 		}
 
 		if (isInPreprocessor)
@@ -2783,8 +2757,9 @@ bool ASFormatter::getNextChar()
 		        && !isImmediatelyPostComment
 		        && !isImmediatelyPostLineComment
 		        && !isInPreprocessor
-		        && !isSequenceReached("/*")
-		        && !isSequenceReached("//"))
+		        && !isSequenceReached(AS_OPEN_COMMENT)
+				&& !(isGSCStyle() && isSequenceReached(AS_GSC_OPEN_COMMENT))
+		        && !isSequenceReached(AS_OPEN_LINE_COMMENT))
 			previousCommandChar = currentChar;
 	}
 
@@ -2985,14 +2960,14 @@ void ASFormatter::initNewLine()
 	}
 	leadingSpaces = charNum + tabIncrementIn;
 
-	if (isSequenceReached("/*"))
+	if (isSequenceReached(AS_OPEN_COMMENT) || (isGSCStyle() && isSequenceReached(AS_GSC_OPEN_COMMENT)))
 	{
 		doesLineStartComment = true;
 		if ((int) currentLine.length() > charNum + 2
 		        && currentLine.find("*/", charNum + 2) != std::string::npos)
 			lineIsCommentOnly = true;
 	}
-	else if (isSequenceReached("//"))
+	else if (isSequenceReached(AS_OPEN_LINE_COMMENT))
 	{
 		lineIsLineCommentOnly = true;
 	}
@@ -4168,18 +4143,21 @@ std::string ASFormatter::peekNextText(std::string_view firstLine,
 void ASFormatter::adjustComments()
 {
 	assert(spacePadNum != 0);
-	assert(isSequenceReached("//") || isSequenceReached("/*"));
+	assert(isSequenceReached(AS_OPEN_LINE_COMMENT) || isSequenceReached(AS_OPEN_COMMENT)  || isSequenceReached(AS_GSC_OPEN_COMMENT));
 
 	// block comment must be closed on this line with nothing after it
-	if (isSequenceReached("/*"))
+	bool isCppComment = isSequenceReached(AS_OPEN_COMMENT);
+	bool isGSCComment = isSequenceReached(AS_GSC_OPEN_COMMENT);
+
+	if (isCppComment || isGSCComment)
 	{
-		size_t endNum = currentLine.find("*/", charNum + 2);
+		size_t endNum = currentLine.find(isCppComment ? AS_CLOSE_COMMENT : AS_GSC_CLOSE_COMMENT, charNum + 2);
 		if (endNum == std::string::npos)
 			return;
 		// following line comments may be a tag from AStyleWx //[[)>
 		size_t nextNum = currentLine.find_first_not_of(" \t", endNum + 2);
 		if (nextNum != std::string::npos
-		        && currentLine.compare(nextNum, 2, "//") != 0)
+		        && currentLine.compare(nextNum, 2, AS_OPEN_LINE_COMMENT) != 0)
 			return;
 	}
 
@@ -4744,7 +4722,7 @@ void ASFormatter::formatPointerOrReferenceCast()
 	                    ? pa : ((ra == REF_SAME_AS_PTR) ? pa : ra);
 
 	std::string sequenceToInsert(1, currentChar);
-	if (isSequenceReached("**") || isSequenceReached("&&"))
+	if (isSequenceReached("**") || isSequenceReached(AS_AND))
 	{
 		goForward(1);
 		sequenceToInsert.append(1, currentLine[charNum]);
@@ -6078,7 +6056,7 @@ void ASFormatter::formatCommentBody()
 	while (charNum < (int) currentLine.length())
 	{
 		currentChar = currentLine[charNum];
-		if (isSequenceReached("*/"))
+		if (isSequenceReached(AS_CLOSE_COMMENT) || (isGSCStyle() && isSequenceReached(AS_GSC_CLOSE_COMMENT)) )
 		{
 			formatCommentCloser();
 			break;
@@ -6099,7 +6077,9 @@ void ASFormatter::formatCommentBody()
  */
 void ASFormatter::formatCommentOpener()
 {
-	assert(isSequenceReached("/*"));
+	assert(isSequenceReached(AS_OPEN_COMMENT) || isSequenceReached(AS_GSC_OPEN_COMMENT));
+
+	bool isCppComment = isSequenceReached(AS_OPEN_COMMENT);
 
 	isInComment = isInCommentStartLine = true;
 	isImmediatelyPostLineComment = false;
@@ -6164,7 +6144,7 @@ void ASFormatter::formatCommentOpener()
 		caseHeaderFollowsComments = true;
 
 	// appendSequence will write the previous line
-	appendSequence(AS_OPEN_COMMENT);
+	appendSequence(isCppComment ? AS_OPEN_COMMENT : AS_GSC_OPEN_COMMENT);
 	goForward(1);
 
 	// must be done AFTER appendSequence
@@ -6196,11 +6176,11 @@ void ASFormatter::formatCommentOpener()
  */
 void ASFormatter::formatCommentCloser()
 {
-	assert(isSequenceReached("*/"));
+	assert(isSequenceReached(AS_CLOSE_COMMENT) || (isGSCStyle() && isSequenceReached(AS_GSC_CLOSE_COMMENT)) );
 	isInComment = false;
 	noTrimCommentContinuation = false;
 	isImmediatelyPostComment = true;
-	appendSequence(AS_CLOSE_COMMENT);
+	appendSequence(isSequenceReached(AS_CLOSE_COMMENT) ? AS_CLOSE_COMMENT : AS_GSC_CLOSE_COMMENT);
 	goForward(1);
 	if (doesLineStartComment
 	        && (currentLine.find_first_not_of(" \t", charNum + 1) == std::string::npos))
@@ -6252,7 +6232,7 @@ void ASFormatter::formatLineCommentBody()
  */
 void ASFormatter::formatLineCommentOpener()
 {
-	assert(isSequenceReached("//"));
+	assert(isSequenceReached(AS_OPEN_LINE_COMMENT));
 
 	if ((int) currentLine.length() > charNum + 2
 	        && currentLine[charNum + 2] == '\xf2')     // check for windows line marker
