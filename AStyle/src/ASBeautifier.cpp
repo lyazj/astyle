@@ -4015,7 +4015,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 					{
 						isInLet = false;
 					}
-					else if (!lineBeginsWithComma)
+					else if (!lineBeginsWithComma && !isInDefine)
 					{
 						if (i == 0 && spaceIndentCount == 0)
 							spaceIndentCount += indentLength;
