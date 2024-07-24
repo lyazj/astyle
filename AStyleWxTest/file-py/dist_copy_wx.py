@@ -24,11 +24,11 @@ AS_RELEASE = "3.2"
 #EXTRACT_ALL = False
 EXTRACT_ALL = True
 
-# inut from AStyleWx directory
+# input from AStyleWx directory
 __astylewx_dir = libastylewx.get_astylewx_directory()
-# inut from AStyleWxTest directory
+# input from AStyleWxTest directory
 __astylewxtest_dir = libastylewx.get_astylewxtest_directory()
-# inut from AStyle directory
+# input from AStyle directory
 __astyle_dir = libastylewx.get_astyle_directory()
 # output to Project directory
 __base_dir = libastylewx.get_project_directory()

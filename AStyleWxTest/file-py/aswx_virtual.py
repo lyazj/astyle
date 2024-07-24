@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-"""Check AStyleIFace.h to Main_Test.h to verify that all virtual fuctions are overridden.
+"""Check AStyleIFace.h to Main_Test.h to verify that all virtual functions are overridden.
 """
 
 # to disable the print statement and use the print() function (version 3 format)
