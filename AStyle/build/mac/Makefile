@@ -39,7 +39,7 @@ dynamiclib = -dynamiclib
 bindir = bin
 objdir = obj
 ipath=$(prefix)/bin
-CBASEFLAGS = -W -Wall -std=c++11 -stdlib=libc++ -fno-rtti -fno-exceptions  \
+CBASEFLAGS = -W -Wall -std=c++17 -stdlib=libc++ -fno-rtti -fno-exceptions  \
 -mmacosx-version-min=10.9
 LDBASEFLAGS =
 JAVAINCS  = -I/Library/Java/JavaVirtualMachines/jdk-11.0.1.jdk/Contents/Home/include \

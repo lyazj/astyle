@@ -14,7 +14,7 @@
 				<Compiler>
 					<Add option="-Wextra" />
 					<Add option="-Wall" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-fPIC" />
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
@@ -39,7 +39,7 @@
 					<Add option="-O3" />
 					<Add option="-Wextra" />
 					<Add option="-Wall" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-fPIC" />
 					<Add option="-fno-rtti" />
 					<Add option="-fno-exceptions" />

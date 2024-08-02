@@ -17,7 +17,7 @@
 					<Add option="-g" />
 					<Add option="-Wextra" />
 					<Add option="-fno-exceptions" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-fPIC" />
 					<Add option="-DASTYLE_JNI" />
 					<Add directory="/usr/lib/jvm/default-java/include" />
@@ -39,7 +39,7 @@
 					<Add option="-Wall" />
 					<Add option="-Wextra" />
 					<Add option="-fno-exceptions" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-fPIC" />
 					<Add option="-wd11074,11076" />
 					<Add option="-DASTYLE_JNI" />
