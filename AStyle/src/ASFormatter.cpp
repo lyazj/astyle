@@ -3617,6 +3617,12 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 	bool retval = false;
 
 	// to avoid problem with multiplications - we need LSP
+	if (currentChar == '*'
+		&& (pointerAlignment == PTR_ALIGN_TYPE || pointerAlignment == PTR_ALIGN_NAME )
+		&& parenthesesCount <= 0) {
+		return false;
+	}
+
 	for (char c: word){
 		if (isLegalNameChar(c)) {
 			retval = true;
