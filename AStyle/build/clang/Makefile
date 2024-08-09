@@ -39,7 +39,7 @@ endif
 bindir = bin
 objdir = obj
 ipath=$(prefix)/bin
-CBASEFLAGS = -Wall -Wextra -fno-rtti -fno-exceptions -std=c++11
+CBASEFLAGS = -Wall -Wextra -fno-rtti -fno-exceptions -std=c++17
 JAVAINCS   = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
 INSTALL=install -o $(USER) -g $(USER)
 

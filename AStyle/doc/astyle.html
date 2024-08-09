@@ -156,6 +156,7 @@
         <a class="contents" href="#_pad-oper">pad-oper</a>
         <a class="contents" href="#_pad-comma">pad-comma</a>
         <a class="contents" href="#_pad-negation">pad-negation</a>
+        <a class="contents" href="#_pad-include">pad-include</a>
         <a class="contents" href="#_pad-paren">pad-paren</a>
         <a class="contents" href="#_pad-paren-out">pad-paren-out</a>
         <a class="contents" href="#_pad-first-paren-out">pad-first-paren-out</a>
@@ -1623,6 +1624,42 @@ isBar = false;
     bar(a, b);
 </pre>
     </div>
+
+
+    <p>
+        &nbsp;</p>
+    <p id="_pad-include">
+        <code class="title">--pad-include</code><br />
+        Insert space padding after include directives.
+    </p>
+    <div class="code">
+        <pre>#include&lt;stdio&gt;
+#include&nbsp;&nbsp;&nbsp;&lt;iostream&gt;
+</pre>
+        <p class="code">
+            becomes:</p>
+        <pre>#include &lt;stdio&gt;
+#include &lt;iostream&gt;
+</pre>
+    </div>
+
+    <p>
+        &nbsp;</p>
+    <p id="_pad-include">
+        <code class="title">--pad-include=none</code><br />
+        Insert space padding after include directives.
+    </p>
+    <div class="code">
+        <pre>#include&lt;stdio&gt;
+#include&nbsp;&nbsp;&nbsp;&lt;iostream&gt;
+</pre>
+        <p class="code">
+            becomes:</p>
+        <pre>#include&lt;stdio&gt;
+#include&lt;iostream&gt;
+</pre>
+    </div>
+
 
     <p>
         &nbsp;</p>

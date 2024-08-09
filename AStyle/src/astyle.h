@@ -53,7 +53,7 @@
 	#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #endif
 
-#define ASTYLE_VERSION "3.5.2"
+#define ASTYLE_VERSION "3.6"
 
 //-----------------------------------------------------------------------------
 // astyle namespace
@@ -65,7 +65,7 @@ namespace astyle {
 // definitions
 //----------------------------------------------------------------------------
 
-enum FileType { C_TYPE = 0, JAVA_TYPE = 1, SHARP_TYPE = 2, JS_TYPE = 3, OBJC_TYPE = 4, GHC_TYPE = 5, GSC_TYPE = 6, INVALID_TYPE = -1 };
+enum FileType { C_TYPE = 0, JAVA_TYPE = 1, SHARP_TYPE = 2, JS_TYPE = 3, OBJC_TYPE = 4, GSC_TYPE = 5, INVALID_TYPE = -1 };
 
 /* The enums below are not recognized by 'vectors' in Microsoft Visual C++
    V5 when they are part of a namespace!!!  Use Visual C++ V6 or higher.
@@ -318,12 +318,11 @@ protected:
 
 protected:  // inline functions
 	void init(int fileTypeArg) { baseFileType = fileTypeArg; }
-	bool isCStyle() const { return baseFileType == C_TYPE || baseFileType == OBJC_TYPE || baseFileType == GHC_TYPE || baseFileType == GSC_TYPE; }
+	bool isCStyle() const { return baseFileType == C_TYPE || baseFileType == OBJC_TYPE || baseFileType == GSC_TYPE; }
 	bool isJavaStyle() const { return baseFileType == JAVA_TYPE; }
 	bool isSharpStyle() const { return baseFileType == SHARP_TYPE; }
 	bool isJSStyle() const { return baseFileType == JS_TYPE; }
 	bool isObjCStyle() const { return baseFileType == OBJC_TYPE; }
-	bool isGHCStyle() const { return baseFileType == GHC_TYPE; }
 	bool isGSCStyle() const { return baseFileType == GSC_TYPE; }
 
 	bool isWhiteSpace(char ch) const { return (ch == ' ' || ch == '\t'); }
@@ -371,9 +370,7 @@ public:
 	void setJSStyle();
 	void setObjCStyle();
 	void setSharpStyle();
-	void setGHCStyle();
 	void setGSCStyle();
-
 
 	void setLabelIndent(bool state);
 	void setMaxContinuationIndentLength(int max);

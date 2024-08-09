@@ -19,7 +19,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-Wextra" />
 					<Add option="-fno-rtti" />
 					<Add option="-fno-exceptions" />
@@ -34,7 +34,7 @@
 				<Compiler>
 					<Add option="-O3" />
 					<Add option="-Wall" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-Wextra" />
 					<Add option="-fno-rtti" />
 					<Add option="-fno-exceptions" />
@@ -59,7 +59,7 @@
 					<Add option="-Weverything" />
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-Wextra" />
 					<Add option="-fno-rtti" />
 					<Add option="-fno-exceptions" />

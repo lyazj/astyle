@@ -18,7 +18,7 @@
 					<Add option="-Wextra" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fPIC" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-DASTYLE_LIB" />
 				</Compiler>
 				<Linker>
@@ -38,7 +38,7 @@
 					<Add option="-Wextra" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fPIC" />
-					<Add option="-std=c++11" />
+					<Add option="-std=c++17" />
 					<Add option="-wd11074,11076" />
 					<Add option="-DASTYLE_LIB" />
 					<Add option="-DDNDEBUG" />
