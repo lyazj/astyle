@@ -1923,6 +1923,14 @@ void ASConsole::printHelp() const
 	std::cout << "    --pad-comma  OR  -xg\n";
 	std::cout << "    Insert space padding after commas.\n";
 	std::cout << std::endl;
+
+	std::cout << "    --pad-include\n";
+	std::cout << "    Insert space padding after include directives.\n";
+	std::cout << std::endl;
+	std::cout << "    --pad-include=none\n";
+	std::cout << "    Remove space padding after include directives.\n";
+	std::cout << std::endl;
+
 	std::cout << "    --pad-negation\n";
 	std::cout << "    Insert space padding after negations.\n";
 	std::cout << std::endl;
