@@ -552,6 +552,7 @@ std::string ASFormatter::nextLine()
 			charNum = (int) currentLine.length() - 1;
 			continue;
 		}
+
 		if ((lineIsLineCommentOnly || lineIsCommentOnly)
 		        && currentLine.find("*INDENT-OFF*", charNum) != std::string::npos)
 		{
@@ -671,8 +672,6 @@ std::string ASFormatter::nextLine()
 				isInBraceRunIn = false;
 			}
 			processPreprocessor();
-
-
 		}
 
 		/* not in preprocessor ... */
@@ -1563,7 +1562,7 @@ std::string ASFormatter::nextLine()
 		if (isPotentialHeader && !isInTemplate)
 		{
 			//GL30
-			if (!isGHCStyle() && (findKeyword(currentLine, charNum, AS_NEW)
+			if (!isGSCStyle() && (findKeyword(currentLine, charNum, AS_NEW)
 			        || findKeyword(currentLine, charNum, AS_DELETE)))
 			{
 				isInPotentialCalculation = false;
@@ -1921,7 +1920,7 @@ std::string ASFormatter::nextLine()
 		}
 
 		//GL31
-		bool isDoubleOpenBrackets = isGHCStyle() && currentChar=='[' && peekNextChar() == '[';
+		bool isDoubleOpenBrackets = isGSCStyle() && currentChar=='[' && peekNextChar() == '[';
 		if ((currentChar == '[' || currentChar == ']' ) && (shouldPadBracketsOutside || shouldPadBracketsInside || shouldUnPadBrackets) && !isDoubleOpenBrackets)
 		{
 			padParensOrBrackets('[', ']', false);
@@ -2813,6 +2812,7 @@ bool ASFormatter::getNextLine(bool emptyLineWasDeleted /*false*/)
 	// check if is in preprocessor before line trimming
 	// a blank line after a \ will remove the flag
 	isImmediatelyPostPreprocessor = isInPreprocessor;
+
 	if (!isInComment
 	        && (previousNonWSChar != '\\'
 	            || isEmptyLine(currentLine)))
@@ -5893,9 +5893,9 @@ void ASFormatter::processPreprocessor()
 	{
 		size_t nextText = currentLine.find_first_not_of(" \t", charNum + 1);
 		if (nextText != std::string::npos) {
-			std::cerr << "erase 2 " << currentLine<<"\n";
+			//std::cerr << "erase 2 " << currentLine<<"\n";
 			currentLine.erase(charNum + 1, nextText - charNum - 1);
-			std::cerr << "erase 3 " << currentLine<<"\n";
+			//std::cerr << "erase 3 " << currentLine<<"\n";
 		}
 
 	}

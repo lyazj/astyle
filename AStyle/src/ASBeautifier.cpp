@@ -877,14 +877,6 @@ void ASBeautifier::setSharpStyle()
 }
 
 /**
- * set indentation style to GHC.
- */
-void ASBeautifier::setGHCStyle()
-{
-	fileType = GHC_TYPE;
-}
-
-/**
  * set indentation style to GSC.
  */
 void ASBeautifier::setGSCStyle()

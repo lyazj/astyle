@@ -2074,9 +2074,6 @@ void ASConsole::printHelp() const
 	std::cout << "    --mode=js\n";
 	std::cout << "    Indent a JavaScript source file (experimental).\n";
 	std::cout << std::endl;
-	std::cout << "    --mode=ghc\n";
-	std::cout << "    Indent a GHC source file (experimental).\n";
-	std::cout << std::endl;
 	std::cout << "    --mode=gsc\n";
 	std::cout << "    Indent a GSC source file (experimental).\n";
 	std::cout << std::endl;
@@ -3087,12 +3084,7 @@ void ASOptions::parseOption(const std::string& arg)
 		formatter.setObjCStyle();
 		formatter.setModeManuallySet(true);
 	}
-	else if (isOption(arg, "mode=ghc"))
-	{
-		formatter.setGHCStyle();
-		formatter.setModeManuallySet(true);
-	}
-	else if (isOption(arg, "mode=gsc"))
+	else if (isOption(arg, "mode=ghc") || isOption(arg, "mode=gsc"))
 	{
 		formatter.setGSCStyle();
 		formatter.setModeManuallySet(true);
