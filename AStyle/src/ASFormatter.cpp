@@ -3355,6 +3355,7 @@ bool ASFormatter::isPointerOrReference() const
 	}
 
 	if (pointerAlignment == PTR_ALIGN_TYPE
+		&& !shouldPadOperators //TODO 578
 		&& !isPointerOrReferenceVariable(lastWord)) {
 		return false;
 	}
@@ -4216,7 +4217,6 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	char nextNonWSChar = ASBase::peekNextChar(currentLine, charNum);
 	std::set<char> allowedChars = {'(', '[', '=', ',', ':', '{'};
 
-// #566
 	bool shouldPad = (newOperator != &AS_SCOPE_RESOLUTION
 	                  && newOperator != &AS_PLUS_PLUS
 	                  && newOperator != &AS_MINUS_MINUS
@@ -4283,8 +4283,9 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	        && !(peekNextChar() == ',')
 	        && !(newOperator == &AS_QUESTION && isSharpStyle() // check for C# nullable type (e.g. int?)
 	             && peekNextChar() == '[')
-	   )
+	) {
 		appendSpaceAfter();
+	}
 }
 
 /**
