@@ -3937,6 +3937,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 
 				// GL28: method calls have to contain only alphanumeric identifier
 				size_t openParenPos = line.find(AS_OPEN_PAREN, i);
+				size_t closeParenPos = line.find(AS_CLOSE_PAREN, openParenPos);
 
 				std::string methodName = getNextWord(std::string(line), i);
 				size_t methodNameEndPos =  i + methodName.length() + 1;
@@ -3963,7 +3964,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 				        && !lineStartsWithDot
 				        && ( (foundNonAssignmentOp == &AS_GR_GR && countLS < 2 )
 				            ||  foundNonAssignmentOp == &AS_LS_LS
-				            || (foundNonAssignmentOp == &AS_DOT && openParenPos == methodNameEndPos)))
+				            || (foundNonAssignmentOp == &AS_DOT && openParenPos == methodNameEndPos && closeParenPos != std::string::npos )))
 				{
 					// this will be true if the line begins with the operator
 					if (i < foundNonAssignmentOp->length() && spaceIndentCount == 0)
