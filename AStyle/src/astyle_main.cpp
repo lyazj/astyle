@@ -728,7 +728,7 @@ std::vector<std::string> ASConsole::getArgvOptions(int argc, char** argv)
 	std::vector<std::string> argvOptions;
 	for (int i = 1; i < argc; i++)
 	{
-		argvOptions.emplace_back(std::string(argv[i]));
+		argvOptions.emplace_back(argv[i]);
 	}
 	return argvOptions;
 }
@@ -800,7 +800,7 @@ FileEncoding ASConsole::readFile(const std::string& fileName_, std::stringstream
 	fin.read(data, blockSize);
 	if (fin.bad())
 		error("Cannot read file", fileName_.c_str());
-	size_t dataSize = static_cast<size_t>(fin.gcount());
+	auto dataSize = static_cast<size_t>(fin.gcount());
 	FileEncoding encoding = detectEncoding(data, dataSize);
 	if (encoding == UTF_32BE || encoding == UTF_32LE)
 		error(_("Cannot process UTF-32 encoding"), fileName_.c_str());
@@ -3816,7 +3816,7 @@ size_t ASEncoding::utf8LengthFromUtf16(const char* utf16In, size_t inLen, bool i
 {
 	size_t len = 0;
 	size_t wcharLen = (inLen / 2) + (inLen % 2);
-	const char16_t* uptr = reinterpret_cast<const char16_t*>(utf16In);
+	const auto* uptr = reinterpret_cast<const char16_t*>(utf16In);
 	for (size_t i = 0; i < wcharLen;)
 	{
 		size_t uch = isBigEndian ? swap16bit(uptr[i]) : uptr[i];
@@ -3843,8 +3843,8 @@ size_t ASEncoding::utf8LengthFromUtf16(const char* utf16In, size_t inLen, bool i
 size_t ASEncoding::utf8ToUtf16(char* utf8In, size_t inLen, bool isBigEndian, char* utf16Out) const
 {
 	int nCur = 0;
-	ubyte* pRead = reinterpret_cast<ubyte*>(utf8In);
-	utf16* pCur = reinterpret_cast<utf16*>(utf16Out);
+	auto* pRead = reinterpret_cast<ubyte*>(utf8In);
+	auto* pCur = reinterpret_cast<utf16*>(utf16Out);
 	const ubyte* pEnd = pRead + inLen;
 	const utf16* pCurStart = pCur;
 	eState state = eStart;
@@ -3922,7 +3922,7 @@ size_t ASEncoding::utf16LengthFromUtf8(const char* utf8In, size_t len) const
 	size_t charLen;
 	for (size_t i = 0; i < len;)
 	{
-		unsigned char ch = static_cast<unsigned char>(utf8In[i]);
+		auto ch = static_cast<unsigned char>(utf8In[i]);
 		if (ch < 0x80)
 			charLen = 1;
 		else if (ch < 0x80 + 0x40 + 0x20)
@@ -3950,8 +3950,8 @@ size_t ASEncoding::utf16ToUtf8(char* utf16In, size_t inLen, bool isBigEndian,
 {
 	int nCur16 = 0;
 	int nCur = 0;
-	ubyte* pRead = reinterpret_cast<ubyte*>(utf16In);
-	ubyte* pCur = reinterpret_cast<ubyte*>(utf8Out);
+	auto* pRead = reinterpret_cast<ubyte*>(utf16In);
+	auto* pCur = reinterpret_cast<ubyte*>(utf8Out);
 	const ubyte* pEnd = pRead + inLen;
 	const ubyte* pCurStart = pCur;
 	static eState state = eStart;	// state is retained for subsequent blocks

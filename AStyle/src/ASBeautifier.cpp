@@ -1598,13 +1598,13 @@ std::string ASBeautifier::rtrim(std::string_view str) const
  */
 std::vector<std::vector<const std::string*>*>* ASBeautifier::copyTempStacks(const ASBeautifier& other) const
 {
-	std::vector<std::vector<const std::string*>*>* tempStacksNew = new std::vector<std::vector<const std::string*>*>;
+	auto* tempStacksNew = new std::vector<std::vector<const std::string*>*>;
 	std::vector<std::vector<const std::string*>*>::iterator iter;
 	for (iter = other.tempStacks->begin();
 	        iter != other.tempStacks->end();
 	        ++iter)
 	{
-		std::vector<const std::string*>* newVec = new std::vector<const std::string*>;
+		auto* newVec = new std::vector<const std::string*>;
 		*newVec = **iter;
 		tempStacksNew->emplace_back(newVec);
 	}
@@ -1652,7 +1652,7 @@ void ASBeautifier::deleteBeautifierContainer(std::vector<ASBeautifier*>*& contai
 {
 	if (container != nullptr)
 	{
-		std::vector<ASBeautifier*>::iterator iter = container->begin();
+		auto iter = container->begin();
 		while (iter < container->end())
 		{
 			delete *iter;
@@ -1673,7 +1673,7 @@ void ASBeautifier::deleteTempStacksContainer(std::vector<std::vector<const std::
 {
 	if (container != nullptr)
 	{
-		std::vector<std::vector<const std::string*>*>::iterator iter = container->begin();
+		auto iter = container->begin();
 		while (iter < container->end())
 		{
 			delete *iter;
@@ -2044,7 +2044,7 @@ void ASBeautifier::processPreprocessor(std::string_view preproc, std::string_vie
 
 			// push a new beautifier into the active stack
 			// this beautifier will be used for the indentation of this define
-			ASBeautifier* defineBeautifier = new ASBeautifier(*this);
+			auto* defineBeautifier = new ASBeautifier(*this);
 			activeBeautifierStack->emplace_back(defineBeautifier);
 		}
 		else
@@ -3937,6 +3937,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 
 				// GL28: method calls have to contain only alphanumeric identifier
 				size_t openParenPos = line.find(AS_OPEN_PAREN, i);
+				size_t closeParenPos = line.find(AS_CLOSE_PAREN, openParenPos);
 
 				std::string methodName = getNextWord(std::string(line), i);
 				size_t methodNameEndPos =  i + methodName.length() + 1;
@@ -3963,7 +3964,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 				        && !lineStartsWithDot
 				        && ( (foundNonAssignmentOp == &AS_GR_GR && countLS < 2 )
 				            ||  foundNonAssignmentOp == &AS_LS_LS
-				            || (foundNonAssignmentOp == &AS_DOT && openParenPos == methodNameEndPos)))
+				            || (foundNonAssignmentOp == &AS_DOT && openParenPos == methodNameEndPos && closeParenPos != std::string::npos )))
 				{
 					// this will be true if the line begins with the operator
 					if (i < foundNonAssignmentOp->length() && spaceIndentCount == 0)
