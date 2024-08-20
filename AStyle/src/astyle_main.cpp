@@ -728,7 +728,7 @@ std::vector<std::string> ASConsole::getArgvOptions(int argc, char** argv)
 	std::vector<std::string> argvOptions;
 	for (int i = 1; i < argc; i++)
 	{
-		argvOptions.emplace_back(std::string(argv[i]));
+		argvOptions.emplace_back(argv[i]);
 	}
 	return argvOptions;
 }
