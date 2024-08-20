@@ -1598,13 +1598,13 @@ std::string ASBeautifier::rtrim(std::string_view str) const
  */
 std::vector<std::vector<const std::string*>*>* ASBeautifier::copyTempStacks(const ASBeautifier& other) const
 {
-	std::vector<std::vector<const std::string*>*>* tempStacksNew = new std::vector<std::vector<const std::string*>*>;
+	auto* tempStacksNew = new std::vector<std::vector<const std::string*>*>;
 	std::vector<std::vector<const std::string*>*>::iterator iter;
 	for (iter = other.tempStacks->begin();
 	        iter != other.tempStacks->end();
 	        ++iter)
 	{
-		std::vector<const std::string*>* newVec = new std::vector<const std::string*>;
+		auto* newVec = new std::vector<const std::string*>;
 		*newVec = **iter;
 		tempStacksNew->emplace_back(newVec);
 	}
@@ -1652,7 +1652,7 @@ void ASBeautifier::deleteBeautifierContainer(std::vector<ASBeautifier*>*& contai
 {
 	if (container != nullptr)
 	{
-		std::vector<ASBeautifier*>::iterator iter = container->begin();
+		auto iter = container->begin();
 		while (iter < container->end())
 		{
 			delete *iter;
@@ -1673,7 +1673,7 @@ void ASBeautifier::deleteTempStacksContainer(std::vector<std::vector<const std::
 {
 	if (container != nullptr)
 	{
-		std::vector<std::vector<const std::string*>*>::iterator iter = container->begin();
+		auto iter = container->begin();
 		while (iter < container->end())
 		{
 			delete *iter;
@@ -2044,7 +2044,7 @@ void ASBeautifier::processPreprocessor(std::string_view preproc, std::string_vie
 
 			// push a new beautifier into the active stack
 			// this beautifier will be used for the indentation of this define
-			ASBeautifier* defineBeautifier = new ASBeautifier(*this);
+			auto* defineBeautifier = new ASBeautifier(*this);
 			activeBeautifierStack->emplace_back(defineBeautifier);
 		}
 		else
