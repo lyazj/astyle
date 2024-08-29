@@ -92,14 +92,14 @@
         ErrorHandler method.</p>
     <p>
         The function will NOT fail for an invalid option in the formatting options. In this case, an error message is
-        sent to the error handling function and the formatted source code is returned without using the invalid 
+        sent to the error handling function and the formatted source code is returned without using the invalid
         option.</p>
 
     <h4>Remarks</h4>
 
     <p>
         The ASyleMain function must be called from the class AStyleInterface. The name of the function in Artistic Style
-        is Java_AStyleInterface_AStyleMain. If the class name is changed, or the method name is changed, the function
+        is Java_cc_arduino_packages_formatter_AStyleInterface_AStyleMain. If the class name is changed, or the method name is changed, the function
         names in the Artistic Style shared library must also be changed.</p>
     <p>
         The call to AStyleMain should be placed in a try/catch block that contains an UnsatisfiedLinkError to handle not
@@ -127,7 +127,7 @@
 
     <p>
         The AStyleGetVersion function must be called from the class AStyleInterface. The name of the function in Artistic
-        Style is Java_AStyleInterface_AStyleGetVersion. If the class name is changed, or the method name is changed, the
+        Style is Java_cc_arduino_packages_formatter_AStyleInterface_AStyleGetVersion. If the class name is changed, or the method name is changed, the
         function names in the Artistic Style shared library must also be changed.</p>
     <p>
         The call to AStyleMain should be placed in a try/catch block that contains an UnsatisfiedLinkError to handle not
@@ -183,7 +183,7 @@
     <p>
         &nbsp;</p>
     <div class="hl">
-        <pre class="hl">         
+        <pre class="hl">
 <span class="hl slc">// Example.java</span>
 
 <span class="hl com">/*</span>
@@ -328,7 +328,7 @@
     <p>
         &nbsp;</p>
     <div class="hl">
-        <pre class="hl">        
+        <pre class="hl">
 <span class="hl slc">// AStyleInterface.java</span>
 
 <span class="hl com">/**</span>
@@ -497,4 +497,3 @@
 </body>
 
 </html>
-
