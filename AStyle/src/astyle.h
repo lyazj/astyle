@@ -10,15 +10,10 @@
 // headers
 //-----------------------------------------------------------------------------
 
-#ifdef __VMS
-	#define __USE_STD_IOSTREAM 1
-	#include <assert>
-#else
-	#include <cassert>
-#endif
+#include <cassert>
 
 #include <cctype>
-#include <iostream>		// for cout
+#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -28,36 +23,7 @@
 	#include <cstring>              // need both string and cstring for GCC
 #endif
 
-//-----------------------------------------------------------------------------
-// declarations
-//-----------------------------------------------------------------------------
-
-#ifdef _MSC_VER
-	#pragma warning(disable: 4267)  // conversion from size_t to int
-#endif
-
-#ifdef __BORLANDC__
-	#pragma warn -8004	            // variable is assigned a value that is never used
-#endif
-
-#ifdef __GNUC__
-	#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-
-#ifdef __INTEL_COMPILER
-	// #pragma warning disable 383  // value copied to temporary, reference to temporary used
-	// #pragma warning disable 981  // operands are evaluated in unspecified order
-#endif
-
-#ifdef __clang__
-	#pragma clang diagnostic ignored "-Wshorten-64-to-32"
-#endif
-
-#define ASTYLE_VERSION "3.6"
-
-//-----------------------------------------------------------------------------
-// astyle namespace
-//-----------------------------------------------------------------------------
+#define ASTYLE_VERSION "3.6.1"
 
 namespace astyle {
 

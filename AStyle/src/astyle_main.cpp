@@ -55,14 +55,7 @@
 	#include <dirent.h>
 	#include <sys/stat.h>
 	#include <unistd.h>
-	#ifdef __VMS
-		#include <unixlib.h>
-		#include <rms.h>
-		#include <ssdef.h>
-		#include <stsdef.h>
-		#include <lib$routines.h>
-		#include <starlet.h>
-	#endif /* __VMS */
+
 #endif
 
 //-----------------------------------------------------------------------------
@@ -2504,51 +2497,6 @@ void ASConsole::renameFile(const char* oldFileName, const char* newFileName, con
 // remove beginning file separator if requested and NOT a complete file path
 void ASConsole::standardizePath(std::string& path, bool removeBeginningSeparator /*false*/) const
 {
-#ifdef __VMS
-	struct FAB fab;
-	struct NAML naml;
-	char less[NAML$C_MAXRSS];
-	char sess[NAM$C_MAXRSS];
-	int r0_status;
-
-	// If we are on a VMS system, translate VMS style filenames to unix
-	// style.
-	fab = cc$rms_fab;
-	fab.fab$l_fna = (char*) -1;
-	fab.fab$b_fns = 0;
-	fab.fab$l_naml = &naml;
-	naml = cc$rms_naml;
-	strcpy(sess, path.c_str());
-	naml.naml$l_long_filename = (char*) sess;
-	naml.naml$l_long_filename_size = path.length();
-	naml.naml$l_long_expand = less;
-	naml.naml$l_long_expand_alloc = sizeof(less);
-	naml.naml$l_esa = sess;
-	naml.naml$b_ess = sizeof(sess);
-	naml.naml$v_no_short_upcase = 1;
-	r0_status = sys$parse(&fab);
-	if (r0_status == RMS$_SYN)
-	{
-		error("File syntax error", path.c_str());
-	}
-	else
-	{
-		if (!$VMS_STATUS_SUCCESS(r0_status))
-		{
-			(void) lib$signal(r0_status);
-		}
-	}
-	less[naml.naml$l_long_expand_size - naml.naml$b_ver] = '\0';
-	sess[naml.naml$b_esl - naml.naml$b_ver] = '\0';
-	if (naml.naml$l_long_expand_size > naml.naml$b_esl)
-	{
-		path = decc$translate_vms(less);
-	}
-	else
-	{
-		path = decc$translate_vms(sess);
-	}
-#endif /* __VMS */
 
 	// make sure separators are correct type (Windows or Linux)
 	for (size_t i = 0; i < path.length(); i++)
