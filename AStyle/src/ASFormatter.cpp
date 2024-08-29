@@ -3618,6 +3618,7 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 	bool retval = false;
 
 	// to avoid problem with multiplications - we need LSP
+
 	if (currentChar == '*'
 		&& (pointerAlignment == PTR_ALIGN_TYPE || pointerAlignment == PTR_ALIGN_NAME )
 		&& parenthesesCount <= 0) {
@@ -3631,12 +3632,11 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 		}
 	}
 
-	if (currentChar == '&' &&
-		(currentHeader == &AS_IF
+	if (currentHeader == &AS_IF
 		|| currentHeader == &AS_ELSE
 		|| currentHeader == &AS_FOR
 		|| currentHeader == &AS_WHILE
-		|| currentHeader == &AS_DO)) {
+		|| currentHeader == &AS_DO) {
 		retval = false;
 	}
 
@@ -5893,11 +5893,8 @@ void ASFormatter::processPreprocessor()
 	{
 		size_t nextText = currentLine.find_first_not_of(" \t", charNum + 1);
 		if (nextText != std::string::npos) {
-			//std::cerr << "erase 2 " << currentLine<<"\n";
 			currentLine.erase(charNum + 1, nextText - charNum - 1);
-			//std::cerr << "erase 3 " << currentLine<<"\n";
 		}
-
 	}
 
 	if (isIndentablePreprocessorBlck
