@@ -43,6 +43,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <filesystem>
+
 // includes for recursive getFileNames() function
 #ifdef _WIN32
 	#undef UNICODE		// use ASCII windows functions
@@ -76,11 +78,10 @@ namespace astyle {
 //
 // console build variables
 #ifndef ASTYLE_LIB
+	char g_fileSeparator = std::filesystem::path::preferred_separator;
 	#ifdef _WIN32
-		char g_fileSeparator = '\\';     // Windows file separator
 		bool g_isCaseSensitive = false;  // Windows IS NOT case sensitive
 	#else
-		char g_fileSeparator = '/';      // Linux file separator
 		bool g_isCaseSensitive = true;   // Linux IS case sensitive
 	#endif	// _WIN32
 #endif	// ASTYLE_LIB
