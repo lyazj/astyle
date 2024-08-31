@@ -332,7 +332,7 @@ private:	// functions
 	bool isOption(const std::string& arg, const char* op);
 	bool isOption(const std::string& arg, const char* a, const char* b);
 	bool isParamOption(const std::string& arg, const char* option);
-	bool isPathExclued(const std::string& subPath);
+	bool isPathExcluded(const std::string& subPath);
 	void launchDefaultBrowser(const char* filePathIn = nullptr) const;
 	void printHelp() const;
 	void printMsg(const char* msg, const std::string& data) const;
@@ -387,6 +387,14 @@ private:
 void  STDCALL javaErrorHandler(int errorNumber, const char* errorMessage);
 char* STDCALL javaMemoryAlloc(unsigned long memoryNeeded);
 // the following function names are constructed from method names in the calling java program
+
+extern "C" EXPORT
+jstring STDCALL Java_AStyleInterface_AStyleGetVersion(JNIEnv* env, jclass);
+extern "C" EXPORT
+jstring STDCALL Java_AStyleInterface_AStyleMain(JNIEnv* env,
+                                                jobject obj,
+                                                jstring textInJava,
+                                                jstring optionsJava);
 extern "C" EXPORT
 jstring STDCALL Java_cc_arduino_packages_formatter_AStyleInterface_AStyleGetVersion(JNIEnv* env, jclass);
 extern "C" EXPORT

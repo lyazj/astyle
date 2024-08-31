@@ -401,7 +401,6 @@ void ASConsole::formatCinToCout()
 	initializeOutputEOL(formatter.getLineEndFormat());
 	formatter.init(&streamIterator);
 
-
 	while (formatter.hasMoreLines())
 	{
 		std::cout << formatter.nextLine();
@@ -952,7 +951,7 @@ void ASConsole::getFileNames(const std::string& directory, const std::vector<std
 				continue;
 			// if a sub directory and recursive, save sub directory
 			std::string subDirectoryPath = directory + g_fileSeparator + findFileData.cFileName;
-			if (isPathExclued(subDirectoryPath))
+			if (isPathExcluded(subDirectoryPath))
 				printMsg(_("Exclude  %s\n"), subDirectoryPath.substr(mainDirectoryLength));
 			else
 				subDirectory.emplace_back(subDirectoryPath);
@@ -961,7 +960,7 @@ void ASConsole::getFileNames(const std::string& directory, const std::vector<std
 
 		std::string filePathName = directory + g_fileSeparator + findFileData.cFileName;
 		// check exclude before wildcmp to avoid "unmatched exclude" error
-		bool isExcluded = isPathExclued(filePathName);
+		bool isExcluded = isPathExcluded(filePathName);
 		// save file name if wildcard match
 		for (const std::string& wildcard : wildcards)
 		{
@@ -1185,7 +1184,7 @@ void ASConsole::getFileNames(const std::string& directory, const std::vector<std
 		// if a sub directory and recursive, save sub directory
 		if (S_ISDIR(statbuf.st_mode) && isRecursive)
 		{
-			if (isPathExclued(entryFilepath))
+			if (isPathExcluded(entryFilepath))
 				printMsg(_("Exclude  %s\n"), entryFilepath.substr(mainDirectoryLength));
 			else
 				subDirectory.emplace_back(entryFilepath);
@@ -1196,7 +1195,7 @@ void ASConsole::getFileNames(const std::string& directory, const std::vector<std
 		if (S_ISREG(statbuf.st_mode))
 		{
 			// check exclude before wildcmp to avoid "unmatched exclude" error
-			bool isExcluded = isPathExclued(entryFilepath);
+			bool isExcluded = isPathExcluded(entryFilepath);
 			// save file name if wildcard match
 			for (const std::string& wildcard : wildcards)
 			{
@@ -1616,12 +1615,9 @@ bool ASConsole::isParamOption(const std::string& arg, const char* option)
 // used for both directories and filenames
 // updates the g_excludeHitsVector
 // return true if a match
-bool ASConsole::isPathExclued(const std::string& subPath)
+bool ASConsole::isPathExcluded(const std::string& subPath)
 {
-	bool retVal = false;
-
-	// read the exclude std::vector checking for a match
-	for (size_t i = 0; i < excludeVector.size(); i++)
+	for (size_t i = 0; i < excludeVector.size(); ++i)
 	{
 		std::string exclude = excludeVector[i];
 
@@ -1629,33 +1625,27 @@ bool ASConsole::isPathExclued(const std::string& subPath)
 			continue;
 
 		size_t compareStart = subPath.length() - exclude.length();
-		// subPath compare must start with a directory name
-		if (compareStart > 0)
-		{
-			char lastPathChar = subPath[compareStart - 1];
-			if (lastPathChar != g_fileSeparator)
-				continue;
-		}
+
+		if (compareStart > 0 && subPath[compareStart - 1] != g_fileSeparator)
+			continue;
 
 		std::string compare = subPath.substr(compareStart);
+
 		if (!g_isCaseSensitive)
 		{
-			// make it case insensitive for Windows
-			for (size_t j = 0; j < compare.length(); j++)
-				compare[j] = (char) tolower(compare[j]);
-			for (size_t j = 0; j < exclude.length(); j++)
-				exclude[j] = (char) tolower(exclude[j]);
+			std::transform(compare.begin(), compare.end(), compare.begin(), ::tolower);
+			std::transform(exclude.begin(), exclude.end(), exclude.begin(), ::tolower);
 		}
-		// compare sub directory to exclude data - must check them all
+
 		if (compare == exclude)
 		{
 			excludeHitsVector[i] = true;
-			retVal = true;
-			break;
+			return true;
 		}
 	}
-	return retVal;
+    return false;
 }
+
 
 void ASConsole::printHelp() const
 {
@@ -2602,21 +2592,7 @@ void ASConsole::sleep(int seconds) const
 
 bool ASConsole::stringEndsWith(std::string_view str, std::string_view suffix) const
 {
-	int strIndex = (int) str.length() - 1;
-	int suffixIndex = (int) suffix.length() - 1;
-
-	while (strIndex >= 0 && suffixIndex >= 0)
-	{
-		if (tolower(str[strIndex]) != tolower(suffix[suffixIndex]))
-			return false;
-
-		--strIndex;
-		--suffixIndex;
-	}
-	// suffix longer than string
-	if (strIndex < 0 && suffixIndex >= 0)
-		return false;
-	return true;
+    return str.size() >= suffix.size() && str.compare(str.size()-suffix.size(), suffix.size(), suffix) == 0;
 }
 
 void ASConsole::updateExcludeVector(const std::string& suffixParam)
@@ -4003,6 +3979,12 @@ using namespace astyle;
 // called by a java program to get the version number
 // the function name is constructed from method names in the calling java program
 extern "C"  EXPORT
+jstring STDCALL Java_AStyleInterface_AStyleGetVersion(JNIEnv* env, jclass)
+{
+	return env->NewStringUTF(g_version);
+}
+
+extern "C"  EXPORT
 jstring STDCALL Java_cc_arduino_packages_formatter_AStyleInterface_AStyleGetVersion(JNIEnv* env, jclass)
 {
 	return env->NewStringUTF(g_version);
@@ -4010,6 +3992,17 @@ jstring STDCALL Java_cc_arduino_packages_formatter_AStyleInterface_AStyleGetVers
 
 // called by a java program to format the source code
 // the function name is constructed from method names in the calling java program
+
+extern "C" EXPORT
+jstring STDCALL Java_AStyleInterface_AStyleMain(JNIEnv* env,
+                                                jobject obj,
+                                                jstring textInJava,
+                                                jstring optionsJava)
+{
+	return Java_cc_arduino_packages_formatter_AStyleInterface_AStyleMain(env, obj, textInJava, optionsJava);
+}
+
+
 extern "C"  EXPORT
 jstring STDCALL Java_cc_arduino_packages_formatter_AStyleInterface_AStyleMain(JNIEnv* env,
                                                 jobject obj,
