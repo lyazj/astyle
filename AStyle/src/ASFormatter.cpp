@@ -1818,14 +1818,13 @@ std::string ASFormatter::nextLine()
 		size_t lastNonWsChar = currentLine.find_last_not_of(" \t", charNum - 1);
 		if (lastNonWsChar != std::string::npos) {
 			char lastChar = currentLine[lastNonWsChar];
-			if (lastChar == '(' || lastChar == '[' || lastChar == ',') {
+			if (lastChar == '(' || lastChar == ',') {
 				formattedLine = rtrim(formattedLine);
 				if (lastChar == ',') {
 					formattedLine += ' ';
 				}
 			}
 		}
-
 
 		// process pointers and references
 		// check newHeader to eliminate things like '&&' sequence
