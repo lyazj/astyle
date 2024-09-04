@@ -661,7 +661,7 @@ std::string ASFormatter::nextLine()
 		// ** isInPreprocessor will be automatically reset at the beginning
 		//    of a new line in getnextChar()
 		if (currentChar == '#'
-		        && currentLine.find_first_not_of(" \t") == (size_t) charNum
+		        //&& currentLine.find_first_not_of(" \t") == (size_t) charNum // #580
 		        && !isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE))
 		{
 			isInPreprocessor = true;
