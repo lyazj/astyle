@@ -92,6 +92,9 @@ parser:flag "--pad-comma"
 parser:flag "--pad-negation"
    :description "Insert space padding after negations"
 
+parser:flag "--pad-include"
+   :description "Insert space padding after include directives"
+
 parser:flag "--pad-paren"
    :description "Insert space padding around parenthesis on both the outside and the inside"
 

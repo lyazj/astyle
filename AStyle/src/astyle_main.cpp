@@ -2924,9 +2924,6 @@ bool ASOptions::parseOptions(std::vector<std::string>& optionsVector)
 
 void ASOptions::parseOption(const std::string& arg)
 {
-	NegationPaddingMode negationPaddingMode = NEGATION_PAD_NO_CHANGE;
-	IncludeDirectivePaddingMode includeDirectivePaddingMode = INCLUDE_PAD_NO_CHANGE;
-
 	if (isOption(arg, "A1", "style=allman") || isOption(arg, "style=bsd") || isOption(arg, "style=break"))
 	{
 		formatter.setFormattingStyle(STYLE_ALLMAN);
@@ -3212,19 +3209,19 @@ void ASOptions::parseOption(const std::string& arg)
 	}
 	else if (isOption(arg, "pad-negation"))
 	{
-		negationPaddingMode = NEGATION_PAD_AFTER;
+		formatter.setNegationPaddingMode(NEGATION_PAD_AFTER);
 	}
 	else if (isOption(arg, "pad-negation=before"))
 	{
-		negationPaddingMode = NEGATION_PAD_BEFORE;
+		formatter.setNegationPaddingMode(NEGATION_PAD_BEFORE);
 	}
 	else if (isOption(arg, "pad-include"))
 	{
-		includeDirectivePaddingMode = INCLUDE_PAD_AFTER;
+		formatter.setIncludeDirectivePaddingMode(INCLUDE_PAD_AFTER);
 	}
 	else if (isOption(arg, "pad-include=none"))
 	{
-		includeDirectivePaddingMode = INCLUDE_PAD_NONE;
+		formatter.setIncludeDirectivePaddingMode(INCLUDE_PAD_NONE);
 	}
 	else if (isOption(arg, "xg", "pad-comma"))
 	{
@@ -3427,10 +3424,6 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		isOptionError(arg);
 	}
-
-	formatter.setNegationPaddingMode(negationPaddingMode);
-	formatter.setIncludeDirectivePaddingMode(includeDirectivePaddingMode);
-
 }	// End of parseOption function
 
 // Continuation of parseOption.
