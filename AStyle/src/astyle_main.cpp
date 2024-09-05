@@ -43,6 +43,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <filesystem>
+
 // includes for recursive getFileNames() function
 #ifdef _WIN32
 	#undef UNICODE		// use ASCII windows functions
@@ -55,14 +57,7 @@
 	#include <dirent.h>
 	#include <sys/stat.h>
 	#include <unistd.h>
-	#ifdef __VMS
-		#include <unixlib.h>
-		#include <rms.h>
-		#include <ssdef.h>
-		#include <stsdef.h>
-		#include <lib$routines.h>
-		#include <starlet.h>
-	#endif /* __VMS */
+
 #endif
 
 //-----------------------------------------------------------------------------
@@ -83,11 +78,10 @@ namespace astyle {
 //
 // console build variables
 #ifndef ASTYLE_LIB
+	char g_fileSeparator = std::filesystem::path::preferred_separator;
 	#ifdef _WIN32
-		char g_fileSeparator = '\\';     // Windows file separator
 		bool g_isCaseSensitive = false;  // Windows IS NOT case sensitive
 	#else
-		char g_fileSeparator = '/';      // Linux file separator
 		bool g_isCaseSensitive = true;   // Linux IS case sensitive
 	#endif	// _WIN32
 #endif	// ASTYLE_LIB
@@ -406,7 +400,6 @@ void ASConsole::formatCinToCout()
 
 	initializeOutputEOL(formatter.getLineEndFormat());
 	formatter.init(&streamIterator);
-
 
 	while (formatter.hasMoreLines())
 	{
@@ -958,7 +951,7 @@ void ASConsole::getFileNames(const std::string& directory, const std::vector<std
 				continue;
 			// if a sub directory and recursive, save sub directory
 			std::string subDirectoryPath = directory + g_fileSeparator + findFileData.cFileName;
-			if (isPathExclued(subDirectoryPath))
+			if (isPathExcluded(subDirectoryPath))
 				printMsg(_("Exclude  %s\n"), subDirectoryPath.substr(mainDirectoryLength));
 			else
 				subDirectory.emplace_back(subDirectoryPath);
@@ -967,7 +960,7 @@ void ASConsole::getFileNames(const std::string& directory, const std::vector<std
 
 		std::string filePathName = directory + g_fileSeparator + findFileData.cFileName;
 		// check exclude before wildcmp to avoid "unmatched exclude" error
-		bool isExcluded = isPathExclued(filePathName);
+		bool isExcluded = isPathExcluded(filePathName);
 		// save file name if wildcard match
 		for (const std::string& wildcard : wildcards)
 		{
@@ -1191,7 +1184,7 @@ void ASConsole::getFileNames(const std::string& directory, const std::vector<std
 		// if a sub directory and recursive, save sub directory
 		if (S_ISDIR(statbuf.st_mode) && isRecursive)
 		{
-			if (isPathExclued(entryFilepath))
+			if (isPathExcluded(entryFilepath))
 				printMsg(_("Exclude  %s\n"), entryFilepath.substr(mainDirectoryLength));
 			else
 				subDirectory.emplace_back(entryFilepath);
@@ -1202,7 +1195,7 @@ void ASConsole::getFileNames(const std::string& directory, const std::vector<std
 		if (S_ISREG(statbuf.st_mode))
 		{
 			// check exclude before wildcmp to avoid "unmatched exclude" error
-			bool isExcluded = isPathExclued(entryFilepath);
+			bool isExcluded = isPathExcluded(entryFilepath);
 			// save file name if wildcard match
 			for (const std::string& wildcard : wildcards)
 			{
@@ -1622,12 +1615,9 @@ bool ASConsole::isParamOption(const std::string& arg, const char* option)
 // used for both directories and filenames
 // updates the g_excludeHitsVector
 // return true if a match
-bool ASConsole::isPathExclued(const std::string& subPath)
+bool ASConsole::isPathExcluded(const std::string& subPath)
 {
-	bool retVal = false;
-
-	// read the exclude std::vector checking for a match
-	for (size_t i = 0; i < excludeVector.size(); i++)
+	for (size_t i = 0; i < excludeVector.size(); ++i)
 	{
 		std::string exclude = excludeVector[i];
 
@@ -1635,33 +1625,27 @@ bool ASConsole::isPathExclued(const std::string& subPath)
 			continue;
 
 		size_t compareStart = subPath.length() - exclude.length();
-		// subPath compare must start with a directory name
-		if (compareStart > 0)
-		{
-			char lastPathChar = subPath[compareStart - 1];
-			if (lastPathChar != g_fileSeparator)
-				continue;
-		}
+
+		if (compareStart > 0 && subPath[compareStart - 1] != g_fileSeparator)
+			continue;
 
 		std::string compare = subPath.substr(compareStart);
+
 		if (!g_isCaseSensitive)
 		{
-			// make it case insensitive for Windows
-			for (size_t j = 0; j < compare.length(); j++)
-				compare[j] = (char) tolower(compare[j]);
-			for (size_t j = 0; j < exclude.length(); j++)
-				exclude[j] = (char) tolower(exclude[j]);
+			std::transform(compare.begin(), compare.end(), compare.begin(), ::tolower);
+			std::transform(exclude.begin(), exclude.end(), exclude.begin(), ::tolower);
 		}
-		// compare sub directory to exclude data - must check them all
+
 		if (compare == exclude)
 		{
 			excludeHitsVector[i] = true;
-			retVal = true;
-			break;
+			return true;
 		}
 	}
-	return retVal;
+    return false;
 }
+
 
 void ASConsole::printHelp() const
 {
@@ -2504,51 +2488,6 @@ void ASConsole::renameFile(const char* oldFileName, const char* newFileName, con
 // remove beginning file separator if requested and NOT a complete file path
 void ASConsole::standardizePath(std::string& path, bool removeBeginningSeparator /*false*/) const
 {
-#ifdef __VMS
-	struct FAB fab;
-	struct NAML naml;
-	char less[NAML$C_MAXRSS];
-	char sess[NAM$C_MAXRSS];
-	int r0_status;
-
-	// If we are on a VMS system, translate VMS style filenames to unix
-	// style.
-	fab = cc$rms_fab;
-	fab.fab$l_fna = (char*) -1;
-	fab.fab$b_fns = 0;
-	fab.fab$l_naml = &naml;
-	naml = cc$rms_naml;
-	strcpy(sess, path.c_str());
-	naml.naml$l_long_filename = (char*) sess;
-	naml.naml$l_long_filename_size = path.length();
-	naml.naml$l_long_expand = less;
-	naml.naml$l_long_expand_alloc = sizeof(less);
-	naml.naml$l_esa = sess;
-	naml.naml$b_ess = sizeof(sess);
-	naml.naml$v_no_short_upcase = 1;
-	r0_status = sys$parse(&fab);
-	if (r0_status == RMS$_SYN)
-	{
-		error("File syntax error", path.c_str());
-	}
-	else
-	{
-		if (!$VMS_STATUS_SUCCESS(r0_status))
-		{
-			(void) lib$signal(r0_status);
-		}
-	}
-	less[naml.naml$l_long_expand_size - naml.naml$b_ver] = '\0';
-	sess[naml.naml$b_esl - naml.naml$b_ver] = '\0';
-	if (naml.naml$l_long_expand_size > naml.naml$b_esl)
-	{
-		path = decc$translate_vms(less);
-	}
-	else
-	{
-		path = decc$translate_vms(sess);
-	}
-#endif /* __VMS */
 
 	// make sure separators are correct type (Windows or Linux)
 	for (size_t i = 0; i < path.length(); i++)
@@ -2653,21 +2592,7 @@ void ASConsole::sleep(int seconds) const
 
 bool ASConsole::stringEndsWith(std::string_view str, std::string_view suffix) const
 {
-	int strIndex = (int) str.length() - 1;
-	int suffixIndex = (int) suffix.length() - 1;
-
-	while (strIndex >= 0 && suffixIndex >= 0)
-	{
-		if (tolower(str[strIndex]) != tolower(suffix[suffixIndex]))
-			return false;
-
-		--strIndex;
-		--suffixIndex;
-	}
-	// suffix longer than string
-	if (strIndex < 0 && suffixIndex >= 0)
-		return false;
-	return true;
+    return str.size() >= suffix.size() && str.compare(str.size()-suffix.size(), suffix.size(), suffix) == 0;
 }
 
 void ASConsole::updateExcludeVector(const std::string& suffixParam)
@@ -2999,9 +2924,6 @@ bool ASOptions::parseOptions(std::vector<std::string>& optionsVector)
 
 void ASOptions::parseOption(const std::string& arg)
 {
-	NegationPaddingMode negationPaddingMode = NEGATION_PAD_NO_CHANGE;
-	IncludeDirectivePaddingMode includeDirectivePaddingMode = INCLUDE_PAD_NO_CHANGE;
-
 	if (isOption(arg, "A1", "style=allman") || isOption(arg, "style=bsd") || isOption(arg, "style=break"))
 	{
 		formatter.setFormattingStyle(STYLE_ALLMAN);
@@ -3287,19 +3209,19 @@ void ASOptions::parseOption(const std::string& arg)
 	}
 	else if (isOption(arg, "pad-negation"))
 	{
-		negationPaddingMode = NEGATION_PAD_AFTER;
+		formatter.setNegationPaddingMode(NEGATION_PAD_AFTER);
 	}
 	else if (isOption(arg, "pad-negation=before"))
 	{
-		negationPaddingMode = NEGATION_PAD_BEFORE;
+		formatter.setNegationPaddingMode(NEGATION_PAD_BEFORE);
 	}
 	else if (isOption(arg, "pad-include"))
 	{
-		includeDirectivePaddingMode = INCLUDE_PAD_AFTER;
+		formatter.setIncludeDirectivePaddingMode(INCLUDE_PAD_AFTER);
 	}
 	else if (isOption(arg, "pad-include=none"))
 	{
-		includeDirectivePaddingMode = INCLUDE_PAD_NONE;
+		formatter.setIncludeDirectivePaddingMode(INCLUDE_PAD_NONE);
 	}
 	else if (isOption(arg, "xg", "pad-comma"))
 	{
@@ -3502,10 +3424,6 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		isOptionError(arg);
 	}
-
-	formatter.setNegationPaddingMode(negationPaddingMode);
-	formatter.setIncludeDirectivePaddingMode(includeDirectivePaddingMode);
-
 }	// End of parseOption function
 
 // Continuation of parseOption.
@@ -4059,10 +3977,27 @@ jstring STDCALL Java_AStyleInterface_AStyleGetVersion(JNIEnv* env, jclass)
 	return env->NewStringUTF(g_version);
 }
 
+extern "C"  EXPORT
+jstring STDCALL Java_cc_arduino_packages_formatter_AStyleInterface_AStyleGetVersion(JNIEnv* env, jclass)
+{
+	return env->NewStringUTF(g_version);
+}
+
 // called by a java program to format the source code
 // the function name is constructed from method names in the calling java program
-extern "C"  EXPORT
+
+extern "C" EXPORT
 jstring STDCALL Java_AStyleInterface_AStyleMain(JNIEnv* env,
+                                                jobject obj,
+                                                jstring textInJava,
+                                                jstring optionsJava)
+{
+	return Java_cc_arduino_packages_formatter_AStyleInterface_AStyleMain(env, obj, textInJava, optionsJava);
+}
+
+
+extern "C"  EXPORT
+jstring STDCALL Java_cc_arduino_packages_formatter_AStyleInterface_AStyleMain(JNIEnv* env,
                                                 jobject obj,
                                                 jstring textInJava,
                                                 jstring optionsJava)

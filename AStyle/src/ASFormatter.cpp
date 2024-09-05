@@ -661,7 +661,7 @@ std::string ASFormatter::nextLine()
 		// ** isInPreprocessor will be automatically reset at the beginning
 		//    of a new line in getnextChar()
 		if (currentChar == '#'
-		        && currentLine.find_first_not_of(" \t") == (size_t) charNum
+		        //&& currentLine.find_first_not_of(" \t") == (size_t) charNum // #580
 		        && !isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE))
 		{
 			isInPreprocessor = true;
@@ -1815,6 +1815,17 @@ std::string ASFormatter::nextLine()
 			}
 		}
 
+		size_t lastNonWsChar = currentLine.find_last_not_of(" \t", charNum - 1);
+		if (lastNonWsChar != std::string::npos) {
+			char lastChar = currentLine[lastNonWsChar];
+			if (lastChar == '(' || lastChar == ',') {
+				formattedLine = rtrim(formattedLine);
+				if (lastChar == ',') {
+					formattedLine += ' ';
+				}
+			}
+		}
+
 		// process pointers and references
 		// check newHeader to eliminate things like '&&' sequence
 		if (newHeader != nullptr && !isJavaStyle()
@@ -1921,6 +1932,7 @@ std::string ASFormatter::nextLine()
 
 		//GL31
 		bool isDoubleOpenBrackets = isGSCStyle() && currentChar=='[' && peekNextChar() == '[';
+
 		if ((currentChar == '[' || currentChar == ']' ) && (shouldPadBracketsOutside || shouldPadBracketsInside || shouldUnPadBrackets) && !isDoubleOpenBrackets)
 		{
 			padParensOrBrackets('[', ']', false);
@@ -3618,6 +3630,7 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 	bool retval = false;
 
 	// to avoid problem with multiplications - we need LSP
+
 	if (currentChar == '*'
 		&& (pointerAlignment == PTR_ALIGN_TYPE || pointerAlignment == PTR_ALIGN_NAME )
 		&& parenthesesCount <= 0) {
@@ -3631,12 +3644,11 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 		}
 	}
 
-	if (currentChar == '&' &&
-		(currentHeader == &AS_IF
+	if (currentHeader == &AS_IF
 		|| currentHeader == &AS_ELSE
 		|| currentHeader == &AS_FOR
 		|| currentHeader == &AS_WHILE
-		|| currentHeader == &AS_DO)) {
+		|| currentHeader == &AS_DO) {
 		retval = false;
 	}
 
@@ -4759,13 +4771,17 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 	int spacesOutsideToDelete = 0;
 	int spacesInsideToDelete = 0;
 
+	bool shouldPadOutside = shouldPadParensOutside || shouldPadBracketsOutside;
+	bool shouldPadInside = shouldPadParensInside || shouldPadBracketsInside;
+	bool shouldUnPad = shouldUnPadParens || shouldUnPadBrackets;
+
 	if (currentChar == openDelim)
 	{
 		spacesOutsideToDelete = formattedLine.length() - 1;
 		spacesInsideToDelete = 0;
 
 		// compute spaces outside the opening paren to delete
-		if (shouldUnPadParens)
+		if (shouldUnPad)
 		{
 			char lastChar = ' ';
 			bool prevIsParenHeader = false;
@@ -4805,27 +4821,15 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 				}
 			}
 			// do not unpad operators, but leave them if already padded
-			if (shouldPadParensOutside || prevIsParenHeader)
+			if (shouldPadOutside || prevIsParenHeader) {
 				spacesOutsideToDelete--;
-			else if (lastChar == '|'          // check for ||
-			         || lastChar == '&'       // check for &&
-			         || lastChar == ','
-			         || (lastChar == openDelim && shouldPadParensInside)
-			         || (lastChar == '>' && !foundCastOperator)
-			         || lastChar == '<'
-			         || lastChar == '?'
-			         || lastChar == ':'
-			         || lastChar == ';'
-			         || lastChar == '='
-			         || lastChar == '+'
-			         || lastChar == '-'
-			         || lastChar == '*'
-			         || lastChar == '/'
-			         || lastChar == '%'
-			         || lastChar == '^'
-			        )
-			{
-				spacesOutsideToDelete--;
+			} else {
+				static const std::string operators = "|&<>,?:;=+-*/%^";
+				if (operators.find(lastChar) != std::string::npos ||
+					(lastChar == openDelim && shouldPadInside) ||
+					(lastChar == '>' && !foundCastOperator)) {
+					spacesOutsideToDelete--;
+				}
 			}
 
 			if (spacesOutsideToDelete > 0)
@@ -4839,7 +4843,7 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 		char peekedCharOutside = peekNextChar();
 		if (padFirstParen && ( (previousChar != openDelim && peekedCharOutside != closeDelim)  || shouldPadEmptyParens ) )
 			appendSpacePad();
-		else if (shouldPadParensOutside)
+		else if (shouldPadOutside)
 		{
 			// GH19
 			if (!(currentChar == openDelim && peekedCharOutside == closeDelim) || shouldPadEmptyParens)
@@ -4849,12 +4853,12 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 		appendCurrentChar();
 
 		// unpad open paren inside
-		if (shouldUnPadParens)
+		if (shouldUnPad)
 		{
 			size_t j = currentLine.find_first_not_of(" \t", charNum + 1);
 			if (j != std::string::npos)
 				spacesInsideToDelete = j - charNum - 1;
-			if (shouldPadParensInside)
+			if (shouldPadInside)
 				spacesInsideToDelete--;
 			if (spacesInsideToDelete > 0)
 			{
@@ -4870,20 +4874,20 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 
 		// pad open paren inside
 		char peekedCharInside = peekNextChar();
-		if (shouldPadParensInside)
+		if (shouldPadInside)
 			if (!(currentChar == openDelim && peekedCharInside == closeDelim))
 				appendSpaceAfter();
 	}
 	else if (currentChar == closeDelim)
 	{
 		// unpad close paren inside
-		if (shouldUnPadParens)
+		if (shouldUnPad)
 		{
 			spacesInsideToDelete = formattedLine.length();
 			size_t i = formattedLine.find_last_not_of(" \t");
 			if (i != std::string::npos)
 				spacesInsideToDelete = formattedLine.length() - 1 - i;
-			if (shouldPadParensInside)
+			if (shouldPadInside)
 				spacesInsideToDelete--;
 			if (spacesInsideToDelete > 0)
 			{
@@ -4893,7 +4897,7 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 		}
 
 		// pad close paren inside
-		if (shouldPadParensInside)
+		if (shouldPadInside)
 			if (!(previousChar == openDelim && currentChar == closeDelim))
 				appendSpacePad();
 
@@ -4901,7 +4905,7 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 
 		// pad close paren outside
 		char peekedCharOutside = peekNextChar();
-		if (shouldPadParensOutside)
+		if (shouldPadOutside)
 			if (peekedCharOutside != ';'
 			        && peekedCharOutside != ','
 			        && peekedCharOutside != '.'
@@ -4910,7 +4914,6 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 			        && peekedCharOutside != ']'){
 			        appendSpaceAfter();
 		}
-
 	}
 }
 
@@ -5893,11 +5896,8 @@ void ASFormatter::processPreprocessor()
 	{
 		size_t nextText = currentLine.find_first_not_of(" \t", charNum + 1);
 		if (nextText != std::string::npos) {
-			//std::cerr << "erase 2 " << currentLine<<"\n";
 			currentLine.erase(charNum + 1, nextText - charNum - 1);
-			//std::cerr << "erase 3 " << currentLine<<"\n";
 		}
-
 	}
 
 	if (isIndentablePreprocessorBlck
