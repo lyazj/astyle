@@ -3504,6 +3504,14 @@ bool ASFormatter::isDereferenceOrAddressOf() const
 		return false;
 	}
 
+	if ( currentChar == '*' && pointerAlignment == PTR_ALIGN_NAME )
+	{
+		size_t openParen = currentLine.rfind('(', charNum);
+    	if (openParen != std::string::npos) {
+    		return true;
+    	}
+	}
+
 	std::set<char> allowedChars = {'=', '.', '{', '>', '<', '?'};
 
 	if ( allowedChars.find(previousNonWSChar) != allowedChars.end()
@@ -4579,7 +4587,6 @@ void ASFormatter::formatPointerOrReferenceToName()
 
 	// do this before bumping charNum
 	bool isOldPRCentered = isPointerOrReferenceCentered();
-
 	size_t startNum = formattedLine.find_last_not_of(" \t");
 	if (startNum == std::string::npos)
 		startNum = 0;
@@ -4607,6 +4614,8 @@ void ASFormatter::formatPointerOrReferenceToName()
 		for (size_t i = charNum; i < currentLine.length() - 1 && isWhiteSpace(currentLine[i]); i++)
 			goForward(1);
 	}
+
+
 	char peekedChar = peekNextChar();
 	bool isAfterScopeResolution = previousNonWSChar == ':';		// check for ::
 	// if this is not the last thing on the line
