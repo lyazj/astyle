@@ -104,7 +104,7 @@ def get_library_name():
     elif platform.system() == "Darwin":
         libext = ".dylib"
     else:
-        error("Cannot indentify platform: " + platform.system())
+        error("Cannot identify platform: " + platform.system())
     # IronPython needs the '.'
     for file_name in os.listdir('.'):
         if (os.path.isfile(file_name)
@@ -138,7 +138,7 @@ def get_source_code_bytes(file_path):
     """
     # read the file as a byte string by declaring it as binary
     # version 3 will read unicode if not declared as binary
-    # IronPython must be explicitely converted to bytes???
+    # IronPython must be explicitly converted to bytes???
     try:
         file_in = open(file_path, 'rb')
         bytes_in = bytes(file_in.read())

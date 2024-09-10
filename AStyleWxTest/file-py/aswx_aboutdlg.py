@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-"""Check AboutDlgBase.h to AboutDlg.h to verify that all virtual fuctions
+"""Check AboutDlgBase.h to AboutDlg.h to verify that all virtual functions
    are overridden.
 """
 

@@ -67,7 +67,7 @@ def find_class_diffs(header_variables, class_variables):
 # -----------------------------------------------------------------------------
 
 def get_constructor_variables(class_variables, astyleiface_path):
-    """Read the AStyleIFace file and save the class constuctor variables."""
+    """Read the AStyleIFace file and save the class constructor variables."""
 
     class_lines = [0, 0]    # line numbers for class constructor
     class_total = 0			# total variables for class constructor

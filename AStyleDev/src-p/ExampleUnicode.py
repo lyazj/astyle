@@ -44,7 +44,7 @@ def main():
         text_in = get_source_code(file_path)
         # unicode must be encoded to utf-8 bytes
         # encoding to utf-8 will not cause an exception
-        # IronPython must be explicitely converted to bytes???
+        # IronPython must be explicitly converted to bytes???
         if __is_unicode__ or __is_iron_python__:
             text_in = bytes(text_in.encode('utf-8'))
             options_in = bytes(options.encode('utf-8'))
@@ -119,7 +119,7 @@ def get_library_name():
     elif platform.system() == "Darwin":
         libext = ".dylib"
     else:
-        error("Cannot indentify platform: " + platform.system())
+        error("Cannot identify platform: " + platform.system())
     # IronPython needs the '.'
     for file_name in os.listdir('.'):
         if (os.path.isfile(file_name)

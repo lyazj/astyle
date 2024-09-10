@@ -86,7 +86,7 @@ def change_static_configs(line, file_path):
         line = line.replace("true", "false")
     #
     # TESTS FOR VS 2010 ONLY
-    # Later relases use macros defined in a "props" file
+    # Later releases use macros defined in a "props" file
     # and macros are used for the variables.
     if "_vc10_" in file_path:
         line = change_vs2010_multiple_lines(line)
@@ -99,7 +99,7 @@ def change_static_configs(line, file_path):
 def change_vs2010_multiple_lines(line):
     """ TESTS FOR VS 2010 ONLY
         These tests change data that is defined in a Static ItemDefinitionGroup.
-        Later relases use macros defined in a "props" file.
+        Later releases use macros defined in a "props" file.
         Return the updated line.
     """
     old_lib = "wxmsw30" + "u_"
@@ -124,7 +124,7 @@ def change_vs2010_multiple_lines(line):
 def change_vs2010_single_line_data(line):
     """ TESTS FOR VS 2010 ONLY
         These tests change data that is defined on a single line.
-        Later relases use macros defined in a "props" file.
+        Later releases use macros defined in a "props" file.
         Return the updated line.
     """
     old_lib = "wxmsw30" + "u_"

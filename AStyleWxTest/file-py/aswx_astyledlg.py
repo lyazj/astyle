@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 
-"""Check AStyleDlgBase.h to AstyleDlg.h to verify that all virtual fuctions are overridden.
-   Check AStyleDlgBase.h to AstyleDlgBase.cpp to verify that all identifiers have an exent
+"""Check AStyleDlgBase.h to AstyleDlg.h to verify that all virtual functions are overridden.
+   Check AStyleDlgBase.h to AstyleDlgBase.cpp to verify that all identifiers have an extent
    and therefore a preview display.
    Check AStyleDlgBase.h to AstyleDlg.cpp to verify that all radio buttons hhave a
    bind event so a mouse click will be displayed in the preview widdow..

@@ -38,7 +38,7 @@ fi
 # astyle  -R  "%indir%\*.cpp"  "%indir%\*.h"
 # if [ $? -ne 0 ] ; then  read -sn1 -p "Error executing astyle!"; fi
 
-# variables for fle processing
+# variables for file processing
 #echo "processing files..."
 fileHasSpaces=false         # a file or directory name has spaces
 extLength=${#fileext}       # length of the file extension

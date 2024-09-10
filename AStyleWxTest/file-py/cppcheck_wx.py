@@ -505,9 +505,9 @@ def process_file_suppressions(file_suppression_list):
     """ Generate suppressions for an entire file.
     """
     file_suppression_list.append("// Suppressed on the Command Line\n")
-    file_suppression_list.append("// functionStatic is supressed for the entire project.\n")
-    file_suppression_list.append("// noValidConfiguration is supressed for the entire project.\n")
-    #~ file_suppression_list.append("// purgedConfiguration is supressed for the entire project.\n")
+    file_suppression_list.append("// functionStatic is suppressed for the entire project.\n")
+    file_suppression_list.append("// noValidConfiguration is suppressed for the entire project.\n")
+    #~ file_suppression_list.append("// purgedConfiguration is suppressed for the entire project.\n")
     file_suppression_list.append("//\n")
 
 # -----------------------------------------------------------------------------
