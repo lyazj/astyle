@@ -104,7 +104,7 @@ void ASEnhancer::enhance(std::string& line, bool isInNamespace, bool isInPreproc
 		nextLineIsDeclareIndent = false;
 	}
 
-	if (line.length() == 0
+	if (line.empty()
 	        && !isInEventTable
 	        && !isInDeclareSection
 	        && !emptyLineFill)
@@ -238,7 +238,7 @@ size_t ASEnhancer::findCaseColon(std::string_view line, size_t caseIndex) const
  */
 int ASEnhancer::indentLine(std::string& line, int indent) const
 {
-	if (line.length() == 0
+	if (line.empty()
 	        && !emptyLineFill)
 		return 0;
 

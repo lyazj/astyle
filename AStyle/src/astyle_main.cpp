@@ -568,7 +568,7 @@ std::string ASConsole::findProjectOptionFilePath(const std::string& fileName_) c
 	else
 	{
 		parent = getFullPathName(getCurrentDirectory(fileName_));
-		if (parent.size())
+		if (!parent.empty())
 		{
 			parent.push_back(g_fileSeparator);
 		}
@@ -677,7 +677,7 @@ bool ASConsole::getPreserveDate() const
 // for unit testing
 std::string ASConsole::getProjectOptionFileName() const
 {
-	assert(projectOptionFileName.length() > 0);
+	assert(!projectOptionFileName.empty());
 	// remove the directory path
 	size_t start = projectOptionFileName.find_last_of(g_fileSeparator);
 	if (start == std::string::npos)
@@ -745,14 +745,14 @@ void ASConsole::getTargetFilenames(std::string& targetFilename_,
 		std::string fileExtension = targetFilename_.substr(beg, sep - beg);
 		beg = sep + 1;
 		// remove whitespace
-		while (fileExtension.length() > 0
+		while (!fileExtension.empty()
 		        && (fileExtension[0] == ' ' || fileExtension[0] == '\t'))
 			fileExtension = fileExtension.erase(0, 1);
-		while (fileExtension.length() > 0
+		while (!fileExtension.empty()
 		        && (fileExtension[fileExtension.length() - 1] == ' '
 		            || fileExtension[fileExtension.length() - 1] == '\t'))
 			fileExtension = fileExtension.erase(fileExtension.length() - 1, 1);
-		if (fileExtension.length() > 0)
+		if (!fileExtension.empty())
 			targetFilenameVector.emplace_back(fileExtension);
 	}
 	if (targetFilenameVector.empty())
@@ -1406,7 +1406,7 @@ void ASConsole::launchDefaultBrowser(const char* filePathIn /*nullptr*/) const
 	while (searchDir != nullptr)
 	{
 		searchPath = searchDir;
-		if (searchPath.length() > 0
+		if (!searchPath.empty()
 		        && searchPath[searchPath.length() - 1] != g_fileSeparator)
 			searchPath.append(std::string(1, g_fileSeparator));
 		searchPath.append(fileOpen);
@@ -1482,7 +1482,7 @@ void ASConsole::getFilePaths(const std::string& filePath)
 		mainDirectoryLength = targetDirectory.length() + 1;    // +1 includes trailing separator
 	}
 
-	if (targetFilename.length() == 0)
+	if (targetFilename.empty())
 	{
 		fprintf(stderr, _("Missing filename in %s\n"), filePath.c_str());
 		error();
@@ -2917,7 +2917,7 @@ bool ASOptions::parseOptions(std::vector<std::string>& optionsVector)
 			subArg = "";
 		}
 	}
-	if (optionErrors.str().length() > 0)
+	if (!optionErrors.str().empty())
 		return false;
 	return true;
 }
@@ -3023,7 +3023,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int spaceNum = 4;
 		std::string spaceNumParam = getParam(arg, "t", "indent=tab=");
-		if (spaceNumParam.length() > 0)
+		if (!spaceNumParam.empty())
 			spaceNum = atoi(spaceNumParam.c_str());
 		if (spaceNum < 2 || spaceNum > 20)
 			isOptionError(arg);
@@ -3040,7 +3040,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int spaceNum = 4;
 		std::string spaceNumParam = getParam(arg, "T", "indent=force-tab=");
-		if (spaceNumParam.length() > 0)
+		if (!spaceNumParam.empty())
 			spaceNum = atoi(spaceNumParam.c_str());
 		if (spaceNum < 2 || spaceNum > 20)
 			isOptionError(arg);
@@ -3057,7 +3057,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int tabNum = 8;
 		std::string tabNumParam = getParam(arg, "xT", "indent=force-tab-x=");
-		if (tabNumParam.length() > 0)
+		if (!tabNumParam.empty())
 			tabNum = atoi(tabNumParam.c_str());
 		if (tabNum < 2 || tabNum > 20)
 			isOptionError(arg);
@@ -3074,7 +3074,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int spaceNum = 4;
 		std::string spaceNumParam = getParam(arg, "s", "indent=spaces=");
-		if (spaceNumParam.length() > 0)
+		if (!spaceNumParam.empty())
 			spaceNum = atoi(spaceNumParam.c_str());
 		if (spaceNum < 2 || spaceNum > 20)
 			isOptionError(arg);
@@ -3091,7 +3091,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int contIndent = 1;
 		std::string contIndentParam = getParam(arg, "xt", "indent-continuation=");
-		if (contIndentParam.length() > 0)
+		if (!contIndentParam.empty())
 			contIndent = atoi(contIndentParam.c_str());
 		if (contIndent < 0)
 			isOptionError(arg);
@@ -3104,7 +3104,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int minIndent = MINCOND_TWO;
 		std::string minIndentParam = getParam(arg, "m", "min-conditional-indent=");
-		if (minIndentParam.length() > 0)
+		if (!minIndentParam.empty())
 			minIndent = atoi(minIndentParam.c_str());
 		if (minIndent >= MINCOND_END)
 			isOptionError(arg);
@@ -3115,7 +3115,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int maxIndent = 40;
 		std::string maxIndentParam = getParam(arg, "M", "max-continuation-indent=");
-		if (maxIndentParam.length() > 0)
+		if (!maxIndentParam.empty())
 			maxIndent = atoi(maxIndentParam.c_str());
 		if (maxIndent < 40)
 			isOptionError(arg);
@@ -3235,7 +3235,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int keepEmptyLines = 2;
 		std::string keepEmptyLinesParam = getParam(arg, "squeeze-lines=");
-		if (keepEmptyLinesParam.length() > 0)
+		if (!keepEmptyLinesParam.empty())
 			keepEmptyLines = atoi(keepEmptyLinesParam.c_str());
 		if (keepEmptyLines < 1)
 			isOptionError(arg);
@@ -3307,7 +3307,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int align = 0;
 		std::string styleParam = getParam(arg, "k");
-		if (styleParam.length() > 0)
+		if (!styleParam.empty())
 			align = atoi(styleParam.c_str());
 		if (align < 1 || align > 3)
 			isOptionError(arg);
@@ -3338,7 +3338,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int align = 0;
 		std::string styleParam = getParam(arg, "W");
-		if (styleParam.length() > 0)
+		if (!styleParam.empty())
 			align = atoi(styleParam.c_str());
 		if (align < 0 || align > 3)
 			isOptionError(arg);
@@ -3355,7 +3355,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int maxLength = 50;
 		std::string maxLengthParam = getParam(arg, "max-code-length=");
-		if (maxLengthParam.length() > 0)
+		if (!maxLengthParam.empty())
 			maxLength = atoi(maxLengthParam.c_str());
 		if (maxLength < 50)
 			isOptionError(arg);
@@ -3368,7 +3368,7 @@ void ASOptions::parseOption(const std::string& arg)
 	{
 		int maxLength = 50;
 		std::string maxLengthParam = getParam(arg, "xC");
-		if (maxLengthParam.length() > 0)
+		if (!maxLengthParam.empty())
 			maxLength = atoi(maxLengthParam.c_str());
 		if (maxLength > 200)
 			isOptionError(arg);
@@ -3494,7 +3494,7 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 	else if (isParamOption(arg, "suffix="))
 	{
 		std::string suffixParam = getParam(arg, "suffix=");
-		if (suffixParam.length() > 0)
+		if (!suffixParam.empty())
 		{
 			console.setOrigSuffix(suffixParam);
 		}
@@ -3502,7 +3502,7 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 	else if (isParamOption(arg, "exclude="))
 	{
 		std::string suffixParam = getParam(arg, "exclude=");
-		if (suffixParam.length() > 0)
+		if (!suffixParam.empty())
 			console.updateExcludeVector(suffixParam);
 	}
 	else if (isOption(arg, "r", "R") || isOption(arg, "recursive"))
@@ -3557,7 +3557,7 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 	{
 		int lineendType = 0;
 		std::string lineendParam = getParam(arg, "z");
-		if (lineendParam.length() > 0)
+		if (!lineendParam.empty())
 			lineendType = atoi(lineendParam.c_str());
 		if (lineendType < 1 || lineendType > 3)
 			isOptionError(arg);
@@ -3644,7 +3644,7 @@ void ASOptions::importOptions(std::stringstream& in, std::vector<std::string>& o
 		}
 		while (in);
 
-		if (currentToken.length() != 0)
+		if (!currentToken.empty())
 			optionsVector.emplace_back(currentToken);
 		isInQuote = false;
 	}
@@ -3677,7 +3677,7 @@ bool ASOptions::isOption(const std::string& arg, const char* op1, const char* op
 
 void ASOptions::isOptionError(const std::string& arg)
 {
-	if (optionErrors.str().length() == 0)
+	if (optionErrors.str().empty())
 		optionErrors << "Invalid Artistic Style options:" << '\n';   // need main error message
 	optionErrors << "\t" << arg << '\n';
 }

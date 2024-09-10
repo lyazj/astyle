@@ -535,7 +535,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 	else
 	{
 		line = trim(originalLine);
-		if (line.length() > 0)
+		if (!line.empty())
 		{
 			if (line[0] == '{')
 				lineBeginsWithOpenBrace = true;
@@ -579,7 +579,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 	        && line.find("*INDENT-OFF*", 0) != std::string::npos)
 		isIndentModeOff = true;
 
-	if (line.length() == 0)
+	if (line.empty())
 	{
 		if (backslashEndsPrevLine)
 		{
@@ -612,7 +612,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 
 	// handle preprocessor commands
 	if (isInIndentablePreprocBlock
-	        && line.length() > 0
+	        && !line.empty()
 	        && line[0] != '#')
 	{
 		if (isIndentModeOff)
@@ -629,7 +629,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 
 	if (!isInComment
 	        && !isInQuoteContinuation
-	        && line.length() > 0
+	        && !line.empty()
 	        && ((line[0] == '#' && !isIndentedPreprocessor(line, 0))
 	            || backslashEndsPrevLine))
 	{
@@ -665,7 +665,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 				else
 					return indentedLine;
 			}
-			if (shouldIndentPreprocConditional && preproc.length() > 0)
+			if (shouldIndentPreprocConditional && !preproc.empty())
 			{
 
 				if (isIndentModeOff)
@@ -707,7 +707,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 		}
 
 		// check if the last char is a backslash
-		if (line.length() > 0)
+		if (!line.empty())
 			backslashEndsPrevLine = (line[line.length() - 1] == '\\');
 		// comments within the definition line can be continued without the backslash
 		if (isInPreprocessorUnterminatedComment(line))
@@ -792,7 +792,7 @@ std::string ASBeautifier::beautify(const std::string& originalLine)
 
 	if (isInDefine)
 	{
-		if (line.length() > 0 && line[0] == '#')
+		if (!line.empty() && line[0] == '#')
 		{
 			// the 'define' does not have to be attached to the '#'
 			std::string preproc = trim(line.substr(1));
@@ -2396,7 +2396,7 @@ std::string ASBeautifier::extractPreprocessorStatement(std::string_view line) co
 void ASBeautifier::adjustObjCMethodDefinitionIndentation(std::string_view line_)
 {
 	// register indent for Objective-C continuation line
-	if (line_.length() > 0
+	if (!line_.empty()
 	        && (line_[0] == '-' || line_[0] == '+'))
 	{
 		if (shouldAlignMethodColon && objCColonAlignSubsequent != -1)
