@@ -663,9 +663,9 @@ const std::string* ASBase::findHeader(std::string_view line, int i,
 		// the following accessor definitions are NOT headers
 		// goto default; is NOT a header
 		// default(int) keyword in C# is NOT a header
-		if ((header == &AS_GET
-		        || header == &AS_SET
-		        || header == &AS_DEFAULT)
+		if ((header == &ASResource::AS_GET
+		        || header == &ASResource::AS_SET
+		        || header == &ASResource::AS_DEFAULT)
 		        && (peekChar == '.' || peekChar == ';' || peekChar == '(' || peekChar == '='))
 			break;
 		return header;
