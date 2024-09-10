@@ -1626,7 +1626,7 @@ std::string ASFormatter::nextLine()
 			if (isCStyle() && findKeyword(currentLine, charNum, AS_AUTO)
 			        && (isBraceType(braceTypeStack->back(), NULL_TYPE)
 			            || isBraceType(braceTypeStack->back(), DEFINITION_TYPE))
-			        && (currentLine.find("(") != std::string::npos)) // #516 auto array initializer with braces should not be blocks
+			        && (currentLine.find('(') != std::string::npos)) // #516 auto array initializer with braces should not be blocks
 				foundTrailingReturnType = true;
 
 			// check for break/attach return type

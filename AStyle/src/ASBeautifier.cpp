@@ -2994,7 +2994,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 				{
 					++squareBracketCount;
 					// #525 Maybe check for opening brace in the line
-					if (squareBracketCount == 1 && isObjCStyle() && line.find("{", i + 1 ) == std::string::npos)
+					if (squareBracketCount == 1 && isObjCStyle() && line.find('{', i + 1 ) == std::string::npos)
 					{
 						isInObjCMethodCall = true;
 						isInObjCMethodCallFirst = true;
