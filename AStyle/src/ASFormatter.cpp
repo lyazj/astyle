@@ -3635,34 +3635,28 @@ bool ASFormatter::isPointerOrReferenceCentered() const
 bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 {
 	assert(currentChar == '*' || currentChar == '&' || currentChar == '^');
-	bool retval = false;
 
 	// to avoid problem with multiplications - we need LSP
 
-	if (currentChar == '*'
-		&& (pointerAlignment == PTR_ALIGN_TYPE || pointerAlignment == PTR_ALIGN_NAME )
-		&& parenthesesCount <= 0) {
-		return false;
-	}
+	bool retval = false;
+	if (word == "char"
+			|| word == "std::string"
+			|| word == "String"
+			|| word == "NSString"
+			|| word == "int"
+			|| word == "void"
+			|| word == "short"
+			|| word == "long"
+			|| word == "double"
+			|| word == "float"
+			|| (word.length() >= 6     // check end of word for _t
+				&& word.compare(word.length() - 2, 2, "_t") == 0)
+		)
+		retval = true;
 
-	for (char c: word){
-		if (isLegalNameChar(c)) {
-			retval = true;
-			break;
-		}
-	}
-
-	if (currentHeader == &AS_IF
-		|| currentHeader == &AS_ELSE
-		|| currentHeader == &AS_FOR
-		|| currentHeader == &AS_WHILE
-		|| currentHeader == &AS_DO) {
-		retval = false;
-	}
-
-	if (pointerAlignment == PTR_ALIGN_TYPE) {
-		return retval;
-	}
+	//if (pointerAlignment == PTR_ALIGN_TYPE) {
+	//	return retval;
+	//}
 
 	// check for C# object type "x is std::string"
 	if (retval && isSharpStyle())
