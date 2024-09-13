@@ -445,6 +445,8 @@ void ASConsole::formatFile(const std::string& fileName_)
 			formatter.setJavaStyle();
 		else if (stringEndsWith(fileName_, std::string(".cs")))
 			formatter.setSharpStyle();
+		else if (stringEndsWith(fileName_, std::string(".gsc")) || stringEndsWith(fileName_, std::string(".ghc")))
+			formatter.setGSCStyle();
 		else
 			formatter.setCStyle();
 	}

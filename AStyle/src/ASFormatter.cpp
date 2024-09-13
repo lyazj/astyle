@@ -4245,7 +4245,7 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	                  && !(newOperator == &ASResource::AS_MINUS && isInExponent())
 	                  && !(newOperator == &ASResource::AS_PLUS && isInExponent())
 	                  && !(newOperator == &ASResource::AS_GR && previousChar == '-') //https://sourceforge.net/p/astyle/bugs/544/
-	                  && !((newOperator == &ASResource::AS_PLUS || newOperator == &ASResource::AS_MINUS)	// check for unary plus or minus
+	                  && !((newOperator == &ASResource::AS_PLUS || newOperator == &ASResource::AS_MINUS || (newOperator == &ASResource::AS_MOD && isGSCStyle()))	// check for unary plus or minus
 	                       && (allowedChars.find(previousNonWSChar) != allowedChars.end()))
 	                  && !(newOperator == &ASResource::AS_MULT
 	                       && (previousNonWSChar == '.'
