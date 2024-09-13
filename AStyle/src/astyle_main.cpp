@@ -2066,10 +2066,10 @@ void ASConsole::printHelp() const
 	std::cout << "    Indent an Objective-C source file.\n";
 	std::cout << '\n';
 	std::cout << "    --mode=js\n";
-	std::cout << "    Indent a JavaScript source file (experimental).\n";
+	std::cout << "    Indent a JavaScript source file.\n";
 	std::cout << '\n';
 	std::cout << "    --mode=gsc\n";
-	std::cout << "    Indent a GSC source file (experimental).\n";
+	std::cout << "    Indent a GSC source file.\n";
 	std::cout << '\n';
 	std::cout << "Objective-C Options:\n";
 	std::cout << "--------------------\n";
@@ -2182,7 +2182,7 @@ void ASConsole::printHelp() const
 	std::cout << "    Open the HTML help file \"astyle.html\" in the default browser.\n";
 	std::cout << "    The documentation must be installed in the standard install path.\n";
 	std::cout << '\n';
-	std::cout << "    --html=####\n";
+	std::cout << "    --html=#### (deprecated)\n";
 	std::cout << "    Open a HTML help file in the default browser using the file path\n";
 	std::cout << "    ####. The path may include a directory path and a file name, or a\n";
 	std::cout << "    file name only. Paths containing spaces must be enclosed in quotes.\n";

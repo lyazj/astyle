@@ -4233,44 +4233,49 @@ void ASFormatter::padOperators(const std::string* newOperator)
 	char nextNonWSChar = ASBase::peekNextChar(currentLine, charNum);
 	std::set<char> allowedChars = {'(', '[', '=', ',', ':', '{'};
 
-	bool shouldPad = (newOperator != &ASResource::AS_SCOPE_RESOLUTION
-	                  && newOperator != &ASResource::AS_PLUS_PLUS
-	                  && newOperator != &ASResource::AS_MINUS_MINUS
-	                  && (newOperator != &ASResource::AS_NOT || negationPadMode != NEGATION_PAD_NO_CHANGE)  // TODO 571
-	                  && newOperator != &ASResource::AS_BIT_NOT
-	                  && newOperator != &ASResource::AS_ARROW
-	                  && !(newOperator == &ASResource::AS_COLON && !foundQuestionMark			// objC methods
-	                       && (isInObjCMethodDefinition || isInObjCInterface
-	                           || isInObjCSelector || squareBracketCount != 0))
-	                  && !(newOperator == &ASResource::AS_MINUS && isInExponent())
-	                  && !(newOperator == &ASResource::AS_PLUS && isInExponent())
-	                  && !(newOperator == &ASResource::AS_GR && previousChar == '-') //https://sourceforge.net/p/astyle/bugs/544/
-	                  && !((newOperator == &ASResource::AS_PLUS || newOperator == &ASResource::AS_MINUS || (newOperator == &ASResource::AS_MOD && isGSCStyle()))	// check for unary plus or minus
-	                       && (allowedChars.find(previousNonWSChar) != allowedChars.end()))
-	                  && !(newOperator == &ASResource::AS_MULT
-	                       && (previousNonWSChar == '.'
-	                           || previousNonWSChar == '>'))    // check for ->
-	                  && !(newOperator == &ASResource::AS_MULT && peekNextChar() == '>')
-	                  && !((isInTemplate || isImmediatelyPostTemplate)
-	                       && (newOperator == &ASResource::AS_LS || newOperator == &ASResource::AS_GR))
-	                  && !(newOperator == &ASResource::AS_GCC_MIN_ASSIGN
-	                       && ASBase::peekNextChar(currentLine, charNum + 1) == '>')
-	                  && !(newOperator == &ASResource::AS_GR && previousNonWSChar == '?')
-	                  && !(newOperator == &ASResource::AS_QUESTION			// check for Java wildcard
-	                       && isJavaStyle()
-	                       && (previousNonWSChar == '<'
-	                           || nextNonWSChar == '>'
-	                           || nextNonWSChar == '.'))
-	                  && !(newOperator == &ASResource::AS_QUESTION			// check for C# null conditional operator
-	                       && isSharpStyle()
-	                       && (nextNonWSChar == '.'
-	                           || nextNonWSChar == '['))
-	                  && !isCharImmediatelyPostOperator
-	                  && !isInCase
-	                  && !isInAsm
-	                  && !isInAsmOneLine
-	                  && !isInAsmBlock
-	                 );
+	bool isUnaryOrModOperator = (newOperator == &ASResource::AS_PLUS ||
+							newOperator == &ASResource::AS_MINUS ||
+							(newOperator == &ASResource::AS_MOD && isGSCStyle()));
+
+	bool isExponentOperator = (newOperator == &ASResource::AS_MINUS && isInExponent()) ||
+							(newOperator == &ASResource::AS_PLUS && isInExponent());
+
+	bool isSpecialColon = (newOperator == &ASResource::AS_COLON && !foundQuestionMark &&
+						(isInObjCMethodDefinition || isInObjCInterface || isInObjCSelector || squareBracketCount != 0));
+
+	bool isJavaWildcard = (newOperator == &ASResource::AS_QUESTION && isJavaStyle() &&
+						(previousNonWSChar == '<' || nextNonWSChar == '>' || nextNonWSChar == '.'));
+
+	bool isSharpNullConditional = (newOperator == &ASResource::AS_QUESTION && isSharpStyle() &&
+								(nextNonWSChar == '.' || nextNonWSChar == '['));
+
+	bool isSpecialTemplateOperator = (isInTemplate || isImmediatelyPostTemplate) &&
+									(newOperator == &ASResource::AS_LS || newOperator == &ASResource::AS_GR);
+
+	bool shouldPad = (newOperator != &ASResource::AS_SCOPE_RESOLUTION &&
+                  newOperator != &ASResource::AS_PLUS_PLUS &&
+                  newOperator != &ASResource::AS_MINUS_MINUS &&
+                  (newOperator != &ASResource::AS_NOT || negationPadMode != NEGATION_PAD_NO_CHANGE) &&
+                  newOperator != &ASResource::AS_BIT_NOT &&
+                  newOperator != &ASResource::AS_ARROW &&
+                  !isSpecialColon &&
+                  !isExponentOperator &&
+                  !(newOperator == &ASResource::AS_GR && previousChar == '-') &&
+                  !(isUnaryOrModOperator && (allowedChars.find(previousNonWSChar) != allowedChars.end())) &&
+                  !(newOperator == &ASResource::AS_MULT &&
+                    (previousNonWSChar == '.' || previousNonWSChar == '>')) &&
+                  !(newOperator == &ASResource::AS_MULT && peekNextChar() == '>') &&
+                  !isSpecialTemplateOperator &&
+                  !(newOperator == &ASResource::AS_GCC_MIN_ASSIGN &&
+                    ASBase::peekNextChar(currentLine, charNum + 1) == '>') &&
+                  !(newOperator == &ASResource::AS_GR && previousNonWSChar == '?') &&
+                  !isJavaWildcard &&
+                  !isSharpNullConditional &&
+                  !isCharImmediatelyPostOperator &&
+                  !isInCase &&
+                  !isInAsm &&
+                  !isInAsmOneLine &&
+                  !isInAsmBlock);
 
 	// pad before operator
 	if (shouldPad
