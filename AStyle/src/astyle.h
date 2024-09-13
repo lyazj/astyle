@@ -672,7 +672,7 @@ public:	// functions
 	LineEndFormat getLineEndFormat() const;
 	bool getIsLineReady() const;
 	void setFormattingStyle(FormatStyle style);
-	void setAddBracesMode(int state);
+	void setAddBracesMode(bool state);
 	void setAddOneLineBracesMode(bool state);
 	void setRemoveBracesMode(bool state);
 	void setAttachClass(bool state);

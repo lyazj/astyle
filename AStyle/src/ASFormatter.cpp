@@ -81,7 +81,7 @@ ASFormatter::ASFormatter()
 	shouldAttachReturnTypeDecl = false;
 	shouldBreakElseIfs = false;
 	shouldBreakLineAfterLogical = false;
-	shouldAddBraces = 0;
+	shouldAddBraces = false;
 	shouldAddOneLineBraces = false;
 	shouldRemoveBraces = false;
 	shouldPadMethodColon = false;
@@ -461,7 +461,7 @@ void ASFormatter::fixOptionVariableConflicts()
 		// only shouldAddBraces should be set to true
 		if (shouldAddOneLineBraces)
 		{
-			shouldAddBraces = 1;
+			shouldAddBraces = true;
 			shouldAddOneLineBraces = false;
 		}
 	}
@@ -2033,13 +2033,13 @@ void ASFormatter::setFormattingStyle(FormatStyle style)
 /**
  * set the add braces mode.
  * options:
- *    2    braces added to headers for (nested) single line statements.
- *    1    braces added to headers for single line statements.
- *    0    braces NOT added to headers for single line statements.
+
+ *    true    braces added to headers for single line statements.
+ *    false    braces NOT added to headers for single line statements.
  *
  * @param state         the add braces state.
  */
-void ASFormatter::setAddBracesMode(int state)
+void ASFormatter::setAddBracesMode(bool state)
 {
 	shouldAddBraces = state;
 }
@@ -4814,6 +4814,7 @@ void ASFormatter::padParensOrBrackets(char openDelim, char closeDelim, bool padF
 					        && !prevWord.empty()
 					        && isCharPotentialHeader(prevWord, 0))
 						prevWordH = ASBase::findHeader(prevWord, 0, headers);
+
 					if (prevWordH != nullptr)
 						prevIsParenHeader = true;    // don't unpad
 					else if (prevWord == ASResource::AS_RETURN)
@@ -5185,7 +5186,6 @@ void ASFormatter::formatOpeningBrace(BraceType braceType)
 			if (isOkToBreakBlock(braceType)
 			        && !(isCharImmediatelyPostComment && isCharImmediatelyPostLineComment)	// don't attach if two comments on the line
 			        && !isImmediatelyPostPreprocessor
-//			        && peekNextChar() != '}'		// don't attach { }		// removed release 2.03
 			        && previousCommandChar != '{'	// don't attach { {
 			        && previousCommandChar != '}'	// don't attach } {
 			        && previousCommandChar != ';')	// don't attach ; {
@@ -5284,8 +5284,6 @@ void ASFormatter::formatClosingBrace(BraceType braceType)
 		        || isCharImmediatelyPostLineComment
 		        || isCharImmediatelyPostComment
 		        || (isImmediatelyPostPreprocessor && (int) currentLine.find_first_not_of(" \t") == charNum)
-//		        || (isBraceType(braceType, CLASS_TYPE) && isOkToBreakBlock(braceType) && previousNonWSChar != '{')
-//		        || (isBraceType(braceType, NAMESPACE_TYPE) && isOkToBreakBlock(braceType) && previousNonWSChar != '{')
 		    )
 		        && (!isBraceType(braceType, SINGLE_LINE_TYPE) || isOkToBreakBlock(braceType)))
 		{
@@ -5407,8 +5405,7 @@ void ASFormatter::formatArrayBraces(BraceType braceType, bool isOpeningArrayBrac
 							// TODO: debug the following line
 							testForTimeToSplitFormattedLine();		// line length will have changed
 
-							if (currentLineBeginsWithBrace
-							        && currentLineFirstBraceNum == (size_t) charNum)
+							if (currentLineBeginsWithBrace && currentLineFirstBraceNum == (size_t) charNum)
 								shouldBreakLineAtNextChar = true;
 						}
 						else
@@ -5878,12 +5875,7 @@ void ASFormatter::processPreprocessor()
 
 	// if top level it is potentially indentable
 	if (shouldIndentPreprocBlock
-		&& (isBraceType(braceTypeStack->back(), NULL_TYPE)
-		|| isBraceType(braceTypeStack->back(), NAMESPACE_TYPE)
-
-		/* #521 enables preprocessor indent within { ... } block, but disables indent of code between #ifdefs  */
-		//|| getFileType() == C_TYPE
-		)
+		&& (isBraceType(braceTypeStack->back(), NULL_TYPE) || isBraceType(braceTypeStack->back(), NAMESPACE_TYPE))
 		&& !foundClassHeader
 		&& !isInClassInitializer
 		&& sourceIterator->tellg() > preprocBlockEnd)
@@ -6002,8 +5994,7 @@ bool ASFormatter::isCurrentBraceBroken() const
 	// check braces
 	if (isBraceType((*braceTypeStack)[stackEnd], EXTERN_TYPE))
 	{
-		if (currentLineBeginsWithBrace
-		        || braceFormatMode == RUN_IN_MODE)
+		if (currentLineBeginsWithBrace || braceFormatMode == RUN_IN_MODE)
 		{
 			breakBrace = true;
 		}
@@ -6719,10 +6710,8 @@ bool ASFormatter::addBracesToStatement()
 		return false;
 
 
-	bool isLastElseBranch = shouldAddBraces == 2 && (previousHeader == &ASResource::AS_IF && currentHeader == &ASResource::AS_ELSE);
-
 	// old behavior
-	if (shouldAddBraces==1 || isLastElseBranch) {
+	if (shouldAddBraces) {
 
 			// do not add if a header follows
 		if (isCharPotentialHeader(currentLine, charNum))
@@ -6741,80 +6730,6 @@ bool ASFormatter::addBracesToStatement()
 			currentLine.append(" }");
 		else
 			currentLine.insert(nextSemiColon + 1, " }");
-
-	} else { // nested single line statements
-
-		if (isInExplicitBlock > 1 && !closingBracesCount) {
-			return false;
-		}
-
-		// find the next semi-colon
-		size_t nextSemiColon = charNum;
-		if (currentChar != ';')
-			nextSemiColon = findNextChar(currentLine, ';', charNum + 1);
-
-		bool currentIsForHeader = false;
-		if (nextSemiColon != std::string::npos) {
-			if (isCharPotentialHeader(currentLine, (int) currentLine.find_first_not_of(" \t") )) {
-				if (findHeader(headers) == &ASResource::AS_FOR) {
-					currentIsForHeader = true;
-					--closingBracesCount;
-				}
-		}
-
-		// add closing brace before changing the line length
-		++closingBracesCount;
-		if (!currentIsForHeader)
-
-			while (closingBracesCount--) {
-				if (nextSemiColon == currentLine.length() - 1)
-					currentLine.append(" }");
-				else
-					currentLine.insert(nextSemiColon + 1, " }");
-			}
-		}
-
-		++closingBracesCount;
-
-		nextSemiColon = currentLine.find('{');
-		if (nextSemiColon != std::string::npos){
-			--closingBracesCount;
-			return false;
-		} else {
-
-			ASPeekStream stream(sourceIterator);
-
-			// loop until { or other symbol is found
-			while (stream.hasMoreLines()) {
-
-				std::string nextLine = ASBeautifier::trim(stream.peekNextLine());
-				if (nextLine.empty())
-					continue;
-
-				if (nextLine[0] == '{' || nextLine[nextLine.size()-1] == '{') {
-					--closingBracesCount;
-					return false;
-				}
-
-				if (isCharPotentialHeader(nextLine, 0) && ASBase::findHeader(nextLine, 0, headers) != nullptr ) {
-					break;
-				}
-
-				// this breaks normal if else blocks
-				if (nextLine[nextLine.size()-1] != ';' && nextLine[nextLine.size()-1] != '}') {
-					isInMultlineStatement = true;
-					continue;
-				}
-
-				if (isInMultlineStatement) {
-					--closingBracesCount;
-					return false;
-				}
-
-				break;
-			}
-		}
-
 	}
 
 	// add opening brace
