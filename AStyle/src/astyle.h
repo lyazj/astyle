@@ -668,8 +668,9 @@ public:	// functions
 	void init(ASSourceIterator* si) override;
 
 	bool hasMoreLines() const;
-	std::string nextLine();
-	LineEndFormat getLineEndFormat() const;
+        void extracted();
+        std::string nextLine();
+        LineEndFormat getLineEndFormat() const;
 	bool getIsLineReady() const;
 	void setFormattingStyle(FormatStyle style);
 	void setAddBracesMode(bool state);
@@ -854,6 +855,25 @@ private:  // functions
 	std::string peekNextText(std::string_view firstLine,
 	                         bool endOnEmptyLine = false,
 	                         const std::shared_ptr<ASPeekStream>& streamArg = nullptr) const;
+
+	bool handleImmediatelyPostHeaderSection();
+	bool handlePassedSemicolonSection();
+	void handleAttachedReturnTypes();
+	void handleClosedBracesOrParens();
+	void handleBraces();
+	void handleBreakLine();
+	bool handlePotentialHeader(const std::string *);
+	void handleEndOfBlock();
+	void handleColonSection();
+	void handlePotentialHeaderPart2();
+	void handlePotentialOperator(const std::string *);
+	void handleParens();
+	void handleOpenParens();
+
+	void formatFirstOpenBrace(BraceType braceType);
+	void formatOpenBrace();
+	void formatCloseBrace(BraceType braceType);
+
 
 private:  // variables
 	int formatterFileType;

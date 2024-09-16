@@ -485,14 +485,1165 @@ void ASFormatter::fixOptionVariableConflicts()
 		setModifierIndent(false);
 }
 
-/**
- * get the next formatted line.
- *
- * @return    formatted line.
- */
-std::string ASFormatter::nextLine()
+bool ASFormatter::handleImmediatelyPostHeaderSection()
 {
-	const std::string* newHeader = nullptr;
+	// should braces be added
+	if (currentChar != '{'
+			&& shouldAddBraces
+			&& currentChar != '#'	// don't add to preprocessor
+			&& (shouldBreakOneLineStatements || !isHeaderInMultiStatementLine)
+			&& isOkToBreakBlock(braceTypeStack->back()))
+	{
+		bool bracesAdded = addBracesToStatement();
+		if (bracesAdded && !shouldAddOneLineBraces)
+		{
+			size_t firstText = currentLine.find_first_not_of(" \t");
+			assert(firstText != std::string::npos);
+			if ((int) firstText == charNum || shouldBreakOneLineHeaders)
+				breakCurrentOneLineBlock = true;
+		}
+	}
+	// should braces be removed
+	else if (currentChar == '{' && shouldRemoveBraces)
+	{
+		bool bracesRemoved = removeBracesFromStatement();
+		if (bracesRemoved)
+		{
+			shouldRemoveNextClosingBrace = true;
+			if (isBeforeAnyLineEndComment(charNum))
+				spacePadNum--;
+			else if (shouldBreakOneLineBlocks
+						|| (currentLineBeginsWithBrace
+							&& currentLine.find_first_not_of(" \t") != std::string::npos))
+				shouldBreakLineAtNextChar = true;
+			return false;
+		}
+	}
+
+	// break 'else-if' if shouldBreakElseIfs is requested
+	if (shouldBreakElseIfs
+			&& currentHeader == &ASResource::AS_ELSE
+			&& isOkToBreakBlock(braceTypeStack->back())
+			&& !isBeforeAnyComment()
+			&& (shouldBreakOneLineStatements || !isHeaderInMultiStatementLine))
+	{
+		std::string nextText = peekNextText(currentLine.substr(charNum));
+		if (!nextText.empty()
+				&& isCharPotentialHeader(nextText, 0)
+				&& ASBase::findHeader(nextText, 0, headers) == &ASResource::AS_IF)
+		{
+			isInLineBreak = true;
+		}
+	}
+
+	// break a header (e.g. if, while, else) from the following statement
+	if (shouldBreakOneLineHeaders
+			&& peekNextChar() != ' '
+			&& (shouldBreakOneLineStatements
+				|| (!isHeaderInMultiStatementLine
+					&& !isMultiStatementLine()))
+			&& isOkToBreakBlock(braceTypeStack->back())
+			&& !isBeforeAnyComment())
+	{
+		if (currentChar == '{')
+		{
+			if (!currentLineBeginsWithBrace)
+			{
+				if (isOneLineBlockReached(currentLine, charNum) == 3)
+					isInLineBreak = false;
+				else
+					breakCurrentOneLineBlock = true;
+			}
+		}
+		else if (currentHeader == &ASResource::AS_ELSE)
+		{
+			std::string nextText = peekNextText(currentLine.substr(charNum), true);
+			if (!nextText.empty()
+					&& ((isCharPotentialHeader(nextText, 0)
+							&& ASBase::findHeader(nextText, 0, headers) != &ASResource::AS_IF)
+						|| nextText[0] == '{'))
+				isInLineBreak = true;
+		}
+		else
+		{
+			// GH16 only break if header is present
+			if (currentHeader)
+				isInLineBreak = true;
+		}
+	}
+
+	isImmediatelyPostHeader = false;
+	return true;
+}
+
+bool ASFormatter::handlePassedSemicolonSection()
+{
+	isInAllocator = false; // GH16
+	isInMultlineStatement = false;
+	passedSemicolon = false;
+	if (parenStack->back() == 0 && !isCharImmediatelyPostComment && currentChar != ';') // allow ;;
+	{
+		// does a one-line block have ending comments?
+		if (isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE))
+		{
+			size_t blockEnd = currentLine.rfind(ASResource::AS_CLOSE_BRACE);
+			assert(blockEnd != std::string::npos);
+			// move ending comments to this formattedLine
+			if (isBeforeAnyLineEndComment(blockEnd))
+			{
+				size_t commentStart = currentLine.find_first_not_of(" \t", blockEnd + 1);
+				assert(commentStart != std::string::npos);
+				assert((currentLine.compare(commentStart, 2, "//") == 0)
+						|| (currentLine.compare(commentStart, 2, "/*") == 0));
+				formattedLine.append(getIndentLength() - 1, ' ');
+				// append comment
+				int charNumSave = charNum;
+				charNum = commentStart;
+				while (charNum < (int) currentLine.length())
+				{
+					currentChar = currentLine[charNum];
+					if (currentChar == '\t' && shouldConvertTabs)
+						convertTabToSpaces();
+					formattedLine.append(1, currentChar);
+					++charNum;
+				}
+				size_t commentLength = currentLine.length() - commentStart;
+				currentLine.erase(commentStart, commentLength);
+				charNum = charNumSave;
+				currentChar = currentLine[charNum];
+				testForTimeToSplitFormattedLine();
+			}
+		}
+		isInExecSQL = false;
+		shouldReparseCurrentChar = true;
+		if (formattedLine.find_first_not_of(" \t") != std::string::npos)
+			isInLineBreak = true;
+		if (needHeaderOpeningBrace)
+		{
+			isCharImmediatelyPostCloseBlock = true;
+			needHeaderOpeningBrace = false;
+		}
+		return false;
+	}
+	return true;
+}
+
+void ASFormatter::handleAttachedReturnTypes()
+{
+	if ((size_t) charNum == methodAttachCharNum)
+	{
+		int pa = pointerAlignment;
+		int ra = referenceAlignment;
+		int itemAlignment = (previousNonWSChar == '*' || previousNonWSChar == '^')
+							? pa : ((ra == REF_SAME_AS_PTR) ? pa : ra);
+		isInLineBreak = false;
+		if (previousNonWSChar == '*' || previousNonWSChar == '&' || previousNonWSChar == '^')
+		{
+			if (itemAlignment == REF_ALIGN_TYPE)
+			{
+				if (!formattedLine.empty()
+						&& !isWhiteSpace(formattedLine[formattedLine.length() - 1]))
+					formattedLine.append(1, ' ');
+			}
+			else if (itemAlignment == REF_ALIGN_MIDDLE)
+			{
+				if (!formattedLine.empty()
+						&& !isWhiteSpace(formattedLine[formattedLine.length() - 1]))
+					formattedLine.append(1, ' ');
+			}
+			else if (itemAlignment == REF_ALIGN_NAME)
+			{
+				if (!formattedLine.empty()
+						&& isWhiteSpace(formattedLine[formattedLine.length() - 1]))
+					formattedLine.erase(formattedLine.length() - 1);
+			}
+			else
+			{
+				if (formattedLine.length() > 1
+						&& !isWhiteSpace(formattedLine[formattedLine.length() - 2]))
+					formattedLine.append(1, ' ');
+			}
+		}
+		else
+			formattedLine.append(1, ' ');
+	}
+	methodAttachCharNum = std::string::npos;
+	methodAttachLineNum = 0;
+}
+
+void ASFormatter::handleClosedBracesOrParens()
+{
+	foundPreCommandHeader = false;
+	parenStack->back()--;
+	// this can happen in preprocessor directives
+	if (parenStack->back() < 0)
+		parenStack->back() = 0;
+	if (!questionMarkStack->empty())
+	{
+		foundQuestionMark = questionMarkStack->back();
+		questionMarkStack->pop_back();
+	}
+	if (isInTemplate && currentChar == '>')
+	{
+		templateDepth--;
+		if (templateDepth == 0)
+		{
+			isInTemplate = false;
+			isImmediatelyPostTemplate = true;
+		}
+	}
+
+	// check if this parenthesis closes a header, e.g. if (...), while (...)
+	//GH16
+	if ( !(isSharpStyle() && peekNextChar() == ',') && isInHeader && parenStack->back() == 0)
+	{
+		isInHeader = false;
+		isImmediatelyPostHeader = true;
+		foundQuestionMark = false;
+	}
+	if (currentChar == ']')
+	{
+		--squareBracketCount;
+		if (squareBracketCount <= 0)
+		{
+			squareBracketCount = 0;
+			objCColonAlign = 0;
+		}
+	}
+
+	// GH16 break
+	if (currentChar == ')')
+	{
+		--parenthesesCount;
+		foundCastOperator = false;
+		if (parenStack->back() == 0)
+			endOfAsmReached = true;
+	}
+}
+
+void ASFormatter::handleBraces()
+{
+	// if appendOpeningBrace this was already done for the original brace
+	if (currentChar == '{' && !appendOpeningBrace)
+	{
+		BraceType newBraceType = getBraceType();
+		breakCurrentOneLineBlock = false;
+		foundNamespaceHeader = false;
+		foundClassHeader = false;
+		foundStructHeader = false;
+		foundInterfaceHeader = false;
+		foundPreDefinitionHeader = false;
+		foundPreCommandHeader = false;
+		foundPreCommandMacro = false;
+		foundTrailingReturnType = false;
+		isInPotentialCalculation = false;
+		isInObjCMethodDefinition = false;
+		isImmediatelyPostObjCMethodPrefix = false;
+		isInObjCInterface = false;
+		isInEnum = false;
+
+		isJavaStaticConstructor = false;
+		isCharImmediatelyPostNonInStmt = false;
+		needHeaderOpeningBrace = false;
+		shouldKeepLineUnbroken = false;
+		returnTypeChecked = false;
+
+		isInExplicitBlock++;
+
+		objCColonAlign = 0;
+
+		methodBreakCharNum = std::string::npos;
+		methodBreakLineNum = 0;
+		methodAttachCharNum = std::string::npos;
+		methodAttachLineNum = 0;
+
+		isPreviousBraceBlockRelated = !isBraceType(newBraceType, ARRAY_TYPE);
+		braceTypeStack->emplace_back(newBraceType);
+		preBraceHeaderStack->emplace_back(currentHeader);
+		currentHeader = nullptr;
+		// do not use emplace_back on std::vector<bool> until supported by macOS
+		structStack->push_back(isInIndentableStruct);
+		if (isBraceType(newBraceType, STRUCT_TYPE) && isCStyle())
+			isInIndentableStruct = isStructAccessModified(currentLine, charNum);
+		else
+			isInIndentableStruct = false;
+	}
+
+	// this must be done before the braceTypeStack is popped
+	BraceType braceType = braceTypeStack->back();
+	bool isOpeningArrayBrace = (isBraceType(braceType, ARRAY_TYPE)
+								&& braceTypeStack->size() >= 2
+								&& !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2], ARRAY_TYPE)
+								);
+
+	if (currentChar == '}')
+	{
+		// if a request has been made to append a post block empty line,
+		// but the block exists immediately before a closing brace,
+		// then there is no need for the post block empty line.
+		isAppendPostBlockEmptyLineRequested = false;
+		if (isInAsm)
+			endOfAsmReached = true;
+		isInAsmOneLine = isInQuote = false;
+		shouldKeepLineUnbroken = false;
+		squareBracketCount = 0;
+		isInAllocator = false;
+		isInMultlineStatement = false;
+		isInExplicitBlock--;
+
+		if (braceTypeStack->size() > 1)
+		{
+			previousBraceType = braceTypeStack->back();
+			braceTypeStack->pop_back();
+			isPreviousBraceBlockRelated = !isBraceType(braceType, ARRAY_TYPE);
+		}
+		else
+		{
+			previousBraceType = NULL_TYPE;
+			isPreviousBraceBlockRelated = false;
+		}
+
+		if (!preBraceHeaderStack->empty())
+		{
+			previousHeader = currentHeader;
+			currentHeader = preBraceHeaderStack->back();
+			preBraceHeaderStack->pop_back();
+		}
+		else
+			currentHeader = nullptr;
+
+		if (!structStack->empty())
+		{
+			isInIndentableStruct = structStack->back();
+			structStack->pop_back();
+		}
+		else
+			isInIndentableStruct = false;
+
+		if (isNonInStatementArray
+				&& (!isBraceType(braceTypeStack->back(), ARRAY_TYPE)	// check previous brace
+					|| peekNextChar() == ';'))							// check for "};" added V2.01
+			isImmediatelyPostNonInStmt = true;
+
+		if (!shouldBreakOneLineStatements
+				&& ASBeautifier::getNextWord(currentLine, charNum) == ASResource::AS_ELSE)
+		{
+			// handle special case of "else" at the end of line
+			size_t nextText = currentLine.find_first_not_of(" \t", charNum + 1);
+			if (ASBeautifier::peekNextChar(currentLine, nextText + 3) == ' ')
+				shouldBreakLineAtNextChar = true;
+		}
+	}
+
+	// format braces
+	appendOpeningBrace = false;
+	if (isBraceType(braceType, ARRAY_TYPE))
+	{
+		formatArrayBraces(braceType, isOpeningArrayBrace);
+	}
+	else
+	{
+		if (currentChar == '{')
+			formatOpeningBrace(braceType);
+		else
+			formatClosingBrace(braceType);
+	}
+}
+
+
+void ASFormatter::handleBreakLine()
+{
+	isCharImmediatelyPostOpenBlock = (previousCommandChar == '{');
+	isCharImmediatelyPostCloseBlock = (previousCommandChar == '}');
+
+	if (isCharImmediatelyPostOpenBlock
+			&& !isCharImmediatelyPostComment
+			&& !isCharImmediatelyPostLineComment)
+	{
+		previousCommandChar = ' ';
+
+		if (braceFormatMode == NONE_MODE)
+		{
+			if (isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE)
+					&& (isBraceType(braceTypeStack->back(), BREAK_BLOCK_TYPE)
+						|| shouldBreakOneLineBlocks))
+				isInLineBreak = true;
+			else if (currentLineBeginsWithBrace)
+				formatRunIn();
+			else
+				breakLine();
+		}
+		else if (braceFormatMode == RUN_IN_MODE
+					&& currentChar != '#')
+			formatRunIn();
+		else
+			isInLineBreak = true;
+	}
+	else if (isCharImmediatelyPostCloseBlock
+				&& shouldBreakOneLineStatements
+				&& !isCharImmediatelyPostComment
+				&& ((isLegalNameChar(currentChar) && currentChar != '.')
+					|| currentChar == '+'
+					|| currentChar == '-'
+					|| currentChar == '*'
+					|| currentChar == '&'
+					|| currentChar == '('))
+	{
+		previousCommandChar = ' ';
+		isInLineBreak = true;
+	}
+}
+
+bool ASFormatter::handlePotentialHeader(const std::string* newHeader)
+{
+	isNonParenHeader = false;
+	foundClosingHeader = false;
+
+	newHeader = findHeader(headers);
+
+	// java can have a 'default' not in a switch
+	if (newHeader == &ASResource::AS_DEFAULT
+			&& ASBeautifier::peekNextChar(
+				currentLine, charNum + (*newHeader).length() - 1) != ':')
+		newHeader = nullptr;
+	// Qt headers may be variables in C++
+	if (isCStyle()
+			&& (newHeader == &ASResource::AS_FOREVER || newHeader == &ASResource::AS_FOREACH))
+	{
+		if (currentLine.find_first_of("=;", charNum) != std::string::npos)
+			newHeader = nullptr;
+	}
+	if (isJavaStyle()
+			&& (newHeader == &ASResource::AS_SYNCHRONIZED))
+	{
+		// want synchronized statements not synchronized methods
+		if (!isBraceType(braceTypeStack->back(), COMMAND_TYPE))
+			newHeader = nullptr;
+	}
+	else if (newHeader == &ASResource::AS_USING
+				&& ASBeautifier::peekNextChar(
+					currentLine, charNum + (*newHeader).length() - 1) != '(')
+		newHeader = nullptr;
+
+	if (newHeader != nullptr)
+	{
+		foundClosingHeader = isClosingHeader(newHeader);
+
+		if (!foundClosingHeader)
+		{
+			// these are closing headers
+			if ((newHeader == &ASResource::AS_WHILE && currentHeader == &ASResource::AS_DO)
+					|| (newHeader == &ASResource::_AS_FINALLY && currentHeader == &ASResource::_AS_TRY)
+					|| (newHeader == &ASResource::_AS_EXCEPT && currentHeader == &ASResource::_AS_TRY))
+				foundClosingHeader = true;
+			// don't append empty block for these related headers
+			else if (isSharpStyle()
+						&& previousNonWSChar == '}'
+						&& ((newHeader == &ASResource::AS_SET && currentHeader == &ASResource::AS_GET)
+							|| (newHeader == &ASResource::AS_REMOVE && currentHeader == &ASResource::AS_ADD))
+						&& isOkToBreakBlock(braceTypeStack->back()))
+				isAppendPostBlockEmptyLineRequested = false;
+		}
+
+		previousHeader = currentHeader;
+		currentHeader = newHeader;
+		needHeaderOpeningBrace = true;
+
+		// is the previous statement on the same line?
+		if ((previousNonWSChar == ';' || previousNonWSChar == ':')
+				&& !isInLineBreak
+				&& isOkToBreakBlock(braceTypeStack->back()))
+		{
+			// if breaking lines, break the line at the header
+			// except for multiple 'case' statements on a line
+			if (maxCodeLength != std::string::npos
+					&& previousHeader != &ASResource::AS_CASE)
+				isInLineBreak = true;
+			else
+				isHeaderInMultiStatementLine = true;
+		}
+
+		if (foundClosingHeader && previousNonWSChar == '}')
+		{
+			if (isOkToBreakBlock(braceTypeStack->back()))
+				isLineBreakBeforeClosingHeader();
+
+			// get the adjustment for a comment following the closing header
+			if (isInLineBreak)
+				nextLineSpacePadNum = getNextLineCommentAdjustment();
+			else
+				spacePadNum = getCurrentLineCommentAdjustment();
+		}
+
+		// check if the found header is non-paren header
+		isNonParenHeader = findHeader(nonParenHeaders) != nullptr;
+
+		if (isNonParenHeader
+				&& (currentHeader == &ASResource::AS_CATCH
+					|| currentHeader == &ASResource::AS_CASE))
+		{
+			int startChar = charNum + currentHeader->length() - 1;
+			if (ASBeautifier::peekNextChar(currentLine, startChar) == '(')
+				isNonParenHeader = false;
+		}
+
+		// join 'else if' statements
+		if (currentHeader == &ASResource::AS_IF
+				&& previousHeader == &ASResource::AS_ELSE
+				&& isInLineBreak
+				&& !shouldBreakElseIfs
+				&& !isCharImmediatelyPostLineComment
+				&& !isImmediatelyPostPreprocessor)
+		{
+			// 'else' must be last thing on the line
+			size_t start = formattedLine.length() >= 6 ? formattedLine.length() - 6 : 0;
+			if (formattedLine.find(ASResource::AS_ELSE, start) != std::string::npos)
+			{
+				appendSpacePad();
+				isInLineBreak = false;
+			}
+		}
+
+		appendSequence(*currentHeader);
+		goForward(currentHeader->length() - 1);
+		// if a paren-header is found add a space after it, if needed
+		// this checks currentLine, appendSpacePad() checks formattedLine
+		// in 'case' and C# 'catch' can be either a paren or non-paren header
+		if (shouldPadHeader
+				&& !isNonParenHeader
+				&& charNum < (int) currentLine.length() - 1 && !isWhiteSpace(currentLine[charNum + 1]))
+			appendSpacePad();
+
+		// Signal that a header has been reached
+		// *** But treat a closing while() (as in do...while)
+		//     as if it were NOT a header since a closing while()
+		//     should never have a block after it!
+		if (currentHeader != &ASResource::AS_CASE && currentHeader != &ASResource::AS_DEFAULT
+				&& !(foundClosingHeader && currentHeader == &ASResource::AS_WHILE))
+		{
+			isInHeader = true;
+
+			// in C# 'catch' and 'delegate' can be a paren or non-paren header
+			if (isNonParenHeader && !isSharpStyleWithParen(currentHeader))
+			{
+				isImmediatelyPostHeader = true;
+				isInHeader = false;
+			}
+		}
+
+		// #569
+		if (shouldBreakBlocks
+				&& isOkToBreakBlock(braceTypeStack->back())
+				&& !isHeaderInMultiStatementLine)
+		{
+			if (previousHeader == nullptr
+					&& !foundClosingHeader
+					&& !isCharImmediatelyPostOpenBlock
+					&& !isImmediatelyPostCommentOnly)
+			{
+				isPrependPostBlockEmptyLineRequested = true;
+			}
+
+			if (isClosingHeader(currentHeader)
+					|| foundClosingHeader)
+			{
+				isPrependPostBlockEmptyLineRequested = false;
+			}
+
+			if (shouldBreakClosingHeaderBlocks
+					&& isCharImmediatelyPostCloseBlock
+					&& !isImmediatelyPostCommentOnly
+					&& !(currentHeader == &ASResource::AS_WHILE			// do-while
+							&& foundClosingHeader))
+			{
+				isPrependPostBlockEmptyLineRequested = true;
+			}
+		}
+
+		if (currentHeader == &ASResource::AS_CASE
+				|| currentHeader == &ASResource::AS_DEFAULT)
+			isInCase = true;
+
+		return false;
+	}
+	if ((newHeader = findHeader(preDefinitionHeaders)) != nullptr
+			&& parenStack->back() == 0
+			&& !isInEnum)		// not C++11 enum class
+	{
+		if (newHeader == &ASResource::AS_NAMESPACE || newHeader == &ASResource::AS_MODULE)
+			foundNamespaceHeader = true;
+		if (newHeader == &ASResource::AS_CLASS)
+			foundClassHeader = true;
+		if (newHeader == &ASResource::AS_STRUCT)
+			foundStructHeader = true;
+		if (newHeader == &ASResource::AS_INTERFACE && !foundNamespaceHeader && !foundClassHeader)
+			foundInterfaceHeader = true;
+		foundPreDefinitionHeader = true;
+		appendSequence(*newHeader);
+		goForward(newHeader->length() - 1);
+
+		return false;
+	}
+	if ((newHeader = findHeader(preCommandHeaders)) != nullptr)
+	{
+		// must be after function arguments
+		if (previousNonWSChar == ')')
+			foundPreCommandHeader = true;
+	}
+	else if ((newHeader = findHeader(castOperators)) != nullptr)
+	{
+		foundCastOperator = true;
+		appendSequence(*newHeader);
+		goForward(newHeader->length() - 1);
+		return false;
+	}
+	return true;
+}
+
+
+void ASFormatter::handleEndOfBlock()
+{
+	if (currentChar == ';' && !isInAsmBlock)
+	{
+		squareBracketCount = 0;
+		//assert(methodBreakCharNum == std::string::npos);	// comment out
+		//assert(methodBreakLineNum == 0);				// comment out
+		methodBreakCharNum = std::string::npos;
+		methodBreakLineNum = 0;
+		methodAttachCharNum = std::string::npos;
+		methodAttachLineNum = 0;
+
+		if (((shouldBreakOneLineStatements
+				|| isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE))
+				&& isOkToBreakBlock(braceTypeStack->back()))
+				&& !(attachClosingBraceMode && peekNextChar() == '}'))
+		{
+			passedSemicolon = true;
+		}
+		else if (!shouldBreakOneLineStatements
+					&& ASBeautifier::getNextWord(currentLine, charNum) == ASResource::AS_ELSE)
+		{
+			// handle special case of "else" at the end of line
+			size_t nextText = currentLine.find_first_not_of(" \t", charNum + 1);
+			if (ASBeautifier::peekNextChar(currentLine, nextText + 3) == ' ')
+				passedSemicolon = true;
+		}
+
+//is set in struct case? #518 #569
+		if (shouldBreakBlocks
+				&& currentHeader != nullptr
+				&& currentHeader != &ASResource::AS_CASE
+				&& currentHeader != &ASResource::AS_DEFAULT
+				&& !isHeaderInMultiStatementLine
+				&& parenStack->back() == 0
+			)
+		{
+			isAppendPostBlockEmptyLineRequested = true;
+		}
+	}
+	if (currentChar != ';'
+			|| foundStructHeader // #518
+			|| (needHeaderOpeningBrace && parenStack->back() == 0))
+		currentHeader = nullptr;
+
+	resetEndOfStatement();
+}
+
+void ASFormatter::handleColonSection()
+{
+	if (isInCase)
+	{
+		isInCase = false;
+		if (shouldBreakOneLineStatements)
+			passedColon = true;
+	}
+	else if (isCStyle()                     // for C/C++ only
+				&& isOkToBreakBlock(braceTypeStack->back())
+				&& shouldBreakOneLineStatements
+				&& !foundQuestionMark          // not in a ?: sequence
+				&& !foundPreDefinitionHeader   // not in a definition block
+				&& previousCommandChar != ')'  // not after closing paren of a method header
+				&& !foundPreCommandHeader      // not after a 'noexcept'
+				&& squareBracketCount == 0     // not in objC method call
+				&& !isInObjCMethodDefinition   // not objC '-' or '+' method
+				&& !isInObjCInterface          // not objC @interface
+				&& !isInObjCSelector           // not objC @selector
+				&& !isDigit(peekNextChar())    // not a bit field
+				&& !isInEnum                   // not an enum with a base type
+				&& !isInStruct                 // not an struct
+				&& !isInContinuedPreProc           // not in preprocessor line
+				&& !isInAsm                    // not in extended assembler
+				&& !isInAsmOneLine             // not in extended assembler
+				&& !isInAsmBlock)              // not in extended assembler
+	{
+		passedColon = true;
+	}
+
+	if (isObjCStyle()
+			&& (squareBracketCount > 0 || isInObjCMethodDefinition || isInObjCSelector)
+			&& !foundQuestionMark)			// not in a ?: sequence
+	{
+		isImmediatelyPostObjCMethodPrefix = false;
+		isInObjCReturnType = false;
+		isInObjCParam = true;
+		if (shouldPadMethodColon)
+			padObjCMethodColon();
+	}
+
+	if (isInObjCInterface)
+	{
+		appendSpacePad();
+		if ((int) currentLine.length() > charNum + 1
+				&& !isWhiteSpace(currentLine[charNum + 1]))
+			currentLine.insert(charNum + 1, " ");
+	}
+
+	if (isClassInitializer())
+	{
+		isInClassInitializer = true;
+	}
+}
+
+void ASFormatter::handlePotentialHeaderPart2()
+{
+	//GL30
+	if (!isGSCStyle() && (findKeyword(currentLine, charNum, ASResource::AS_NEW)
+			|| findKeyword(currentLine, charNum, ASResource::AS_DELETE)))
+	{
+		isInPotentialCalculation = false;
+		isImmediatelyPostNewDelete = true;
+	}
+
+	//https://sourceforge.net/p/astyle/bugs/464/ + GH16
+	if (isSharpStyle() && findKeyword(currentLine, charNum, ASResource::AS_NEW)
+						&& currentHeader != &ASResource::AS_FOREACH
+						&& currentHeader != &ASResource::AS_FOR
+						&& currentHeader != &ASResource::AS_USING
+						&& currentHeader != &ASResource::AS_WHILE
+						&& currentHeader != &ASResource::AS_IF
+						&& currentLine.find(ASResource::AS_PUBLIC) == std::string::npos
+						&& currentLine.find(ASResource::AS_PROTECTED) == std::string::npos
+						&& currentLine.find(ASResource::AS_PRIVATE) == std::string::npos
+						)
+	{
+		isInAllocator = true;
+	}
+
+	if (findKeyword(currentLine, charNum, ASResource::AS_RETURN))
+	{
+		isInPotentialCalculation = true;
+		isImmediatelyPostReturn = true;		// return is the same as an = sign
+	}
+
+	if (findKeyword(currentLine, charNum, ASResource::AS_OPERATOR))
+		isImmediatelyPostOperator = true;
+
+	if (findKeyword(currentLine, charNum, ASResource::AS_ENUM))
+	{
+		size_t firstNum = currentLine.find_first_of("(){},/");
+		if (firstNum == std::string::npos
+				|| currentLine[firstNum] == '{'
+				|| currentLine[firstNum] == '/')
+			isInEnum = true;
+	}
+
+	if (findKeyword(currentLine, charNum, ASResource::AS_TYPEDEF_STRUCT) || findKeyword(currentLine, charNum, ASResource::AS_STRUCT))
+	{
+		size_t firstNum = currentLine.find_first_of("(){},/");
+
+		if (firstNum == std::string::npos
+				|| currentLine[firstNum] == '{'
+				|| currentLine[firstNum] == '/')
+		{
+			isInStruct = true;
+		}
+	}
+
+	if (isCStyle()
+			&& findKeyword(currentLine, charNum, ASResource::AS_THROW)
+			&& previousCommandChar != ')'
+			&& !foundPreCommandHeader)      // 'const' throw()
+		isImmediatelyPostThrow = true;
+
+	if (isCStyle() && findKeyword(currentLine, charNum, ASResource::AS_EXTERN) && isExternC())
+		isInExternC = true;
+
+	if (isCStyle() && findKeyword(currentLine, charNum, ASResource::AS_AUTO)
+			&& (isBraceType(braceTypeStack->back(), NULL_TYPE)
+				|| isBraceType(braceTypeStack->back(), DEFINITION_TYPE))
+			&& (currentLine.find('(') != std::string::npos)) // #516 auto array initializer with braces should not be blocks
+		foundTrailingReturnType = true;
+
+	// check for break/attach return type
+	if (shouldBreakReturnType || shouldBreakReturnTypeDecl
+			|| shouldAttachReturnType || shouldAttachReturnTypeDecl)
+	{
+		if ((isBraceType(braceTypeStack->back(), NULL_TYPE)
+				|| isBraceType(braceTypeStack->back(), DEFINITION_TYPE))
+				&& !returnTypeChecked
+				&& !foundNamespaceHeader
+				&& !foundClassHeader
+				&& !isInObjCMethodDefinition
+				// bypass objective-C and java @ character
+				&& charNum == (int) currentLine.find_first_not_of(" \t")
+
+				// possibly related to #504
+				&& !(isCStyle() && isCharPotentialHeader(currentLine, charNum)
+						&& (findKeyword(currentLine, charNum, ASResource::AS_PUBLIC)
+							|| findKeyword(currentLine, charNum, ASResource::AS_PRIVATE)
+							|| findKeyword(currentLine, charNum, ASResource::AS_PROTECTED)))
+			)
+		{
+			findReturnTypeSplitPoint(currentLine);
+			returnTypeChecked = true;
+		}
+	}
+
+	// Objective-C NSException macros are preCommandHeaders
+	if (isCStyle() && findKeyword(currentLine, charNum, ASResource::AS_NS_DURING))
+		foundPreCommandMacro = true;
+	if (isCStyle() && findKeyword(currentLine, charNum, ASResource::AS_NS_HANDLER))
+		foundPreCommandMacro = true;
+
+	if (isCStyle() && isExecSQL(currentLine, charNum))
+		isInExecSQL = true;
+
+	if (isCStyle())
+	{
+		if (findKeyword(currentLine, charNum, ASResource::AS_ASM)
+				|| findKeyword(currentLine, charNum, ASResource::AS__ASM__))
+		{
+			isInAsm = true;
+		}
+		else if (findKeyword(currentLine, charNum, ASResource::AS_MS_ASM)		// microsoft specific
+					|| findKeyword(currentLine, charNum, ASResource::AS_MS__ASM))
+		{
+			int index = 4;
+			if (peekNextChar() == '_')	// check for __asm
+				index = 5;
+
+			char peekedChar = ASBase::peekNextChar(currentLine, charNum + index);
+			if (peekedChar == '{' || peekedChar == ' ')
+				isInAsmBlock = true;
+			else
+				isInAsmOneLine = true;
+		}
+	}
+
+	if (isJavaStyle()
+			&& (findKeyword(currentLine, charNum, ASResource::AS_STATIC)
+				&& isNextCharOpeningBrace(charNum + 6)))
+		isJavaStaticConstructor = true;
+
+	if (isSharpStyle()
+			&& (findKeyword(currentLine, charNum, ASResource::AS_DELEGATE)
+				|| findKeyword(currentLine, charNum, ASResource::AS_UNCHECKED)))
+		isSharpDelegate = true;
+
+	// append the entire name
+	std::string_view name = getCurrentWord(currentLine, charNum);
+	// must pad the 'and' and 'or' operators if required
+	if (name == "and" || name == "or")
+	{
+		if (shouldPadOperators && previousNonWSChar != ':')
+		{
+			appendSpacePad();
+			appendOperator(std::string(name));
+			goForward(name.length() - 1);
+			if (!isBeforeAnyComment()
+					&& !(currentLine.compare(charNum + 1, 1, ASResource::AS_SEMICOLON) == 0)
+					&& !(currentLine.compare(charNum + 1, 2, ASResource::AS_SCOPE_RESOLUTION) == 0))
+				appendSpaceAfter();
+		}
+		else
+		{
+			appendOperator(std::string(name));
+			goForward(name.length() - 1);
+		}
+	}
+	else
+	{
+		appendSequence(std::string(name));
+		goForward(name.length() - 1);
+	}
+}
+
+void ASFormatter::handlePotentialOperator(const std::string *newHeader)
+{
+	// check for Java ? wildcard
+	if (newHeader != nullptr
+			&& newHeader == &ASResource::AS_GCC_MIN_ASSIGN
+			&& isJavaStyle()
+			&& isInTemplate)
+		newHeader = nullptr;
+
+	if (newHeader != nullptr)
+	{
+		if (newHeader == &ASResource::AS_LAMBDA)
+			foundPreCommandHeader = true;
+
+		// correct mistake of two >> closing a template
+		if (isInTemplate && (newHeader == &ASResource::AS_GR_GR || newHeader == &ASResource::AS_GR_GR_GR))
+			newHeader = &ASResource::AS_GR;
+
+		if (!isInPotentialCalculation)
+		{
+			// must determine if newHeader is an assignment operator
+			// do NOT use findOperator - the length must be exact!!!
+			if (find(begin(*assignmentOperators), end(*assignmentOperators), newHeader)
+					!= end(*assignmentOperators))
+			{
+				foundPreCommandHeader = false;
+				char peekedChar = peekNextChar();
+				isInPotentialCalculation = !(newHeader == &ASResource::AS_EQUAL && peekedChar == '*')
+											&& !(newHeader == &ASResource::AS_EQUAL && peekedChar == '&')
+											&& !isCharImmediatelyPostOperator;
+			}
+		}
+	}
+}
+
+void ASFormatter::handleParens()
+{
+	if (currentChar == '(')
+	{
+		if (shouldPadHeader
+				&& (isCharImmediatelyPostReturn
+					|| isCharImmediatelyPostThrow
+					|| isCharImmediatelyPostNewDelete))
+			appendSpacePad();
+	}
+
+	if (shouldPadParensOutside || shouldPadParensInside || shouldUnPadParens || shouldPadFirstParen)
+		padParensOrBrackets('(', ')', shouldPadFirstParen);
+	else
+		appendCurrentChar();
+
+	if (isInObjCMethodDefinition)
+	{
+		if (currentChar == '(' && isImmediatelyPostObjCMethodPrefix)
+		{
+			if (shouldPadMethodPrefix || shouldUnPadMethodPrefix)
+				padObjCMethodPrefix();
+			isImmediatelyPostObjCMethodPrefix = false;
+			isInObjCReturnType = true;
+		}
+		else if (currentChar == ')' && isInObjCReturnType)
+		{
+			if (shouldPadReturnType || shouldUnPadReturnType)
+				padObjCReturnType();
+			isInObjCReturnType = false;
+		}
+		else if (isInObjCParam
+					&& (shouldPadParamType || shouldUnPadParamType))
+			padObjCParamType();
+	}
+}
+
+
+void ASFormatter::handleOpenParens() {
+	questionMarkStack->push_back(foundQuestionMark);
+	foundQuestionMark = false;
+	parenStack->back()++;
+	if (currentChar == '[') {
+			++squareBracketCount;
+			if (getAlignMethodColon() && squareBracketCount == 1 &&
+				isCStyle())
+					objCColonAlign = findObjCColonAlignment();
+	}
+	if (currentChar == '(') {
+			++parenthesesCount;
+	}
+}
+
+void ASFormatter::formatFirstOpenBrace(BraceType braceType)
+{
+	if (braceFormatMode == ATTACH_MODE || braceFormatMode == LINUX_MODE)
+	{
+		// break an enum if mozilla
+		if (isBraceType(braceType, ENUM_TYPE)
+				&& formattingStyle == STYLE_MOZILLA
+				&& !(!shouldBreakOneLineBlocks && formattedLine.find('}' != std::string::npos) ) // GL38
+			)
+		{
+			isInLineBreak = true;
+			appendCurrentChar();                // don't attach
+		}
+		// don't attach to a preprocessor directive or '\' line
+		else if ((isImmediatelyPostPreprocessor
+					|| (!formattedLine.empty()
+						&& formattedLine[formattedLine.length() - 1] == '\\'))
+					&& currentLineBeginsWithBrace)
+		{
+			isInLineBreak = true;
+			appendCurrentChar();                // don't attach
+		}
+		else if (isCharImmediatelyPostComment)
+		{
+			// TODO: attach brace to line-end comment
+			appendCurrentChar();                // don't attach
+		}
+		else if (isCharImmediatelyPostLineComment && !isBraceType(braceType, SINGLE_LINE_TYPE))
+		{
+			appendCharInsideComments();
+		}
+		else
+		{
+			// if a blank line precedes this don't attach
+			if (isEmptyLine(formattedLine))
+				appendCurrentChar();            // don't attach
+			else
+			{
+				// if brace is broken or not an assignment
+				if (currentLineBeginsWithBrace
+						&& !isBraceType(braceType, SINGLE_LINE_TYPE))
+				{
+					appendSpacePad();
+					appendCurrentChar(false);				// OK to attach
+					// TODO: debug the following line
+					testForTimeToSplitFormattedLine();		// line length will have changed
+
+					if (currentLineBeginsWithBrace && currentLineFirstBraceNum == (size_t) charNum)
+						shouldBreakLineAtNextChar = true;
+				}
+				else
+				{
+					if (previousNonWSChar != '(')
+					{
+						// don't space pad C++11 uniform initialization
+						if (!isBraceType(braceType, INIT_TYPE))
+							appendSpacePad();
+					}
+					appendCurrentChar();
+				}
+			}
+		}
+	}
+	else if (braceFormatMode == BREAK_MODE)
+	{
+		if (isWhiteSpace(peekNextChar()) && !isInVirginLine)
+			breakLine();
+		else if (isBeforeAnyComment() && sourceIterator->hasMoreLines())
+		{
+			// do not break unless comment is at line end
+			if (isBeforeAnyLineEndComment(charNum) && !currentLineBeginsWithBrace)
+			{
+				currentChar = ' ';            // remove brace from current line
+				appendOpeningBrace = true;    // append brace to following line
+			}
+		}
+		if (!isInLineBreak && previousNonWSChar != '(')
+		{
+			// don't space pad C++11 uniform initialization
+			if (!isBraceType(braceType, INIT_TYPE))
+				appendSpacePad();
+		}
+		appendCurrentChar();
+
+		if (currentLineBeginsWithBrace
+				&& currentLineFirstBraceNum == (size_t) charNum
+				&& !isBraceType(braceType, SINGLE_LINE_TYPE))
+			shouldBreakLineAtNextChar = true;
+	}
+	else if (braceFormatMode == RUN_IN_MODE)
+	{
+		if (isWhiteSpace(peekNextChar()) && !isInVirginLine)
+			breakLine();
+		else if (isBeforeAnyComment() && sourceIterator->hasMoreLines())
+		{
+			// do not break unless comment is at line end
+			if (isBeforeAnyLineEndComment(charNum) && !currentLineBeginsWithBrace)
+			{
+				currentChar = ' ';            // remove brace from current line
+				appendOpeningBrace = true;    // append brace to following line
+			}
+		}
+		if (!isInLineBreak && previousNonWSChar != '(')
+		{
+			// don't space pad C++11 uniform initialization
+			if (!isBraceType(braceType, INIT_TYPE))
+				appendSpacePad();
+		}
+		appendCurrentChar();
+	}
+	else if (braceFormatMode == NONE_MODE)
+	{
+		if (currentLineBeginsWithBrace
+				&& (size_t) charNum == currentLineFirstBraceNum)
+		{
+			appendCurrentChar();                // don't attach
+		}
+		else
+		{
+			if (previousNonWSChar != '(')
+			{
+				// don't space pad C++11 uniform initialization
+				if (!isBraceType(braceType, INIT_TYPE))
+					appendSpacePad();
+			}
+			appendCurrentChar(false);           // OK to attach
+		}
+	}
+}
+
+void ASFormatter::formatOpenBrace()
+{
+	if (braceFormatMode == RUN_IN_MODE)
+	{
+		if (previousNonWSChar == '{'
+				&& braceTypeStack->size() > 2
+				&& !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2],
+								SINGLE_LINE_TYPE))
+			formatArrayRunIn();
+	}
+	else if (!isInLineBreak
+				&& !isWhiteSpace(peekNextChar())
+				&& previousNonWSChar == '{'
+				&& braceTypeStack->size() > 2
+				&& !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2],
+								SINGLE_LINE_TYPE))
+		formatArrayRunIn();
+
+	appendCurrentChar();
+}
+
+void ASFormatter::formatCloseBrace(BraceType braceType)
+{
+	if (attachClosingBraceMode)
+	{
+		if (isEmptyLine(formattedLine)			// if a blank line precedes this
+				|| isImmediatelyPostPreprocessor
+				|| isCharImmediatelyPostLineComment
+				|| isCharImmediatelyPostComment)
+			appendCurrentChar();				// don't attach
+		else
+		{
+			appendSpacePad();
+			appendCurrentChar(false);			// attach
+		}
+	}
+	else
+	{
+		// does this close the first opening brace in the array?
+		// must check if the block is still a single line because of anonymous statements
+		if (!isBraceType(braceType, INIT_TYPE)
+				&& (!isBraceType(braceType, SINGLE_LINE_TYPE)
+					|| formattedLine.find('{') == std::string::npos))
+			breakLine();
+		appendCurrentChar();
+	}
+
+	// if a declaration follows an enum definition, space pad
+	char peekedChar = peekNextChar();
+	if ((isLegalNameChar(peekedChar) && peekedChar != '.')
+			|| peekedChar == '[')
+		appendSpaceAfter();
+}
+
+
+
+std::string ASFormatter::nextLine() {
+        const std::string* newHeader = nullptr;
 	isInVirginLine = isVirgin;
 	isCharImmediatelyPostComment = false;
 	isPreviousCharPostComment = false;
@@ -500,7 +1651,6 @@ std::string ASFormatter::nextLine()
 	isCharImmediatelyPostOpenBlock = false;
 	isCharImmediatelyPostCloseBlock = false;
 	isCharImmediatelyPostTemplate = false;
-
 
 	while (!isLineReady)
 	{
@@ -662,9 +1812,7 @@ std::string ASFormatter::nextLine()
 		// check if in preprocessor
 		// ** isInPreprocessor will be automatically reset at the beginning
 		//    of a new line in getnextChar()
-		if (currentChar == '#'
-		        //&& currentLine.find_first_not_of(" \t") == (size_t) charNum // #580
-		        && !isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE))
+		if (currentChar == '#' && !isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE))
 		{
 			isInPreprocessor = true;
 			// check for run-in
@@ -729,143 +1877,14 @@ std::string ASFormatter::nextLine()
 		// reset isImmediatelyPostHeader information
 		if (isImmediatelyPostHeader)
 		{
-			// should braces be added
-			if (currentChar != '{'
-			        && shouldAddBraces
-			        && currentChar != '#'	// don't add to preprocessor
-			        && (shouldBreakOneLineStatements || !isHeaderInMultiStatementLine)
-			        && isOkToBreakBlock(braceTypeStack->back()))
-			{
-				bool bracesAdded = addBracesToStatement();
-				if (bracesAdded && !shouldAddOneLineBraces)
-				{
-					size_t firstText = currentLine.find_first_not_of(" \t");
-					assert(firstText != std::string::npos);
-					if ((int) firstText == charNum || shouldBreakOneLineHeaders)
-						breakCurrentOneLineBlock = true;
-				}
-			}
-			// should braces be removed
-			else if (currentChar == '{' && shouldRemoveBraces)
-			{
-				bool bracesRemoved = removeBracesFromStatement();
-				if (bracesRemoved)
-				{
-					shouldRemoveNextClosingBrace = true;
-					if (isBeforeAnyLineEndComment(charNum))
-						spacePadNum--;
-					else if (shouldBreakOneLineBlocks
-					         || (currentLineBeginsWithBrace
-					             && currentLine.find_first_not_of(" \t") != std::string::npos))
-						shouldBreakLineAtNextChar = true;
-					continue;
-				}
-			}
-
-			// break 'else-if' if shouldBreakElseIfs is requested
-			if (shouldBreakElseIfs
-			        && currentHeader == &ASResource::AS_ELSE
-			        && isOkToBreakBlock(braceTypeStack->back())
-			        && !isBeforeAnyComment()
-			        && (shouldBreakOneLineStatements || !isHeaderInMultiStatementLine))
-			{
-				std::string nextText = peekNextText(currentLine.substr(charNum));
-				if (!nextText.empty()
-				        && isCharPotentialHeader(nextText, 0)
-				        && ASBase::findHeader(nextText, 0, headers) == &ASResource::AS_IF)
-				{
-					isInLineBreak = true;
-				}
-			}
-
-			// break a header (e.g. if, while, else) from the following statement
-			if (shouldBreakOneLineHeaders
-			        && peekNextChar() != ' '
-			        && (shouldBreakOneLineStatements
-			            || (!isHeaderInMultiStatementLine
-			                && !isMultiStatementLine()))
-			        && isOkToBreakBlock(braceTypeStack->back())
-			        && !isBeforeAnyComment())
-			{
-				if (currentChar == '{')
-				{
-					if (!currentLineBeginsWithBrace)
-					{
-						if (isOneLineBlockReached(currentLine, charNum) == 3)
-							isInLineBreak = false;
-						else
-							breakCurrentOneLineBlock = true;
-					}
-				}
-				else if (currentHeader == &ASResource::AS_ELSE)
-				{
-					std::string nextText = peekNextText(currentLine.substr(charNum), true);
-					if (!nextText.empty()
-					        && ((isCharPotentialHeader(nextText, 0)
-					             && ASBase::findHeader(nextText, 0, headers) != &ASResource::AS_IF)
-					            || nextText[0] == '{'))
-						isInLineBreak = true;
-				}
-				else
-				{
-					// GH16 only break if header is present
-					if (currentHeader)
-						isInLineBreak = true;
-				}
-			}
-
-			isImmediatelyPostHeader = false;
+			if (!handleImmediatelyPostHeaderSection())
+				continue;
 		}
 
 		if (passedSemicolon)    // need to break the formattedLine
 		{
-			isInAllocator = false; // GH16
-			isInMultlineStatement = false;
-			passedSemicolon = false;
-			if (parenStack->back() == 0 && !isCharImmediatelyPostComment && currentChar != ';') // allow ;;
-			{
-				// does a one-line block have ending comments?
-				if (isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE))
-				{
-					size_t blockEnd = currentLine.rfind(ASResource::AS_CLOSE_BRACE);
-					assert(blockEnd != std::string::npos);
-					// move ending comments to this formattedLine
-					if (isBeforeAnyLineEndComment(blockEnd))
-					{
-						size_t commentStart = currentLine.find_first_not_of(" \t", blockEnd + 1);
-						assert(commentStart != std::string::npos);
-						assert((currentLine.compare(commentStart, 2, "//") == 0)
-						       || (currentLine.compare(commentStart, 2, "/*") == 0));
-						formattedLine.append(getIndentLength() - 1, ' ');
-						// append comment
-						int charNumSave = charNum;
-						charNum = commentStart;
-						while (charNum < (int) currentLine.length())
-						{
-							currentChar = currentLine[charNum];
-							if (currentChar == '\t' && shouldConvertTabs)
-								convertTabToSpaces();
-							formattedLine.append(1, currentChar);
-							++charNum;
-						}
-						size_t commentLength = currentLine.length() - commentStart;
-						currentLine.erase(commentStart, commentLength);
-						charNum = charNumSave;
-						currentChar = currentLine[charNum];
-						testForTimeToSplitFormattedLine();
-					}
-				}
-				isInExecSQL = false;
-				shouldReparseCurrentChar = true;
-				if (formattedLine.find_first_not_of(" \t") != std::string::npos)
-					isInLineBreak = true;
-				if (needHeaderOpeningBrace)
-				{
-					isCharImmediatelyPostCloseBlock = true;
-					needHeaderOpeningBrace = false;
-				}
+			if (!handlePassedSemicolonSection())
 				continue;
-			}
 		}
 
 		if (passedColon)
@@ -898,254 +1917,32 @@ std::string ASFormatter::nextLine()
 		// Check for attach return type
 		if ((size_t) charNum >= methodAttachCharNum && methodAttachLineNum == 0)
 		{
-			if ((size_t) charNum == methodAttachCharNum)
-			{
-				int pa = pointerAlignment;
-				int ra = referenceAlignment;
-				int itemAlignment = (previousNonWSChar == '*' || previousNonWSChar == '^')
-				                    ? pa : ((ra == REF_SAME_AS_PTR) ? pa : ra);
-				isInLineBreak = false;
-				if (previousNonWSChar == '*' || previousNonWSChar == '&' || previousNonWSChar == '^')
-				{
-					if (itemAlignment == REF_ALIGN_TYPE)
-					{
-						if (!formattedLine.empty()
-						        && !isWhiteSpace(formattedLine[formattedLine.length() - 1]))
-							formattedLine.append(1, ' ');
-					}
-					else if (itemAlignment == REF_ALIGN_MIDDLE)
-					{
-						if (!formattedLine.empty()
-						        && !isWhiteSpace(formattedLine[formattedLine.length() - 1]))
-							formattedLine.append(1, ' ');
-					}
-					else if (itemAlignment == REF_ALIGN_NAME)
-					{
-						if (!formattedLine.empty()
-						        && isWhiteSpace(formattedLine[formattedLine.length() - 1]))
-							formattedLine.erase(formattedLine.length() - 1);
-					}
-					else
-					{
-						if (formattedLine.length() > 1
-						        && !isWhiteSpace(formattedLine[formattedLine.length() - 2]))
-							formattedLine.append(1, ' ');
-					}
-				}
-				else
-					formattedLine.append(1, ' ');
-			}
-			methodAttachCharNum = std::string::npos;
-			methodAttachLineNum = 0;
+			handleAttachedReturnTypes();
 		}
 
 		// handle parens
 		if (currentChar == '(' || currentChar == '[' || (isInTemplate && currentChar == '<'))
 		{
-			// do not use emplace_back on std::vector<bool> until supported by macOS
-			questionMarkStack->push_back(foundQuestionMark);
-			foundQuestionMark = false;
-			parenStack->back()++;
-			if (currentChar == '[')
-			{
-				++squareBracketCount;
-				if (getAlignMethodColon() && squareBracketCount == 1 && isCStyle())
-					objCColonAlign = findObjCColonAlignment();
-			}
-			if (currentChar == '(')
-			{
-				++parenthesesCount;
-			}
-		}
+            handleOpenParens();
+        }
 
 		else if (currentChar == ')' || currentChar == ']' || (isInTemplate && currentChar == '>'))
 		{
-			foundPreCommandHeader = false;
-			parenStack->back()--;
-			// this can happen in preprocessor directives
-			if (parenStack->back() < 0)
-				parenStack->back() = 0;
-			if (!questionMarkStack->empty())
-			{
-				foundQuestionMark = questionMarkStack->back();
-				questionMarkStack->pop_back();
-			}
-			if (isInTemplate && currentChar == '>')
-			{
-				templateDepth--;
-				if (templateDepth == 0)
-				{
-					isInTemplate = false;
-					isImmediatelyPostTemplate = true;
-				}
-			}
-
-			// check if this parenthesis closes a header, e.g. if (...), while (...)
-			//GH16
-			if ( !(isSharpStyle() && peekNextChar() == ',') && isInHeader && parenStack->back() == 0)
-			{
-				isInHeader = false;
-				isImmediatelyPostHeader = true;
-				foundQuestionMark = false;
-			}
-			if (currentChar == ']')
-			{
-				--squareBracketCount;
-				if (squareBracketCount <= 0)
-				{
-					squareBracketCount = 0;
-					objCColonAlign = 0;
-				}
-			}
-
-			// GH16 break
-			if (currentChar == ')')
-			{
-				--parenthesesCount;
-				foundCastOperator = false;
-				if (parenStack->back() == 0)
-					endOfAsmReached = true;
-			}
+			handleClosedBracesOrParens();
 		}
-
-
 
 		// handle braces
 		if (currentChar == '{' || currentChar == '}')
 		{
-
-			// if appendOpeningBrace this was already done for the original brace
-			if (currentChar == '{' && !appendOpeningBrace)
-			{
-				BraceType newBraceType = getBraceType();
-				breakCurrentOneLineBlock = false;
-				foundNamespaceHeader = false;
-				foundClassHeader = false;
-				foundStructHeader = false;
-				foundInterfaceHeader = false;
-				foundPreDefinitionHeader = false;
-				foundPreCommandHeader = false;
-				foundPreCommandMacro = false;
-				foundTrailingReturnType = false;
-				isInPotentialCalculation = false;
-				isInObjCMethodDefinition = false;
-				isImmediatelyPostObjCMethodPrefix = false;
-				isInObjCInterface = false;
-				isInEnum = false;
-
-				isJavaStaticConstructor = false;
-				isCharImmediatelyPostNonInStmt = false;
-				needHeaderOpeningBrace = false;
-				shouldKeepLineUnbroken = false;
-				returnTypeChecked = false;
-
-				isInExplicitBlock++;
-
-				objCColonAlign = 0;
-
-				methodBreakCharNum = std::string::npos;
-				methodBreakLineNum = 0;
-				methodAttachCharNum = std::string::npos;
-				methodAttachLineNum = 0;
-
-				isPreviousBraceBlockRelated = !isBraceType(newBraceType, ARRAY_TYPE);
-				braceTypeStack->emplace_back(newBraceType);
-				preBraceHeaderStack->emplace_back(currentHeader);
-				currentHeader = nullptr;
-				// do not use emplace_back on std::vector<bool> until supported by macOS
-				structStack->push_back(isInIndentableStruct);
-				if (isBraceType(newBraceType, STRUCT_TYPE) && isCStyle())
-					isInIndentableStruct = isStructAccessModified(currentLine, charNum);
-				else
-					isInIndentableStruct = false;
-			}
-
-			// this must be done before the braceTypeStack is popped
-			BraceType braceType = braceTypeStack->back();
-			bool isOpeningArrayBrace = (isBraceType(braceType, ARRAY_TYPE)
-			                            && braceTypeStack->size() >= 2
-			                            && !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2], ARRAY_TYPE)
-			                           );
-
-			if (currentChar == '}')
-			{
-				// if a request has been made to append a post block empty line,
-				// but the block exists immediately before a closing brace,
-				// then there is no need for the post block empty line.
-				isAppendPostBlockEmptyLineRequested = false;
-				if (isInAsm)
-					endOfAsmReached = true;
-				isInAsmOneLine = isInQuote = false;
-				shouldKeepLineUnbroken = false;
-				squareBracketCount = 0;
-				isInAllocator = false;
-				isInMultlineStatement = false;
-				isInExplicitBlock--;
-
-				if (braceTypeStack->size() > 1)
-				{
-					previousBraceType = braceTypeStack->back();
-					braceTypeStack->pop_back();
-					isPreviousBraceBlockRelated = !isBraceType(braceType, ARRAY_TYPE);
-				}
-				else
-				{
-					previousBraceType = NULL_TYPE;
-					isPreviousBraceBlockRelated = false;
-				}
-
-				if (!preBraceHeaderStack->empty())
-				{
-					previousHeader = currentHeader;
-					currentHeader = preBraceHeaderStack->back();
-					preBraceHeaderStack->pop_back();
-				}
-				else
-					currentHeader = nullptr;
-
-				if (!structStack->empty())
-				{
-					isInIndentableStruct = structStack->back();
-					structStack->pop_back();
-				}
-				else
-					isInIndentableStruct = false;
-
-				if (isNonInStatementArray
-				        && (!isBraceType(braceTypeStack->back(), ARRAY_TYPE)	// check previous brace
-				            || peekNextChar() == ';'))							// check for "};" added V2.01
-					isImmediatelyPostNonInStmt = true;
-
-				if (!shouldBreakOneLineStatements
-				        && ASBeautifier::getNextWord(currentLine, charNum) == ASResource::AS_ELSE)
-				{
-					// handle special case of "else" at the end of line
-					size_t nextText = currentLine.find_first_not_of(" \t", charNum + 1);
-					if (ASBeautifier::peekNextChar(currentLine, nextText + 3) == ' ')
-						shouldBreakLineAtNextChar = true;
-				}
-			}
-
-			// format braces
-			appendOpeningBrace = false;
-			if (isBraceType(braceType, ARRAY_TYPE))
-			{
-				formatArrayBraces(braceType, isOpeningArrayBrace);
-			}
-			else
-			{
-				if (currentChar == '{')
-					formatOpeningBrace(braceType);
-				else
-					formatClosingBrace(braceType);
-			}
+			handleBraces();
 			continue;
 		}
 
 		// #126
 		if ( currentChar == '*' && shouldPadOperators &&
 			pointerAlignment != PTR_ALIGN_TYPE &&  // SF 557
-			( currentHeader == &ASResource::AS_IF || currentHeader == &ASResource::AS_WHILE || currentHeader == &ASResource::AS_DO || currentHeader == &ASResource::AS_FOR)
+			( currentHeader == &ASResource::AS_IF || currentHeader == &ASResource::AS_WHILE ||
+			  currentHeader == &ASResource::AS_DO || currentHeader == &ASResource::AS_FOR)
 			&& ( previousChar == ')' || std::isalpha(previousChar) )
 			&& !isOperatorPaddingDisabled() ) {
 			appendSpacePad();
@@ -1177,45 +1974,7 @@ std::string ASFormatter::nextLine()
 		            && braceFormatMode == RUN_IN_MODE)
 		   )
 		{
-			isCharImmediatelyPostOpenBlock = (previousCommandChar == '{');
-			isCharImmediatelyPostCloseBlock = (previousCommandChar == '}');
-
-			if (isCharImmediatelyPostOpenBlock
-			        && !isCharImmediatelyPostComment
-			        && !isCharImmediatelyPostLineComment)
-			{
-				previousCommandChar = ' ';
-
-				if (braceFormatMode == NONE_MODE)
-				{
-					if (isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE)
-					        && (isBraceType(braceTypeStack->back(), BREAK_BLOCK_TYPE)
-					            || shouldBreakOneLineBlocks))
-						isInLineBreak = true;
-					else if (currentLineBeginsWithBrace)
-						formatRunIn();
-					else
-						breakLine();
-				}
-				else if (braceFormatMode == RUN_IN_MODE
-				         && currentChar != '#')
-					formatRunIn();
-				else
-					isInLineBreak = true;
-			}
-			else if (isCharImmediatelyPostCloseBlock
-			         && shouldBreakOneLineStatements
-			         && !isCharImmediatelyPostComment
-			         && ((isLegalNameChar(currentChar) && currentChar != '.')
-			             || currentChar == '+'
-			             || currentChar == '-'
-			             || currentChar == '*'
-			             || currentChar == '&'
-			             || currentChar == '('))
-			{
-				previousCommandChar = ' ';
-				isInLineBreak = true;
-			}
+			handleBreakLine();
 		}
 
 		// reset block handling flags
@@ -1234,207 +1993,8 @@ std::string ASFormatter::nextLine()
 
 		if (isPotentialHeader && !isInTemplate && squareBracketCount == 0)
 		{
-			isNonParenHeader = false;
-			foundClosingHeader = false;
-
-			newHeader = findHeader(headers);
-
-			// java can have a 'default' not in a switch
-			if (newHeader == &ASResource::AS_DEFAULT
-			        && ASBeautifier::peekNextChar(
-			            currentLine, charNum + (*newHeader).length() - 1) != ':')
-				newHeader = nullptr;
-			// Qt headers may be variables in C++
-			if (isCStyle()
-			        && (newHeader == &ASResource::AS_FOREVER || newHeader == &ASResource::AS_FOREACH))
-			{
-				if (currentLine.find_first_of("=;", charNum) != std::string::npos)
-					newHeader = nullptr;
-			}
-			if (isJavaStyle()
-			        && (newHeader == &ASResource::AS_SYNCHRONIZED))
-			{
-				// want synchronized statements not synchronized methods
-				if (!isBraceType(braceTypeStack->back(), COMMAND_TYPE))
-					newHeader = nullptr;
-			}
-			else if (newHeader == &ASResource::AS_USING
-			         && ASBeautifier::peekNextChar(
-			             currentLine, charNum + (*newHeader).length() - 1) != '(')
-				newHeader = nullptr;
-
-			if (newHeader != nullptr)
-			{
-				foundClosingHeader = isClosingHeader(newHeader);
-
-				if (!foundClosingHeader)
-				{
-					// these are closing headers
-					if ((newHeader == &ASResource::AS_WHILE && currentHeader == &ASResource::AS_DO)
-					        || (newHeader == &ASResource::_AS_FINALLY && currentHeader == &ASResource::_AS_TRY)
-					        || (newHeader == &ASResource::_AS_EXCEPT && currentHeader == &ASResource::_AS_TRY))
-						foundClosingHeader = true;
-					// don't append empty block for these related headers
-					else if (isSharpStyle()
-					         && previousNonWSChar == '}'
-					         && ((newHeader == &ASResource::AS_SET && currentHeader == &ASResource::AS_GET)
-					             || (newHeader == &ASResource::AS_REMOVE && currentHeader == &ASResource::AS_ADD))
-					         && isOkToBreakBlock(braceTypeStack->back()))
-						isAppendPostBlockEmptyLineRequested = false;
-				}
-
-				previousHeader = currentHeader;
-				currentHeader = newHeader;
-				needHeaderOpeningBrace = true;
-
-				// is the previous statement on the same line?
-				if ((previousNonWSChar == ';' || previousNonWSChar == ':')
-				        && !isInLineBreak
-				        && isOkToBreakBlock(braceTypeStack->back()))
-				{
-					// if breaking lines, break the line at the header
-					// except for multiple 'case' statements on a line
-					if (maxCodeLength != std::string::npos
-					        && previousHeader != &ASResource::AS_CASE)
-						isInLineBreak = true;
-					else
-						isHeaderInMultiStatementLine = true;
-				}
-
-				if (foundClosingHeader && previousNonWSChar == '}')
-				{
-					if (isOkToBreakBlock(braceTypeStack->back()))
-						isLineBreakBeforeClosingHeader();
-
-					// get the adjustment for a comment following the closing header
-					if (isInLineBreak)
-						nextLineSpacePadNum = getNextLineCommentAdjustment();
-					else
-						spacePadNum = getCurrentLineCommentAdjustment();
-				}
-
-				// check if the found header is non-paren header
-				isNonParenHeader = findHeader(nonParenHeaders) != nullptr;
-
-				if (isNonParenHeader
-				        && (currentHeader == &ASResource::AS_CATCH
-				            || currentHeader == &ASResource::AS_CASE))
-				{
-					int startChar = charNum + currentHeader->length() - 1;
-					if (ASBeautifier::peekNextChar(currentLine, startChar) == '(')
-						isNonParenHeader = false;
-				}
-
-				// join 'else if' statements
-				if (currentHeader == &ASResource::AS_IF
-				        && previousHeader == &ASResource::AS_ELSE
-				        && isInLineBreak
-				        && !shouldBreakElseIfs
-				        && !isCharImmediatelyPostLineComment
-				        && !isImmediatelyPostPreprocessor)
-				{
-					// 'else' must be last thing on the line
-					size_t start = formattedLine.length() >= 6 ? formattedLine.length() - 6 : 0;
-					if (formattedLine.find(ASResource::AS_ELSE, start) != std::string::npos)
-					{
-						appendSpacePad();
-						isInLineBreak = false;
-					}
-				}
-
-				appendSequence(*currentHeader);
-				goForward(currentHeader->length() - 1);
-				// if a paren-header is found add a space after it, if needed
-				// this checks currentLine, appendSpacePad() checks formattedLine
-				// in 'case' and C# 'catch' can be either a paren or non-paren header
-				if (shouldPadHeader
-				        && !isNonParenHeader
-				        && charNum < (int) currentLine.length() - 1 && !isWhiteSpace(currentLine[charNum + 1]))
-					appendSpacePad();
-
-				// Signal that a header has been reached
-				// *** But treat a closing while() (as in do...while)
-				//     as if it were NOT a header since a closing while()
-				//     should never have a block after it!
-				if (currentHeader != &ASResource::AS_CASE && currentHeader != &ASResource::AS_DEFAULT
-				        && !(foundClosingHeader && currentHeader == &ASResource::AS_WHILE))
-				{
-					isInHeader = true;
-
-					// in C# 'catch' and 'delegate' can be a paren or non-paren header
-					if (isNonParenHeader && !isSharpStyleWithParen(currentHeader))
-					{
-						isImmediatelyPostHeader = true;
-						isInHeader = false;
-					}
-				}
-
-				// #569
-				if (shouldBreakBlocks
-				        && isOkToBreakBlock(braceTypeStack->back())
-				        && !isHeaderInMultiStatementLine)
-				{
-					if (previousHeader == nullptr
-					        && !foundClosingHeader
-					        && !isCharImmediatelyPostOpenBlock
-					        && !isImmediatelyPostCommentOnly)
-					{
-						isPrependPostBlockEmptyLineRequested = true;
-					}
-
-					if (isClosingHeader(currentHeader)
-					        || foundClosingHeader)
-					{
-						isPrependPostBlockEmptyLineRequested = false;
-					}
-
-					if (shouldBreakClosingHeaderBlocks
-					        && isCharImmediatelyPostCloseBlock
-					        && !isImmediatelyPostCommentOnly
-					        && !(currentHeader == &ASResource::AS_WHILE			// do-while
-					             && foundClosingHeader))
-					{
-						isPrependPostBlockEmptyLineRequested = true;
-					}
-				}
-
-				if (currentHeader == &ASResource::AS_CASE
-				        || currentHeader == &ASResource::AS_DEFAULT)
-					isInCase = true;
-
+			if (!handlePotentialHeader(newHeader))
 				continue;
-			}
-			if ((newHeader = findHeader(preDefinitionHeaders)) != nullptr
-			        && parenStack->back() == 0
-			        && !isInEnum)		// not C++11 enum class
-			{
-				if (newHeader == &ASResource::AS_NAMESPACE || newHeader == &ASResource::AS_MODULE)
-					foundNamespaceHeader = true;
-				if (newHeader == &ASResource::AS_CLASS)
-					foundClassHeader = true;
-				if (newHeader == &ASResource::AS_STRUCT)
-					foundStructHeader = true;
-				if (newHeader == &ASResource::AS_INTERFACE && !foundNamespaceHeader && !foundClassHeader)
-					foundInterfaceHeader = true;
-				foundPreDefinitionHeader = true;
-				appendSequence(*newHeader);
-				goForward(newHeader->length() - 1);
-
-				continue;
-			}
-			if ((newHeader = findHeader(preCommandHeaders)) != nullptr)
-			{
-				// must be after function arguments
-				if (previousNonWSChar == ')')
-					foundPreCommandHeader = true;
-			}
-			else if ((newHeader = findHeader(castOperators)) != nullptr)
-			{
-				foundCastOperator = true;
-				appendSequence(*newHeader);
-				goForward(newHeader->length() - 1);
-				continue;
-			}
 		}   // (isPotentialHeader && !isInTemplate)
 
 		if (isInLineBreak)          // OK to break line here
@@ -1454,108 +2014,14 @@ std::string ASFormatter::nextLine()
 
 		if (previousNonWSChar == '}' || currentChar == ';')
 		{
-			if (currentChar == ';' && !isInAsmBlock)
-			{
-				squareBracketCount = 0;
-				//assert(methodBreakCharNum == std::string::npos);	// comment out
-				//assert(methodBreakLineNum == 0);				// comment out
-				methodBreakCharNum = std::string::npos;
-				methodBreakLineNum = 0;
-				methodAttachCharNum = std::string::npos;
-				methodAttachLineNum = 0;
-
-				if (((shouldBreakOneLineStatements
-				        || isBraceType(braceTypeStack->back(), SINGLE_LINE_TYPE))
-				        && isOkToBreakBlock(braceTypeStack->back()))
-				        && !(attachClosingBraceMode && peekNextChar() == '}'))
-				{
-					passedSemicolon = true;
-				}
-				else if (!shouldBreakOneLineStatements
-				         && ASBeautifier::getNextWord(currentLine, charNum) == ASResource::AS_ELSE)
-				{
-					// handle special case of "else" at the end of line
-					size_t nextText = currentLine.find_first_not_of(" \t", charNum + 1);
-					if (ASBeautifier::peekNextChar(currentLine, nextText + 3) == ' ')
-						passedSemicolon = true;
-				}
-
-//is set in struct case? #518 #569
-				if (shouldBreakBlocks
-				        && currentHeader != nullptr
-				        && currentHeader != &ASResource::AS_CASE
-				        && currentHeader != &ASResource::AS_DEFAULT
-				        && !isHeaderInMultiStatementLine
-				        && parenStack->back() == 0
-				   )
-				{
-					isAppendPostBlockEmptyLineRequested = true;
-				}
-			}
-			if (currentChar != ';'
-			        || foundStructHeader // #518
-			        || (needHeaderOpeningBrace && parenStack->back() == 0))
-				currentHeader = nullptr;
-
-			resetEndOfStatement();
+			handleEndOfBlock();
 		}
 
 		if (currentChar == ':'
 		        && previousChar != ':'         // not part of '::'
 		        && peekNextChar() != ':')      // not part of '::'
 		{
-			if (isInCase)
-			{
-				isInCase = false;
-				if (shouldBreakOneLineStatements)
-					passedColon = true;
-			}
-			else if (isCStyle()                     // for C/C++ only
-			         && isOkToBreakBlock(braceTypeStack->back())
-			         && shouldBreakOneLineStatements
-			         && !foundQuestionMark          // not in a ?: sequence
-			         && !foundPreDefinitionHeader   // not in a definition block
-			         && previousCommandChar != ')'  // not after closing paren of a method header
-			         && !foundPreCommandHeader      // not after a 'noexcept'
-			         && squareBracketCount == 0     // not in objC method call
-			         && !isInObjCMethodDefinition   // not objC '-' or '+' method
-			         && !isInObjCInterface          // not objC @interface
-			         && !isInObjCSelector           // not objC @selector
-			         && !isDigit(peekNextChar())    // not a bit field
-			         && !isInEnum                   // not an enum with a base type
-			         && !isInStruct                 // not an struct
-			         && !isInContinuedPreProc           // not in preprocessor line
-			         && !isInAsm                    // not in extended assembler
-			         && !isInAsmOneLine             // not in extended assembler
-			         && !isInAsmBlock)              // not in extended assembler
-			{
-				passedColon = true;
-			}
-
-			if (isObjCStyle()
-			        && (squareBracketCount > 0 || isInObjCMethodDefinition || isInObjCSelector)
-			        && !foundQuestionMark)			// not in a ?: sequence
-			{
-				isImmediatelyPostObjCMethodPrefix = false;
-				isInObjCReturnType = false;
-				isInObjCParam = true;
-				if (shouldPadMethodColon)
-					padObjCMethodColon();
-			}
-
-			if (isInObjCInterface)
-			{
-				appendSpacePad();
-				if ((int) currentLine.length() > charNum + 1
-				        && !isWhiteSpace(currentLine[charNum + 1]))
-					currentLine.insert(charNum + 1, " ");
-			}
-
-			if (isClassInitializer())
-			{
-				isInClassInitializer = true;
-			}
-
+			handleColonSection();
 		}
 
 		if (currentChar == '?')
@@ -1563,169 +2029,8 @@ std::string ASFormatter::nextLine()
 
 		if (isPotentialHeader && !isInTemplate)
 		{
-			//GL30
-			if (!isGSCStyle() && (findKeyword(currentLine, charNum, ASResource::AS_NEW)
-			        || findKeyword(currentLine, charNum, ASResource::AS_DELETE)))
-			{
-				isInPotentialCalculation = false;
-				isImmediatelyPostNewDelete = true;
-			}
-
-			//https://sourceforge.net/p/astyle/bugs/464/ + GH16
-			if (isSharpStyle() && findKeyword(currentLine, charNum, ASResource::AS_NEW)
-								&& currentHeader != &ASResource::AS_FOREACH
-								&& currentHeader != &ASResource::AS_FOR
-								&& currentHeader != &ASResource::AS_USING
-								&& currentHeader != &ASResource::AS_WHILE
-								&& currentHeader != &ASResource::AS_IF
-								&& currentLine.find(ASResource::AS_PUBLIC) == std::string::npos
-								&& currentLine.find(ASResource::AS_PROTECTED) == std::string::npos
-								&& currentLine.find(ASResource::AS_PRIVATE) == std::string::npos
-								)
-			{
-				isInAllocator = true;
-			}
-
-			if (findKeyword(currentLine, charNum, ASResource::AS_RETURN))
-			{
-				isInPotentialCalculation = true;
-				isImmediatelyPostReturn = true;		// return is the same as an = sign
-			}
-
-			if (findKeyword(currentLine, charNum, ASResource::AS_OPERATOR))
-				isImmediatelyPostOperator = true;
-
-			if (findKeyword(currentLine, charNum, ASResource::AS_ENUM))
-			{
-				size_t firstNum = currentLine.find_first_of("(){},/");
-				if (firstNum == std::string::npos
-				        || currentLine[firstNum] == '{'
-				        || currentLine[firstNum] == '/')
-					isInEnum = true;
-			}
-
-			if (findKeyword(currentLine, charNum, ASResource::AS_TYPEDEF_STRUCT) || findKeyword(currentLine, charNum, ASResource::AS_STRUCT))
-			{
-				size_t firstNum = currentLine.find_first_of("(){},/");
-
-				if (firstNum == std::string::npos
-				        || currentLine[firstNum] == '{'
-				        || currentLine[firstNum] == '/')
-				{
-					isInStruct = true;
-				}
-			}
-
-			if (isCStyle()
-			        && findKeyword(currentLine, charNum, ASResource::AS_THROW)
-			        && previousCommandChar != ')'
-			        && !foundPreCommandHeader)      // 'const' throw()
-				isImmediatelyPostThrow = true;
-
-			if (isCStyle() && findKeyword(currentLine, charNum, ASResource::AS_EXTERN) && isExternC())
-				isInExternC = true;
-
-			if (isCStyle() && findKeyword(currentLine, charNum, ASResource::AS_AUTO)
-			        && (isBraceType(braceTypeStack->back(), NULL_TYPE)
-			            || isBraceType(braceTypeStack->back(), DEFINITION_TYPE))
-			        && (currentLine.find('(') != std::string::npos)) // #516 auto array initializer with braces should not be blocks
-				foundTrailingReturnType = true;
-
-			// check for break/attach return type
-			if (shouldBreakReturnType || shouldBreakReturnTypeDecl
-			        || shouldAttachReturnType || shouldAttachReturnTypeDecl)
-			{
-				if ((isBraceType(braceTypeStack->back(), NULL_TYPE)
-				        || isBraceType(braceTypeStack->back(), DEFINITION_TYPE))
-				        && !returnTypeChecked
-				        && !foundNamespaceHeader
-				        && !foundClassHeader
-				        && !isInObjCMethodDefinition
-				        // bypass objective-C and java @ character
-				        && charNum == (int) currentLine.find_first_not_of(" \t")
-
-						// possibly related to #504
-				        && !(isCStyle() && isCharPotentialHeader(currentLine, charNum)
-				             && (findKeyword(currentLine, charNum, ASResource::AS_PUBLIC)
-				                 || findKeyword(currentLine, charNum, ASResource::AS_PRIVATE)
-				                 || findKeyword(currentLine, charNum, ASResource::AS_PROTECTED)))
-					)
-				{
-					findReturnTypeSplitPoint(currentLine);
-					returnTypeChecked = true;
-				}
-			}
-
-			// Objective-C NSException macros are preCommandHeaders
-			if (isCStyle() && findKeyword(currentLine, charNum, ASResource::AS_NS_DURING))
-				foundPreCommandMacro = true;
-			if (isCStyle() && findKeyword(currentLine, charNum, ASResource::AS_NS_HANDLER))
-				foundPreCommandMacro = true;
-
-			if (isCStyle() && isExecSQL(currentLine, charNum))
-				isInExecSQL = true;
-
-			if (isCStyle())
-			{
-				if (findKeyword(currentLine, charNum, ASResource::AS_ASM)
-				        || findKeyword(currentLine, charNum, ASResource::AS__ASM__))
-				{
-					isInAsm = true;
-				}
-				else if (findKeyword(currentLine, charNum, ASResource::AS_MS_ASM)		// microsoft specific
-				         || findKeyword(currentLine, charNum, ASResource::AS_MS__ASM))
-				{
-					int index = 4;
-					if (peekNextChar() == '_')	// check for __asm
-						index = 5;
-
-					char peekedChar = ASBase::peekNextChar(currentLine, charNum + index);
-					if (peekedChar == '{' || peekedChar == ' ')
-						isInAsmBlock = true;
-					else
-						isInAsmOneLine = true;
-				}
-			}
-
-			if (isJavaStyle()
-			        && (findKeyword(currentLine, charNum, ASResource::AS_STATIC)
-			            && isNextCharOpeningBrace(charNum + 6)))
-				isJavaStaticConstructor = true;
-
-			if (isSharpStyle()
-			        && (findKeyword(currentLine, charNum, ASResource::AS_DELEGATE)
-			            || findKeyword(currentLine, charNum, ASResource::AS_UNCHECKED)))
-				isSharpDelegate = true;
-
-			// append the entire name
-			std::string_view name = getCurrentWord(currentLine, charNum);
-			// must pad the 'and' and 'or' operators if required
-			if (name == "and" || name == "or")
-			{
-				if (shouldPadOperators && previousNonWSChar != ':')
-				{
-					appendSpacePad();
-					appendOperator(std::string(name));
-					goForward(name.length() - 1);
-					if (!isBeforeAnyComment()
-					        && !(currentLine.compare(charNum + 1, 1, ASResource::AS_SEMICOLON) == 0)
-					        && !(currentLine.compare(charNum + 1, 2, ASResource::AS_SCOPE_RESOLUTION) == 0))
-						appendSpaceAfter();
-				}
-				else
-				{
-					appendOperator(std::string(name));
-					goForward(name.length() - 1);
-				}
-			}
-			else
-			{
-				appendSequence(std::string(name));
-				goForward(name.length() - 1);
-			}
-
+			handlePotentialHeaderPart2();
 			continue;
-
 		}   // (isPotentialHeader &&  !isInTemplate)
 
 		// determine if this is an Objective-C statement
@@ -1784,37 +2089,7 @@ std::string ASFormatter::nextLine()
 		{
 			newHeader = findOperator(operators);
 
-			// check for Java ? wildcard
-			if (newHeader != nullptr
-			        && newHeader == &ASResource::AS_GCC_MIN_ASSIGN
-			        && isJavaStyle()
-			        && isInTemplate)
-				newHeader = nullptr;
-
-			if (newHeader != nullptr)
-			{
-				if (newHeader == &ASResource::AS_LAMBDA)
-					foundPreCommandHeader = true;
-
-				// correct mistake of two >> closing a template
-				if (isInTemplate && (newHeader == &ASResource::AS_GR_GR || newHeader == &ASResource::AS_GR_GR_GR))
-					newHeader = &ASResource::AS_GR;
-
-				if (!isInPotentialCalculation)
-				{
-					// must determine if newHeader is an assignment operator
-					// do NOT use findOperator - the length must be exact!!!
-					if (find(begin(*assignmentOperators), end(*assignmentOperators), newHeader)
-					        != end(*assignmentOperators))
-					{
-						foundPreCommandHeader = false;
-						char peekedChar = peekNextChar();
-						isInPotentialCalculation = !(newHeader == &ASResource::AS_EQUAL && peekedChar == '*')
-						                           && !(newHeader == &ASResource::AS_EQUAL && peekedChar == '&')
-						                           && !isCharImmediatelyPostOperator;
-					}
-				}
-			}
+			handlePotentialOperator(newHeader);
 		}
 
 		size_t lastNonWsChar = currentLine.find_last_not_of(" \t", charNum - 1);
@@ -1842,7 +2117,6 @@ std::string ASFormatter::nextLine()
 			{
 				formatPointerOrReference();
 			}
-
 			else
 			{
 				appendOperator(*newHeader);
@@ -1896,39 +2170,7 @@ std::string ASFormatter::nextLine()
 		// pad parens
 		if (currentChar == '(' || currentChar == ')')
 		{
-			if (currentChar == '(')
-			{
-				if (shouldPadHeader
-				        && (isCharImmediatelyPostReturn
-				            || isCharImmediatelyPostThrow
-				            || isCharImmediatelyPostNewDelete))
-					appendSpacePad();
-			}
-
-			if (shouldPadParensOutside || shouldPadParensInside || shouldUnPadParens || shouldPadFirstParen)
-				padParensOrBrackets('(', ')', shouldPadFirstParen);
-			else
-				appendCurrentChar();
-
-			if (isInObjCMethodDefinition)
-			{
-				if (currentChar == '(' && isImmediatelyPostObjCMethodPrefix)
-				{
-					if (shouldPadMethodPrefix || shouldUnPadMethodPrefix)
-						padObjCMethodPrefix();
-					isImmediatelyPostObjCMethodPrefix = false;
-					isInObjCReturnType = true;
-				}
-				else if (currentChar == ')' && isInObjCReturnType)
-				{
-					if (shouldPadReturnType || shouldUnPadReturnType)
-						padObjCReturnType();
-					isInObjCReturnType = false;
-				}
-				else if (isInObjCParam
-				         && (shouldPadParamType || shouldUnPadParamType))
-					padObjCParamType();
-			}
+			handleParens();
 			continue;
 		}
 
@@ -3273,24 +3515,21 @@ bool ASFormatter::isNumericVariable(std::string_view word) const
 bool ASFormatter::isClassInitializer() const
 {
 	assert(currentChar == ':');
-	assert(previousChar != ':' && peekNextChar() != ':');	// not part of '::'
+	assert(previousChar != ':' && peekNextChar() != ':'); // not part of '::'
 
-	// this should be similar to ASBeautifier::parseCurrentLine()
-	bool foundClassInitializer = false;
+	// Early exit if conditions that prevent class initializer detection are met
+	if (foundQuestionMark || parenStack->back() > 0 || isInEnum) {
+		return false;
+	}
 
-	if (foundQuestionMark || parenStack->back() > 0 || isInEnum)
-	{
-		// do nothing special
-	}
-	else if (isCStyle()
-	         && !isInCase
-	         && (previousCommandChar == ')' || foundPreCommandHeader))
-	{
-		// found a 'class' c'tor initializer
-		foundClassInitializer = true;
-	}
-	return foundClassInitializer;
+	// Check if we are in a C-style class constructor initializer
+	bool isCStyleInitializer = isCStyle() &&
+	                           !isInCase &&
+	                           (previousCommandChar == ')' || foundPreCommandHeader);
+
+	return isCStyleInitializer;
 }
+
 
 /**
  * check if a line is empty
@@ -3655,10 +3894,6 @@ bool ASFormatter::isPointerOrReferenceVariable(std::string_view word) const
 				&& word.compare(word.length() - 2, 2, "_t") == 0)
 		)
 		retval = true;
-
-	//if (pointerAlignment == PTR_ALIGN_TYPE) {
-	//	return retval;
-	//}
 
 	// check for C# object type "x is std::string"
 	if (retval && isSharpStyle())
@@ -5360,185 +5595,16 @@ void ASFormatter::formatArrayBraces(BraceType braceType, bool isOpeningArrayBrac
 		// is this the first opening brace in the array?
 		if (isOpeningArrayBrace)
 		{
-			if (braceFormatMode == ATTACH_MODE || braceFormatMode == LINUX_MODE)
-			{
-				// break an enum if mozilla
-				if (isBraceType(braceType, ENUM_TYPE)
-				        && formattingStyle == STYLE_MOZILLA
-						&& !(!shouldBreakOneLineBlocks && formattedLine.find('}' != std::string::npos) ) // GL38
-					)
-				{
-					isInLineBreak = true;
-					appendCurrentChar();                // don't attach
-				}
-				// don't attach to a preprocessor directive or '\' line
-				else if ((isImmediatelyPostPreprocessor
-				          || (!formattedLine.empty()
-				              && formattedLine[formattedLine.length() - 1] == '\\'))
-				         && currentLineBeginsWithBrace)
-				{
-					isInLineBreak = true;
-					appendCurrentChar();                // don't attach
-				}
-				else if (isCharImmediatelyPostComment)
-				{
-					// TODO: attach brace to line-end comment
-					appendCurrentChar();                // don't attach
-				}
-				else if (isCharImmediatelyPostLineComment && !isBraceType(braceType, SINGLE_LINE_TYPE))
-				{
-					appendCharInsideComments();
-				}
-				else
-				{
-					// if a blank line precedes this don't attach
-					if (isEmptyLine(formattedLine))
-						appendCurrentChar();            // don't attach
-					else
-					{
-						// if brace is broken or not an assignment
-						if (currentLineBeginsWithBrace
-						        && !isBraceType(braceType, SINGLE_LINE_TYPE))
-						{
-							appendSpacePad();
-							appendCurrentChar(false);				// OK to attach
-							// TODO: debug the following line
-							testForTimeToSplitFormattedLine();		// line length will have changed
-
-							if (currentLineBeginsWithBrace && currentLineFirstBraceNum == (size_t) charNum)
-								shouldBreakLineAtNextChar = true;
-						}
-						else
-						{
-							if (previousNonWSChar != '(')
-							{
-								// don't space pad C++11 uniform initialization
-								if (!isBraceType(braceType, INIT_TYPE))
-									appendSpacePad();
-							}
-							appendCurrentChar();
-						}
-					}
-				}
-			}
-			else if (braceFormatMode == BREAK_MODE)
-			{
-				if (isWhiteSpace(peekNextChar()) && !isInVirginLine)
-					breakLine();
-				else if (isBeforeAnyComment() && sourceIterator->hasMoreLines())
-				{
-					// do not break unless comment is at line end
-					if (isBeforeAnyLineEndComment(charNum) && !currentLineBeginsWithBrace)
-					{
-						currentChar = ' ';            // remove brace from current line
-						appendOpeningBrace = true;    // append brace to following line
-					}
-				}
-				if (!isInLineBreak && previousNonWSChar != '(')
-				{
-					// don't space pad C++11 uniform initialization
-					if (!isBraceType(braceType, INIT_TYPE))
-						appendSpacePad();
-				}
-				appendCurrentChar();
-
-				if (currentLineBeginsWithBrace
-				        && currentLineFirstBraceNum == (size_t) charNum
-				        && !isBraceType(braceType, SINGLE_LINE_TYPE))
-					shouldBreakLineAtNextChar = true;
-			}
-			else if (braceFormatMode == RUN_IN_MODE)
-			{
-				if (isWhiteSpace(peekNextChar()) && !isInVirginLine)
-					breakLine();
-				else if (isBeforeAnyComment() && sourceIterator->hasMoreLines())
-				{
-					// do not break unless comment is at line end
-					if (isBeforeAnyLineEndComment(charNum) && !currentLineBeginsWithBrace)
-					{
-						currentChar = ' ';            // remove brace from current line
-						appendOpeningBrace = true;    // append brace to following line
-					}
-				}
-				if (!isInLineBreak && previousNonWSChar != '(')
-				{
-					// don't space pad C++11 uniform initialization
-					if (!isBraceType(braceType, INIT_TYPE))
-						appendSpacePad();
-				}
-				appendCurrentChar();
-			}
-			else if (braceFormatMode == NONE_MODE)
-			{
-				if (currentLineBeginsWithBrace
-				        && (size_t) charNum == currentLineFirstBraceNum)
-				{
-					appendCurrentChar();                // don't attach
-				}
-				else
-				{
-					if (previousNonWSChar != '(')
-					{
-						// don't space pad C++11 uniform initialization
-						if (!isBraceType(braceType, INIT_TYPE))
-							appendSpacePad();
-					}
-					appendCurrentChar(false);           // OK to attach
-				}
-			}
+			formatFirstOpenBrace(braceType);
 		}
 		else	     // not the first opening brace
 		{
-			if (braceFormatMode == RUN_IN_MODE)
-			{
-				if (previousNonWSChar == '{'
-				        && braceTypeStack->size() > 2
-				        && !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2],
-				                        SINGLE_LINE_TYPE))
-					formatArrayRunIn();
-			}
-			else if (!isInLineBreak
-			         && !isWhiteSpace(peekNextChar())
-			         && previousNonWSChar == '{'
-			         && braceTypeStack->size() > 2
-			         && !isBraceType((*braceTypeStack)[braceTypeStack->size() - 2],
-			                         SINGLE_LINE_TYPE))
-				formatArrayRunIn();
-
-			appendCurrentChar();
+			formatOpenBrace();
 		}
 	}
 	else if (currentChar == '}')
 	{
-		if (attachClosingBraceMode)
-		{
-			if (isEmptyLine(formattedLine)			// if a blank line precedes this
-			        || isImmediatelyPostPreprocessor
-			        || isCharImmediatelyPostLineComment
-			        || isCharImmediatelyPostComment)
-				appendCurrentChar();				// don't attach
-			else
-			{
-				appendSpacePad();
-				appendCurrentChar(false);			// attach
-			}
-		}
-		else
-		{
-			// does this close the first opening brace in the array?
-			// must check if the block is still a single line because of anonymous statements
-			if (!isBraceType(braceType, INIT_TYPE)
-			        && (!isBraceType(braceType, SINGLE_LINE_TYPE)
-			            || formattedLine.find('{') == std::string::npos))
-				breakLine();
-			appendCurrentChar();
-		}
-
-		// if a declaration follows an enum definition, space pad
-		char peekedChar = peekNextChar();
-		if ((isLegalNameChar(peekedChar) && peekedChar != '.')
-		        || peekedChar == '[')
-			appendSpaceAfter();
+		formatCloseBrace(braceType);
 	}
 }
 
