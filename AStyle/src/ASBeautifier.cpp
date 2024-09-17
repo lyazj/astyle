@@ -10,6 +10,7 @@
 #include "astyle.h"
 
 #include <algorithm>
+#include <string_view>
 
 
 //-----------------------------------------------------------------------------
@@ -2660,6 +2661,950 @@ bool ASBeautifier::isTopLevel() const
 	return false;
 }
 
+
+bool ASBeautifier::handleHeaderSection(std::string_view line, size_t i, bool closingBraceReached, bool *haveCaseIndent)
+{
+	const std::string* newHeader = findHeader(line, i, headers);
+
+	// java can have a 'default' not in a switch
+	if (newHeader == &ASResource::AS_DEFAULT
+			&& peekNextChar(line, (i + (*newHeader).length() - 1)) != ':')
+		newHeader = nullptr;
+	// Qt headers may be variables in C++
+	if (isCStyle()
+			&& (newHeader == &ASResource::AS_FOREVER || newHeader == &ASResource::AS_FOREACH))
+	{
+		if (line.find_first_of("=;", i) != std::string::npos)
+			newHeader = nullptr;
+	}
+	else if (isSharpStyle()
+				&& (newHeader == &ASResource::AS_GET || newHeader == &ASResource::AS_SET))
+	{
+		if (getNextWord(std::string(line), i + (*newHeader).length()) == "is")
+			newHeader = nullptr;
+	}
+	else if (newHeader == &ASResource::AS_USING
+				&& peekNextChar(line, i + (*newHeader).length() - 1) != '(')
+		newHeader = nullptr;
+
+	if (newHeader != nullptr)
+	{
+		// if we reached here, then this is a header...
+		bool isIndentableHeader = true;
+
+		isInHeader = true;
+
+		std::vector<const std::string*>* lastTempStack = nullptr;
+		if (!tempStacks->empty())
+			lastTempStack = tempStacks->back();
+
+		// if a new block is opened, push a new stack into tempStacks to hold the
+		// future list of headers in the new block.
+
+		// take care of the special case: 'else if (...)'
+		if (newHeader == &ASResource::AS_IF && lastLineHeader == &ASResource::AS_ELSE)
+		{
+			if (!headerStack->empty())
+				headerStack->pop_back();
+		}
+
+		// take care of 'else'
+		else if (newHeader == &ASResource::AS_ELSE)
+		{
+			if (lastTempStack != nullptr)
+			{
+				int indexOfIf = indexOf(*lastTempStack, &ASResource::AS_IF);
+				if (indexOfIf != -1)
+				{
+					// recreate the header list in headerStack up to the previous 'if'
+					// from the temporary snapshot stored in lastTempStack.
+					int restackSize = lastTempStack->size() - indexOfIf - 1;
+					for (int r = 0; r < restackSize; r++)
+					{
+						headerStack->emplace_back(lastTempStack->back());
+						lastTempStack->pop_back();
+					}
+					if (!closingBraceReached)
+						indentCount += restackSize;
+				}
+				/*
+					* If the above if is not true, i.e. no 'if' before the 'else',
+					* then nothing beautiful will come out of this...
+					* I should think about inserting an Exception here to notify the caller of this...
+					*/
+			}
+		}
+
+		// check if 'while' closes a previous 'do'
+		else if (newHeader == &ASResource::AS_WHILE)
+		{
+			if (lastTempStack != nullptr)
+			{
+				int indexOfDo = indexOf(*lastTempStack, &ASResource::AS_DO);
+				if (indexOfDo != -1)
+				{
+					// recreate the header list in headerStack up to the previous 'do'
+					// from the temporary snapshot stored in lastTempStack.
+					int restackSize = lastTempStack->size() - indexOfDo - 1;
+					for (int r = 0; r < restackSize; r++)
+					{
+						headerStack->emplace_back(lastTempStack->back());
+						lastTempStack->pop_back();
+					}
+					if (!closingBraceReached)
+						indentCount += restackSize;
+				}
+			}
+		}
+		// check if 'catch' closes a previous 'try' or 'catch'
+		else if (newHeader == &ASResource::AS_CATCH || newHeader == &ASResource::AS_FINALLY)
+		{
+			if (lastTempStack != nullptr)
+			{
+				int indexOfTry = indexOf(*lastTempStack, &ASResource::AS_TRY);
+				if (indexOfTry == -1)
+					indexOfTry = indexOf(*lastTempStack, &ASResource::AS_CATCH);
+				if (indexOfTry != -1)
+				{
+					// recreate the header list in headerStack up to the previous 'try'
+					// from the temporary snapshot stored in lastTempStack.
+					int restackSize = lastTempStack->size() - indexOfTry - 1;
+					for (int r = 0; r < restackSize; r++)
+					{
+						headerStack->emplace_back(lastTempStack->back());
+						lastTempStack->pop_back();
+					}
+
+					if (!closingBraceReached)
+						indentCount += restackSize;
+				}
+			}
+		}
+		else if (newHeader == &ASResource::AS_CASE)
+		{
+			isInCase = true;
+			if (!*haveCaseIndent)
+			{
+				*haveCaseIndent = true;
+				if (!lineBeginsWithOpenBrace)
+					--indentCount;
+			}
+		}
+		else if (newHeader == &ASResource::AS_DEFAULT)
+		{
+			isInCase = true;
+			--indentCount;
+		}
+		else if (newHeader == &ASResource::AS_STATIC
+					|| newHeader == &ASResource::AS_SYNCHRONIZED)
+		{
+			if (!headerStack->empty()
+					&& (headerStack->back() == &ASResource::AS_STATIC
+						|| headerStack->back() == &ASResource::AS_SYNCHRONIZED))
+			{
+				isIndentableHeader = false;
+			}
+			else
+			{
+				isIndentableHeader = false;
+				probationHeader = newHeader;
+			}
+		}
+		else if (newHeader == &ASResource::AS_TEMPLATE)
+		{
+			isInTemplate = true;
+			isIndentableHeader = false;
+		}
+
+		if (isIndentableHeader)
+		{
+			headerStack->emplace_back(newHeader);
+			isContinuation = false;
+			if (indexOf(*nonParenHeaders, newHeader) == -1)
+			{
+				isInConditional = true;
+			}
+			lastLineHeader = newHeader;
+		}
+		else
+			isInHeader = false;
+
+		i += newHeader->length() - 1;
+
+		return false;
+	}  // newHeader != nullptr
+
+	if (findHeader(line, i, preCommandHeaders) != nullptr)
+		// must be after function arguments
+		if (prevNonSpaceCh == ')')
+			foundPreCommandHeader = true;
+
+	// Objective-C NSException macros are preCommandHeaders
+	if (isObjCStyle() && findKeyword(line, i, ASResource::AS_NS_DURING))
+		foundPreCommandMacro = true;
+	if (isObjCStyle() && findKeyword(line, i, ASResource::AS_NS_HANDLER))
+		foundPreCommandMacro = true;
+
+	//https://sourceforge.net/p/astyle/bugs/353/
+	// new is ending the line?
+	if (isJavaStyle() && findKeyword(line, i, ASResource::AS_NEW) && line.length() - 3 == i)
+	{
+		headerStack->emplace_back(&ASResource::AS_FIXED); // needs to be something which will not match - need to define a token which will never match
+	}
+
+	//https://sourceforge.net/p/astyle/bugs/550/
+	//enum can be function return value
+	if (parenDepth == 0 && findKeyword(line, i, ASResource::AS_ENUM) && line.find_first_of(ASResource::AS_OPEN_PAREN, i) == std::string::npos){
+		isInEnum = true;
+	}
+
+	if (parenDepth == 0 && (findKeyword(line, i, ASResource::AS_TYPEDEF_STRUCT) || findKeyword(line, i, ASResource::AS_STRUCT)) && line.find_first_of(ASResource::AS_SEMICOLON, i) == std::string::npos)
+	{
+		isInStruct = true;
+	}
+
+	// avoid regression with neovim test dataset
+	if (parenDepth == 0 && findKeyword(line, i, ASResource::AS_UNION) )
+	{
+		isInStruct = false;
+	}
+
+	if (isSharpStyle() && findKeyword(line, i, ASResource::AS_LET))
+		isInLet = true;
+
+	return true;
+}
+
+bool ASBeautifier::handleColonSection(std::string_view line, size_t i, bool tabIncrementIn, char *ch)
+{
+	if (line.length() > i + 1 && line[i + 1] == ':') // look for ::
+	{
+		++i;
+		return false;
+	}
+	else if (isInQuestion)		// NOLINT
+	{
+		// do nothing special
+	}
+	else if (parenDepth > 0)
+	{
+		// found a 'for' loop or an objective-C statement
+		// so do nothing special
+	}
+	else if (isInEnum)
+	{
+		// found an enum with a base-type
+		isInEnumTypeID = true;
+		if (i == 0)
+			indentCount += classInitializerIndents;
+	}
+	else if ((isCStyle() || isSharpStyle())
+				&& !isInCase
+				&& (prevNonSpaceCh == ')' || foundPreCommandHeader))
+	{
+		// found a 'class' c'tor initializer
+		isInClassInitializer = true;
+		registerContinuationIndentColon(line, i, tabIncrementIn);
+		if (i == 0)
+			indentCount += classInitializerIndents;
+	}
+
+	else if (isInClassHeader || isInObjCInterface)
+	{
+		// is in a 'class A : public B' definition
+		isInClassHeaderTab = true;
+		registerContinuationIndentColon(line, i, tabIncrementIn);
+	}
+	else if (isInAsm || isInAsmOneLine || isInAsmBlock)
+	{
+		// do nothing special
+	}
+	else if (isDigit(peekNextChar(line, i)))
+	{
+		// found a bit field - do nothing special
+	}
+	else if (isCStyle() && isInClass && prevNonSpaceCh != ')')
+	{
+		// found a 'private:' or 'public:' inside a class definition
+		--indentCount;
+		if (modifierIndent)
+			spaceIndentCount += (indentLength / 2);
+	}
+	else if (isCStyle() && !isInClass
+				&& headerStack->size() >= 2
+				&& (*headerStack)[headerStack->size() - 2] == &ASResource::AS_CLASS
+				&& (*headerStack)[headerStack->size() - 1] == &ASResource::AS_OPEN_BRACE)
+	{
+		// found a 'private:' or 'public:' inside a class definition
+		// and on the same line as the class opening brace
+		// do nothing
+	}
+	else if (isJavaStyle() && lastLineHeader == &ASResource::AS_FOR)
+	{
+		// found a java for-each statement
+		// so do nothing special
+	}
+	// do not trigger this in class definitions https://gitlab.com/saalen/astyle/-/issues/4
+	else if (isInStruct && !isInCase)
+	{
+		if (i == 0)
+			indentCount += classInitializerIndents;
+	}
+	else
+	{
+		currentNonSpaceCh = ';'; // so that braces after the ':' will appear as block-openers
+		char peekedChar = peekNextChar(line, i);
+		if (isInCase)
+		{
+			isInCase = false;
+			*ch = ';'; // from here on, treat char as ';'
+		}
+		else if (isCStyle() || (isSharpStyle() && peekedChar == ';'))
+		{
+			// is in a label (e.g. 'label1:')
+			if (labelIndent)
+				--indentCount; // unindent label by one indent
+			else if (!lineBeginsWithOpenBrace)
+				indentCount = 0; // completely flush indent to left
+		}
+	}
+	return true;
+}
+
+
+void ASBeautifier::handleEndOfStatement(size_t i, bool *closingBraceReached, char *ch)
+{
+	isInAssignment = isInInitializerList = false;
+
+	if (*ch == '}')
+	{
+
+		lambdaIndicator = false;
+
+		// first check if this '}' closes a previous block, or a static array...
+		if (braceBlockStateStack->size() > 1)
+		{
+			bool braceBlockState = braceBlockStateStack->back();
+			braceBlockStateStack->pop_back();
+			if (!braceBlockState)
+			{
+				if (!continuationIndentStackSizeStack->empty())
+				{
+					// this brace is a static array
+					popLastContinuationIndent();
+					parenDepth--;
+					if (i == 0)
+						shouldIndentBracedLine = false;
+
+					if (!parenIndentStack->empty())
+					{
+						int poppedIndent = parenIndentStack->back();
+						parenIndentStack->pop_back();
+						if (i == 0)
+							spaceIndentCount = poppedIndent;
+					}
+				}
+				return;
+			}
+		}
+
+		// this brace is block closer...
+
+		++lineClosingBlocksNum;
+
+		if (!continuationIndentStackSizeStack->empty())
+			popLastContinuationIndent();
+
+		if (!parenDepthStack->empty())
+		{
+			parenDepth = parenDepthStack->back();
+			parenDepthStack->pop_back();
+			isContinuation = blockStatementStack->back();
+			blockStatementStack->pop_back();
+
+			if (isContinuation)
+				blockTabCount--;
+		}
+
+		*closingBraceReached = true;
+		if (i == 0)
+			spaceIndentCount = 0;
+		isInAsmBlock = false;
+		isInAsm = isInAsmOneLine = isInQuote = false;	// close these just in case
+		isInStruct = false;
+
+		int headerPlace = indexOf(*headerStack, &ASResource::AS_OPEN_BRACE);
+		if (headerPlace != -1)
+		{
+			const std::string* popped = headerStack->back();
+			while (popped != &ASResource::AS_OPEN_BRACE)
+			{
+				headerStack->pop_back();
+				popped = headerStack->back();
+			}
+			headerStack->pop_back();
+
+			if (headerStack->empty())
+				g_preprocessorCppExternCBrace = 0;
+
+			// do not indent namespace brace unless namespaces are indented
+			if (!namespaceIndent && !headerStack->empty()
+					&& ((*headerStack).back() == &ASResource::AS_NAMESPACE
+						|| (*headerStack).back() == &ASResource::AS_MODULE)
+					&& i == 0)		// must be the first brace on the line
+				shouldIndentBracedLine = false;
+
+			if (!tempStacks->empty())
+			{
+				std::vector<const std::string*>* temp = tempStacks->back();
+				tempStacks->pop_back();
+				delete temp;
+			}
+		}
+
+		*ch = ' '; // needed due to cases such as '}else{', so that headers ('else' in this case) will be identified...
+	}	// ch == '}'
+
+	/*
+		* Create a temporary snapshot of the current block's header-list in the
+		* uppermost inner stack in tempStacks, and clear the headerStack up to
+		* the beginning of the block.
+		* Thus, the next future statement will think it comes one indent past
+		* the block's '{' unless it specifically checks for a companion-header
+		* (such as a previous 'if' for an 'else' header) within the tempStacks,
+		* and recreates the temporary snapshot by manipulating the tempStacks.
+		*/
+	if (!tempStacks->back()->empty())
+		while (!tempStacks->back()->empty())
+			tempStacks->back()->pop_back();
+	while (!headerStack->empty() && headerStack->back() != &ASResource::AS_OPEN_BRACE)
+	{
+		tempStacks->back()->emplace_back(headerStack->back());
+		headerStack->pop_back();
+	}
+
+	if (parenDepth == 0 && *ch == ';')
+	{
+		isContinuation = false;
+		isInClassInitializer = false;
+	}
+
+	if (isInObjCMethodDefinition)
+	{
+		objCColonAlignSubsequent = 0;
+		isImmediatelyPostObjCMethodDefinition = true;
+	}
+
+	previousLastLineHeader = nullptr;
+	isInClassHeader = false;		// for 'friend' class
+	isInEnum = false;
+	isInEnumTypeID = false;
+
+	isInQuestion = false;
+	isInTemplate = false;
+	isInObjCInterface = false;
+	foundPreCommandHeader = false;
+	foundPreCommandMacro = false;
+	squareBracketCount = 0;
+}
+
+void ASBeautifier::handleParens(std::string_view line, size_t i, bool tabIncrementIn, bool * isInOperator, char ch)
+{
+	// GL28 xx
+	if (ch == '(' || ch == '[')
+	{
+		*isInOperator = false;
+		// if have a struct header, this is a declaration not a definition
+		if (ch == '('
+				&& !headerStack->empty()
+				&& headerStack->back() == &ASResource::AS_STRUCT)
+		{
+			headerStack->pop_back();
+			isInClassHeader = false;
+
+			if (line.find("struct ", 0) > i)        // if not on this line #526, GH #12
+				indentCount -= classInitializerIndents;
+			if (indentCount < 0)
+				indentCount = 0;
+		}
+
+		if (parenDepth == 0)
+		{
+			// do not use emplace_back on vector<bool> until supported by macOS
+			parenStatementStack->push_back(isContinuation);
+			isContinuation = true;
+		}
+		parenDepth++;
+		if (ch == '[')
+		{
+			++squareBracketCount;
+			// #525 Maybe check for opening brace in the line
+			if (squareBracketCount == 1 && isObjCStyle() && line.find('{', i + 1 ) == std::string::npos)
+			{
+				isInObjCMethodCall = true;
+				isInObjCMethodCallFirst = true;
+			}
+
+			// #121
+			if (   !isLegalNameChar(prevNonSpaceCh)
+					&& prevNonSpaceCh != ']'
+					&& prevNonSpaceCh != ')'
+					&& prevNonSpaceCh != '*'  // GL #11
+					//&& line.find(ASResource::AS_AUTO, 0 ) == std::string::npos
+				)
+			{
+				lambdaIndicator = true;
+			}
+		}
+
+		continuationIndentStackSizeStack->emplace_back(continuationIndentStack->size());
+
+		if (currentHeader != nullptr)
+			registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, minConditionalIndent, true);
+		else if (!isInObjCMethodDefinition
+					//&& xxxCondition && shouldForceTabIndentation  // only count one opening parentheses per line #498
+				)
+			registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, true);
+	}
+	else if (ch == ')' || ch == ']')
+	{
+		if (ch == ']')
+			--squareBracketCount;
+
+		if (squareBracketCount <= 0)
+		{
+			squareBracketCount = 0;
+			if (isInObjCMethodCall)
+				isImmediatelyPostObjCMethodCall = true;
+		}
+		foundPreCommandHeader = false;
+		parenDepth--;
+
+		if (parenDepth == 0)
+		{
+			if (!parenStatementStack->empty())      // in case of unmatched closing parens
+			{
+				isContinuation = parenStatementStack->back();
+				parenStatementStack->pop_back();
+			}
+			isInAsm = false;
+			isInConditional = false;
+		}
+
+		if (!continuationIndentStackSizeStack->empty())
+		{
+			popLastContinuationIndent();
+
+			if (!parenIndentStack->empty())
+			{
+				int poppedIndent = parenIndentStack->back();
+				parenIndentStack->pop_back();
+
+				if (i == 0)
+					spaceIndentCount = poppedIndent;
+			}
+		}
+	}
+}
+
+void ASBeautifier::handleClosingParen(std::string_view line, size_t i, bool tabIncrementIn)
+{
+	// first, check if '{' is a block-opener or a static-array opener
+	bool isBlockOpener = ((prevNonSpaceCh == '{' && braceBlockStateStack->back())
+							|| prevNonSpaceCh == '}'
+							|| prevNonSpaceCh == ')'
+							|| prevNonSpaceCh == ';'
+							|| peekNextChar(line, i) == '{'
+							|| isInTrailingReturnType
+							|| foundPreCommandHeader
+							|| foundPreCommandMacro
+							|| isInClassHeader
+							|| (isInClassInitializer && !isLegalNameChar(prevNonSpaceCh))
+							|| isNonInStatementArray
+							|| isInObjCMethodDefinition
+							|| isInObjCInterface
+							|| isSharpAccessor
+							|| isSharpDelegate
+							|| isInExternC
+							|| isInAsmBlock
+							//|| getNextWord(line, i) == ASResource::AS_NEW // #487
+							|| (isInDefine
+								&& (prevNonSpaceCh == '('
+									|| isLegalNameChar(prevNonSpaceCh))));
+
+	if (isInObjCMethodDefinition)
+	{
+		objCColonAlignSubsequent = 0;
+		isImmediatelyPostObjCMethodDefinition = true;
+		if (lineBeginsWithOpenBrace)		// for run-in braces
+			clearObjCMethodDefinitionAlignment();
+	}
+
+	// !isInStruct omitted: fix for https://gitlab.com/saalen/astyle/-/issues/3
+	if (!isBlockOpener && !isContinuation && !isInClassInitializer && !isInEnum /*&& !isInStruct*/)
+	{
+		if (isTopLevel())
+			isBlockOpener = true;
+	}
+
+	// GL28 fix initializer lists like x({a.x=0;})
+	isInInitializerList = isCStyle() && isBlockOpener && (prevNonSpaceCh=='(' || prevNonSpaceCh=='=');
+
+	if (!isBlockOpener && currentHeader != nullptr)
+	{
+		for (const std::string* const nonParenHeader : *nonParenHeaders)
+			if (currentHeader == nonParenHeader)
+			{
+				isBlockOpener = true;
+				break;
+			}
+	}
+
+	// #121 fix indent of lambda bodies, also GH #7
+	if (isCStyle() && lambdaIndicator && attemptLambdaIndentation )
+	{
+		isBlockOpener = false;
+	}
+
+	// do not use emplace_back on vector<bool> until supported by macOS
+	braceBlockStateStack->push_back(isBlockOpener);
+
+	if (!isBlockOpener)
+	{
+		continuationIndentStackSizeStack->emplace_back(continuationIndentStack->size());
+		registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, true);
+		parenDepth++;
+		if (i == 0)
+			shouldIndentBracedLine = false;
+		isInEnumTypeID = false;
+
+		return ;
+	}
+
+	// this brace is a block opener...
+
+	++lineOpeningBlocksNum;
+
+	if (isInClassInitializer || isInEnumTypeID)
+	{
+		// decrease tab count if brace is broken
+		if (lineBeginsWithOpenBrace)
+		{
+			indentCount -= classInitializerIndents;
+			// decrease one more if an empty class
+			if (!headerStack->empty()
+					&& (*headerStack).back() == &ASResource::AS_CLASS)
+			{
+				int nextChar = getNextProgramCharDistance(line, i);
+				if ((int) line.length() > nextChar && line[nextChar] == '}')
+					--indentCount;
+			}
+		}
+	}
+
+	if (isInObjCInterface)
+	{
+		isInObjCInterface = false;
+		if (lineBeginsWithOpenBrace)
+			--indentCount;
+	}
+
+	if (braceIndent && !namespaceIndent && !headerStack->empty()
+			&& ((*headerStack).back() == &ASResource::AS_NAMESPACE
+				|| (*headerStack).back() == &ASResource::AS_MODULE))
+	{
+		shouldIndentBracedLine = false;
+		--indentCount;
+	}
+
+	// an indentable struct is treated like a class in the header stack
+	if (!headerStack->empty()
+			&& (*headerStack).back() == &ASResource::AS_STRUCT
+			&& isInIndentableStruct)
+		(*headerStack).back() = &ASResource::AS_CLASS;
+
+	// is a brace inside a paren?
+	parenDepthStack->emplace_back(parenDepth);
+	// do not use emplace_back on vector<bool> until supported by macOS
+	blockStatementStack->push_back(isContinuation);
+
+	if (!continuationIndentStack->empty())
+	{
+		// completely purge the continuationIndentStack
+		while (!continuationIndentStack->empty())
+			popLastContinuationIndent();
+		if (isInClassInitializer || isInClassHeaderTab)
+		{
+			if (lineBeginsWithOpenBrace || lineBeginsWithComma)
+				spaceIndentCount = 0;
+		}
+		else
+			spaceIndentCount = 0;
+	}
+
+	blockTabCount += (isContinuation ? 1 : 0);
+	if (g_preprocessorCppExternCBrace == 3)
+		++g_preprocessorCppExternCBrace;
+	parenDepth = 0;
+	isInTrailingReturnType = false;
+	isInClassHeader = false;
+	isInClassHeaderTab = false;
+	isInClassInitializer = false;
+	isInEnumTypeID = false;
+	isContinuation = false;
+	isInQuestion = false;
+	isInLet = false;
+	foundPreCommandHeader = false;
+	foundPreCommandMacro = false;
+	isInExternC = false;
+
+	tempStacks->emplace_back(new std::vector<const std::string*>);
+	headerStack->emplace_back(&ASResource::AS_OPEN_BRACE);
+	lastLineHeader = &ASResource::AS_OPEN_BRACE;
+}
+
+void ASBeautifier::handlePotentialHeaderSection(std::string_view line, size_t *i, bool tabIncrementIn, bool *isInOperator)
+{
+	// check for preBlockStatements in C/C++ ONLY if not within parentheses
+	// (otherwise 'struct XXX' statements would be wrongly interpreted...)
+	if (!isInTemplate && !(isCStyle() && parenDepth > 0))
+	{
+		const std::string* newHeader = findHeader(line, *i, preBlockStatements);
+		// CORBA IDL module
+		if (newHeader == &ASResource::AS_MODULE)
+		{
+			char nextChar = peekNextChar(line, *i + newHeader->length() - 1);
+			if (prevNonSpaceCh == ')' || !isalpha(nextChar))
+				newHeader = nullptr;
+		}
+		if (newHeader != nullptr
+				&& !(isCStyle() && newHeader == &ASResource::AS_CLASS && (isInEnum || isInStruct))	// is not 'enum class'
+				&& !(isCStyle() && newHeader == &ASResource::AS_INTERFACE			// CORBA IDL interface
+						&& (headerStack->empty()
+							|| headerStack->back() != &ASResource::AS_OPEN_BRACE)))
+		{
+			if (!isSharpStyle())
+				headerStack->emplace_back(newHeader);
+			// do not need 'where' in the headerStack
+			// do not need second 'class' statement in a row
+			else if (!(newHeader == &ASResource::AS_WHERE
+						|| ((newHeader == &ASResource::AS_CLASS || newHeader == &ASResource::AS_STRUCT)
+							&& !headerStack->empty()
+							&& (headerStack->back() == &ASResource::AS_CLASS
+								|| headerStack->back() == &ASResource::AS_STRUCT))))
+				headerStack->emplace_back(newHeader);
+
+			if (!headerStack->empty())
+			{
+				if ((*headerStack).back() == &ASResource::AS_CLASS
+						|| (*headerStack).back() == &ASResource::AS_STRUCT
+						|| (*headerStack).back() == &ASResource::AS_INTERFACE)
+				{
+					isInClassHeader = true;
+				}
+				else if ((*headerStack).back() == &ASResource::AS_NAMESPACE
+							|| (*headerStack).back() == &ASResource::AS_MODULE)
+				{
+					// remove continuationIndent from namespace
+					if (!continuationIndentStack->empty())
+						continuationIndentStack->pop_back();
+					isContinuation = false;
+				}
+			}
+
+			i += newHeader->length() - 1;
+			return;
+		}
+	}
+	const std::string* foundIndentableHeader = findHeader(line, *i, indentableHeaders);
+
+	if (foundIndentableHeader != nullptr)
+	{
+		// must bypass the header before registering the in statement
+		*i += foundIndentableHeader->length() - 1;
+		if (!*isInOperator && !isInTemplate && !isNonInStatementArray)
+		{
+			registerContinuationIndent(line, *i, spaceIndentCount, tabIncrementIn, 0, false);
+			isContinuation = true;
+		}
+		return;
+	}
+
+	if (isCStyle() && findKeyword(line, *i, ASResource::AS_OPERATOR))
+		*isInOperator = true;
+
+	if (g_preprocessorCppExternCBrace == 1 && findKeyword(line, *i, ASResource::AS_EXTERN))
+		++g_preprocessorCppExternCBrace;
+
+	if (g_preprocessorCppExternCBrace == 3)	// extern "C" is not followed by a '{'
+		g_preprocessorCppExternCBrace = 0;
+
+	// "new" operator is a pointer, not a calculation
+	if (findKeyword(line, *i, ASResource::AS_NEW))
+	{
+		if (isContinuation && !continuationIndentStack->empty() && prevNonSpaceCh == '=')
+			continuationIndentStack->back() = 0;
+	}
+
+	if (isCStyle() && findKeyword(line, *i, ASResource::AS_AUTO) && isTopLevel())
+	{
+		isInTrailingReturnType = true;
+	}
+
+	if (isCStyle())
+	{
+		if (findKeyword(line, *i, ASResource::AS_ASM)
+				|| findKeyword(line, *i, ASResource::AS__ASM__))
+		{
+			isInAsm = true;
+		}
+		else if (findKeyword(line, *i, ASResource::AS_MS_ASM)		// microsoft specific
+					|| findKeyword(line, *i, ASResource::AS_MS__ASM))
+		{
+			int index = 4;
+			if (peekNextChar(line, *i) == '_')		// check for __asm
+				index = 5;
+
+			char peekedChar = peekNextChar(line, *i + index);
+			if (peekedChar == '{' || peekedChar == ' ')
+				isInAsmBlock = true;
+			else
+				isInAsmOneLine = true;
+		}
+	}
+
+	// bypass the entire name for all others
+	std::string_view name = getCurrentWord(line, *i);
+	*i += name.length() - 1;
+}
+
+
+void ASBeautifier::handlePotentialOperatorSection(std::string_view line, size_t i, bool tabIncrementIn, bool haveAssignmentThisLine, bool isInOperator)
+{
+	// Check if an operator has been reached.
+	const std::string* foundAssignmentOp = findOperator(line, i, assignmentOperators);
+	const std::string* foundNonAssignmentOp = findOperator(line, i, nonAssignmentOperators);
+
+	if (foundNonAssignmentOp != nullptr)
+	{
+		if (foundNonAssignmentOp == &ASResource::AS_LAMBDA)
+			foundPreCommandHeader = true;
+		if (isInTemplate && foundNonAssignmentOp == &ASResource::AS_GR_GR)
+			foundNonAssignmentOp = nullptr;
+	}
+
+	// Since findHeader's boundary checking was not used above, it is possible
+	// that both an assignment op and a non-assignment op where found,
+	// e.g. '>>' and '>>='. If this is the case, treat the LONGER one as the
+	// found operator.
+	if (foundAssignmentOp != nullptr && foundNonAssignmentOp != nullptr)
+	{
+		if (foundAssignmentOp->length() < foundNonAssignmentOp->length())
+			foundAssignmentOp = nullptr;
+		else
+			foundNonAssignmentOp = nullptr;
+	}
+
+	if (foundNonAssignmentOp != nullptr)
+	{
+		if (foundNonAssignmentOp->length() > 1)
+			i += foundNonAssignmentOp->length() - 1;
+
+		// For C++ input/output, operator<<, >> and . method calls should be
+		// aligned, if we are not in a statement already and
+		// also not in the "operator<<(...)" header line
+
+		// GL28: method calls have to contain only alphanumeric identifier
+		size_t openParenPos = line.find(ASResource::AS_OPEN_PAREN, i);
+		size_t closeParenPos = line.find(ASResource::AS_CLOSE_PAREN, openParenPos);
+
+		std::string methodName = getNextWord(std::string(line), i);
+		size_t methodNameEndPos =  i + methodName.length() + 1;
+		size_t firstCharAfterMethod = line.substr(i + methodName.length() + 1).find_first_not_of(" \t");
+		if (firstCharAfterMethod != std::string::npos)
+		{
+			methodNameEndPos += firstCharAfterMethod;
+		}
+
+		size_t firstCharOfLine = line.find_first_not_of(" \t");
+		bool lineStartsWithDot = false;
+		if (firstCharOfLine != std::string::npos)
+		{
+			lineStartsWithDot = line[firstCharOfLine] == '.';
+		}
+
+		// GL28: do not mixup template closing ">>" with IO operator
+		std::string searchTemplatePattern = std::string(line).substr(0, i);
+		size_t countLS = std::count_if( searchTemplatePattern.begin(), searchTemplatePattern.end(), []( char c ){return c =='<';});
+
+		if (!isInOperator
+				&& continuationIndentStack->empty()
+				&& isCStyle()
+				&& !lineStartsWithDot
+				&& ( (foundNonAssignmentOp == &ASResource::AS_GR_GR && countLS < 2 )
+					||  foundNonAssignmentOp == &ASResource::AS_LS_LS
+					|| (foundNonAssignmentOp == &ASResource::AS_DOT && openParenPos == methodNameEndPos && closeParenPos != std::string::npos )))
+		{
+			// this will be true if the line begins with the operator
+			if (i < foundNonAssignmentOp->length() && spaceIndentCount == 0)
+				spaceIndentCount += 2 * indentLength;
+			// align to the beginning column of the operator
+			registerContinuationIndent(line, i - foundNonAssignmentOp->length(), spaceIndentCount, tabIncrementIn, 0, false);
+		}
+	}
+
+	else if (foundAssignmentOp != nullptr)
+	{
+
+		isInAssignment = true;
+
+		foundPreCommandHeader = false;		// clears this for array assignments
+		foundPreCommandMacro = false;
+
+		if (foundAssignmentOp->length() > 1)
+			i += foundAssignmentOp->length() - 1;
+
+		if (!isInOperator && !isInTemplate && (!isNonInStatementArray || isInEnum || isInStruct))
+		{
+			// if multiple assignments, align on the previous word
+			if (foundAssignmentOp == &ASResource::AS_ASSIGN
+					&& prevNonSpaceCh != ']'		// an array
+					&& statementEndsWithComma(line, i))
+			{
+				// only one assignment indent per line + GH #10
+				if (!haveAssignmentThisLine && line.find(ASResource::AS_SCOPE_RESOLUTION) == std::string::npos)
+				{
+					// register indent at previous word
+					haveAssignmentThisLine = true;
+					int prevWordIndex = getContinuationIndentAssign(line, i);
+					int continuationIndentCount = prevWordIndex + spaceIndentCount + tabIncrementIn;
+					continuationIndentStack->emplace_back(continuationIndentCount);
+					isContinuation = true;
+				}
+			}
+			// don't indent an assignment if 'let'
+			else if (isInLet)
+			{
+				isInLet = false;
+			}
+			else if (!lineBeginsWithComma && !isInDefine)
+			{
+				if (i == 0 && spaceIndentCount == 0)
+					spaceIndentCount += indentLength;
+
+				// #SF 97
+				if (prevNonLegalCh == '=' && currentNonLegalCh == '=')
+					spaceIndentCount = 0;
+
+				registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, false);
+				isContinuation = true;
+			}
+		}
+	}
+
+}
+
+
 /**
  * Parse the current line to update indentCount and spaceIndentCount.
  */
@@ -2966,260 +3911,14 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 		// handle parentheses
 		if ((ch == '(' && !isInInitializerList) || ch == '[' || ch == ')' || ch == ']')
 		{
-
-			// GL28 xx
-			if (ch == '(' || ch == '[')
-			{
-				isInOperator = false;
-				// if have a struct header, this is a declaration not a definition
-				if (ch == '('
-				        && !headerStack->empty()
-				        && headerStack->back() == &ASResource::AS_STRUCT)
-				{
-					headerStack->pop_back();
-					isInClassHeader = false;
-
-					if (line.find("struct ", 0) > i)        // if not on this line #526, GH #12
-						indentCount -= classInitializerIndents;
-					if (indentCount < 0)
-						indentCount = 0;
-				}
-
-				if (parenDepth == 0)
-				{
-					// do not use emplace_back on vector<bool> until supported by macOS
-					parenStatementStack->push_back(isContinuation);
-					isContinuation = true;
-				}
-				parenDepth++;
-				if (ch == '[')
-				{
-					++squareBracketCount;
-					// #525 Maybe check for opening brace in the line
-					if (squareBracketCount == 1 && isObjCStyle() && line.find('{', i + 1 ) == std::string::npos)
-					{
-						isInObjCMethodCall = true;
-						isInObjCMethodCallFirst = true;
-					}
-
-					// #121
-					if (   !isLegalNameChar(prevNonSpaceCh)
-					        && prevNonSpaceCh != ']'
-					        && prevNonSpaceCh != ')'
-					        && prevNonSpaceCh != '*'  // GL #11
-					        //&& line.find(ASResource::AS_AUTO, 0 ) == std::string::npos
-					   )
-					{
-						lambdaIndicator = true;
-					}
-				}
-
-				continuationIndentStackSizeStack->emplace_back(continuationIndentStack->size());
-
-				if (currentHeader != nullptr)
-					registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, minConditionalIndent, true);
-				else if (!isInObjCMethodDefinition
-				         //&& xxxCondition && shouldForceTabIndentation  // only count one opening parentheses per line #498
-				        )
-					registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, true);
-			}
-			else if (ch == ')' || ch == ']')
-			{
-				if (ch == ']')
-					--squareBracketCount;
-
-				if (squareBracketCount <= 0)
-				{
-					squareBracketCount = 0;
-					if (isInObjCMethodCall)
-						isImmediatelyPostObjCMethodCall = true;
-				}
-				foundPreCommandHeader = false;
-				parenDepth--;
-
-				if (parenDepth == 0)
-				{
-					if (!parenStatementStack->empty())      // in case of unmatched closing parens
-					{
-						isContinuation = parenStatementStack->back();
-						parenStatementStack->pop_back();
-					}
-					isInAsm = false;
-					isInConditional = false;
-				}
-
-				if (!continuationIndentStackSizeStack->empty())
-				{
-					popLastContinuationIndent();
-
-					if (!parenIndentStack->empty())
-					{
-						int poppedIndent = parenIndentStack->back();
-						parenIndentStack->pop_back();
-
-						if (i == 0)
-							spaceIndentCount = poppedIndent;
-					}
-				}
-			}
+			handleParens(line, i, tabIncrementIn, &isInOperator, ch);
 			continue;
 		}
 
 		if (ch == '{')
 		{
-			// first, check if '{' is a block-opener or a static-array opener
-			bool isBlockOpener = ((prevNonSpaceCh == '{' && braceBlockStateStack->back())
-			                      || prevNonSpaceCh == '}'
-			                      || prevNonSpaceCh == ')'
-			                      || prevNonSpaceCh == ';'
-			                      || peekNextChar(line, i) == '{'
-			                      || isInTrailingReturnType
-			                      || foundPreCommandHeader
-			                      || foundPreCommandMacro
-			                      || isInClassHeader
-			                      || (isInClassInitializer && !isLegalNameChar(prevNonSpaceCh))
-			                      || isNonInStatementArray
-			                      || isInObjCMethodDefinition
-			                      || isInObjCInterface
-			                      || isSharpAccessor
-			                      || isSharpDelegate
-			                      || isInExternC
-			                      || isInAsmBlock
-			                      //|| getNextWord(line, i) == ASResource::AS_NEW // #487
-			                      || (isInDefine
-			                          && (prevNonSpaceCh == '('
-			                              || isLegalNameChar(prevNonSpaceCh))));
 
-			if (isInObjCMethodDefinition)
-			{
-				objCColonAlignSubsequent = 0;
-				isImmediatelyPostObjCMethodDefinition = true;
-				if (lineBeginsWithOpenBrace)		// for run-in braces
-					clearObjCMethodDefinitionAlignment();
-			}
-
-			// !isInStruct omitted: fix for https://gitlab.com/saalen/astyle/-/issues/3
-			if (!isBlockOpener && !isContinuation && !isInClassInitializer && !isInEnum /*&& !isInStruct*/)
-			{
-				if (isTopLevel())
-					isBlockOpener = true;
-			}
-
-			// GL28 fix initializer lists like x({a.x=0;})
-			isInInitializerList = isCStyle() && isBlockOpener && (prevNonSpaceCh=='(' || prevNonSpaceCh=='=');
-
-			if (!isBlockOpener && currentHeader != nullptr)
-			{
-				for (const std::string* const nonParenHeader : *nonParenHeaders)
-					if (currentHeader == nonParenHeader)
-					{
-						isBlockOpener = true;
-						break;
-					}
-			}
-
-			// #121 fix indent of lambda bodies, also GH #7
-			if (isCStyle() && lambdaIndicator && attemptLambdaIndentation )
-			{
-				isBlockOpener = false;
-			}
-
-			// do not use emplace_back on vector<bool> until supported by macOS
-			braceBlockStateStack->push_back(isBlockOpener);
-
-			if (!isBlockOpener)
-			{
-				continuationIndentStackSizeStack->emplace_back(continuationIndentStack->size());
-				registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, true);
-				parenDepth++;
-				if (i == 0)
-					shouldIndentBracedLine = false;
-				isInEnumTypeID = false;
-
-				continue;
-			}
-
-			// this brace is a block opener...
-
-			++lineOpeningBlocksNum;
-
-			if (isInClassInitializer || isInEnumTypeID)
-			{
-				// decrease tab count if brace is broken
-				if (lineBeginsWithOpenBrace)
-				{
-					indentCount -= classInitializerIndents;
-					// decrease one more if an empty class
-					if (!headerStack->empty()
-					        && (*headerStack).back() == &ASResource::AS_CLASS)
-					{
-						int nextChar = getNextProgramCharDistance(line, i);
-						if ((int) line.length() > nextChar && line[nextChar] == '}')
-							--indentCount;
-					}
-				}
-			}
-
-			if (isInObjCInterface)
-			{
-				isInObjCInterface = false;
-				if (lineBeginsWithOpenBrace)
-					--indentCount;
-			}
-
-			if (braceIndent && !namespaceIndent && !headerStack->empty()
-			        && ((*headerStack).back() == &ASResource::AS_NAMESPACE
-			            || (*headerStack).back() == &ASResource::AS_MODULE))
-			{
-				shouldIndentBracedLine = false;
-				--indentCount;
-			}
-
-			// an indentable struct is treated like a class in the header stack
-			if (!headerStack->empty()
-			        && (*headerStack).back() == &ASResource::AS_STRUCT
-			        && isInIndentableStruct)
-				(*headerStack).back() = &ASResource::AS_CLASS;
-
-			// is a brace inside a paren?
-			parenDepthStack->emplace_back(parenDepth);
-			// do not use emplace_back on vector<bool> until supported by macOS
-			blockStatementStack->push_back(isContinuation);
-
-			if (!continuationIndentStack->empty())
-			{
-				// completely purge the continuationIndentStack
-				while (!continuationIndentStack->empty())
-					popLastContinuationIndent();
-				if (isInClassInitializer || isInClassHeaderTab)
-				{
-					if (lineBeginsWithOpenBrace || lineBeginsWithComma)
-						spaceIndentCount = 0;
-				}
-				else
-					spaceIndentCount = 0;
-			}
-
-			blockTabCount += (isContinuation ? 1 : 0);
-			if (g_preprocessorCppExternCBrace == 3)
-				++g_preprocessorCppExternCBrace;
-			parenDepth = 0;
-			isInTrailingReturnType = false;
-			isInClassHeader = false;
-			isInClassHeaderTab = false;
-			isInClassInitializer = false;
-			isInEnumTypeID = false;
-			isContinuation = false;
-			isInQuestion = false;
-			isInLet = false;
-			foundPreCommandHeader = false;
-			foundPreCommandMacro = false;
-			isInExternC = false;
-
-			tempStacks->emplace_back(new std::vector<const std::string*>);
-			headerStack->emplace_back(&ASResource::AS_OPEN_BRACE);
-			lastLineHeader = &ASResource::AS_OPEN_BRACE;
-
+			handleClosingParen(line, i, tabIncrementIn);
 			continue;
 		}	// end '{'
 
@@ -3228,315 +3927,20 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 
 		if (isPotentialHeader && squareBracketCount == 0)
 		{
-			const std::string* newHeader = findHeader(line, i, headers);
 
-			// java can have a 'default' not in a switch
-			if (newHeader == &ASResource::AS_DEFAULT
-			        && peekNextChar(line, (i + (*newHeader).length() - 1)) != ':')
-				newHeader = nullptr;
-			// Qt headers may be variables in C++
-			if (isCStyle()
-			        && (newHeader == &ASResource::AS_FOREVER || newHeader == &ASResource::AS_FOREACH))
-			{
-				if (line.find_first_of("=;", i) != std::string::npos)
-					newHeader = nullptr;
-			}
-			else if (isSharpStyle()
-			         && (newHeader == &ASResource::AS_GET || newHeader == &ASResource::AS_SET))
-			{
-				if (getNextWord(std::string(line), i + (*newHeader).length()) == "is")
-					newHeader = nullptr;
-			}
-			else if (newHeader == &ASResource::AS_USING
-			         && peekNextChar(line, i + (*newHeader).length() - 1) != '(')
-				newHeader = nullptr;
-
-			if (newHeader != nullptr)
-			{
-				// if we reached here, then this is a header...
-				bool isIndentableHeader = true;
-
-				isInHeader = true;
-
-				std::vector<const std::string*>* lastTempStack = nullptr;
-				if (!tempStacks->empty())
-					lastTempStack = tempStacks->back();
-
-				// if a new block is opened, push a new stack into tempStacks to hold the
-				// future list of headers in the new block.
-
-				// take care of the special case: 'else if (...)'
-				if (newHeader == &ASResource::AS_IF && lastLineHeader == &ASResource::AS_ELSE)
-				{
-					if (!headerStack->empty())
-						headerStack->pop_back();
-				}
-
-				// take care of 'else'
-				else if (newHeader == &ASResource::AS_ELSE)
-				{
-					if (lastTempStack != nullptr)
-					{
-						int indexOfIf = indexOf(*lastTempStack, &ASResource::AS_IF);
-						if (indexOfIf != -1)
-						{
-							// recreate the header list in headerStack up to the previous 'if'
-							// from the temporary snapshot stored in lastTempStack.
-							int restackSize = lastTempStack->size() - indexOfIf - 1;
-							for (int r = 0; r < restackSize; r++)
-							{
-								headerStack->emplace_back(lastTempStack->back());
-								lastTempStack->pop_back();
-							}
-							if (!closingBraceReached)
-								indentCount += restackSize;
-						}
-						/*
-						 * If the above if is not true, i.e. no 'if' before the 'else',
-						 * then nothing beautiful will come out of this...
-						 * I should think about inserting an Exception here to notify the caller of this...
-						 */
-					}
-				}
-
-				// check if 'while' closes a previous 'do'
-				else if (newHeader == &ASResource::AS_WHILE)
-				{
-					if (lastTempStack != nullptr)
-					{
-						int indexOfDo = indexOf(*lastTempStack, &ASResource::AS_DO);
-						if (indexOfDo != -1)
-						{
-							// recreate the header list in headerStack up to the previous 'do'
-							// from the temporary snapshot stored in lastTempStack.
-							int restackSize = lastTempStack->size() - indexOfDo - 1;
-							for (int r = 0; r < restackSize; r++)
-							{
-								headerStack->emplace_back(lastTempStack->back());
-								lastTempStack->pop_back();
-							}
-							if (!closingBraceReached)
-								indentCount += restackSize;
-						}
-					}
-				}
-				// check if 'catch' closes a previous 'try' or 'catch'
-				else if (newHeader == &ASResource::AS_CATCH || newHeader == &ASResource::AS_FINALLY)
-				{
-					if (lastTempStack != nullptr)
-					{
-						int indexOfTry = indexOf(*lastTempStack, &ASResource::AS_TRY);
-						if (indexOfTry == -1)
-							indexOfTry = indexOf(*lastTempStack, &ASResource::AS_CATCH);
-						if (indexOfTry != -1)
-						{
-							// recreate the header list in headerStack up to the previous 'try'
-							// from the temporary snapshot stored in lastTempStack.
-							int restackSize = lastTempStack->size() - indexOfTry - 1;
-							for (int r = 0; r < restackSize; r++)
-							{
-								headerStack->emplace_back(lastTempStack->back());
-								lastTempStack->pop_back();
-							}
-
-							if (!closingBraceReached)
-								indentCount += restackSize;
-						}
-					}
-				}
-				else if (newHeader == &ASResource::AS_CASE)
-				{
-					isInCase = true;
-					if (!haveCaseIndent)
-					{
-						haveCaseIndent = true;
-						if (!lineBeginsWithOpenBrace)
-							--indentCount;
-					}
-				}
-				else if (newHeader == &ASResource::AS_DEFAULT)
-				{
-					isInCase = true;
-					--indentCount;
-				}
-				else if (newHeader == &ASResource::AS_STATIC
-				         || newHeader == &ASResource::AS_SYNCHRONIZED)
-				{
-					if (!headerStack->empty()
-					        && (headerStack->back() == &ASResource::AS_STATIC
-					            || headerStack->back() == &ASResource::AS_SYNCHRONIZED))
-					{
-						isIndentableHeader = false;
-					}
-					else
-					{
-						isIndentableHeader = false;
-						probationHeader = newHeader;
-					}
-				}
-				else if (newHeader == &ASResource::AS_TEMPLATE)
-				{
-					isInTemplate = true;
-					isIndentableHeader = false;
-				}
-
-				if (isIndentableHeader)
-				{
-					headerStack->emplace_back(newHeader);
-					isContinuation = false;
-					if (indexOf(*nonParenHeaders, newHeader) == -1)
-					{
-						isInConditional = true;
-					}
-					lastLineHeader = newHeader;
-				}
-				else
-					isInHeader = false;
-
-				i += newHeader->length() - 1;
-
+			if (!handleHeaderSection(line, i, closingBraceReached, &haveCaseIndent))
 				continue;
-			}  // newHeader != nullptr
-
-			if (findHeader(line, i, preCommandHeaders) != nullptr)
-				// must be after function arguments
-				if (prevNonSpaceCh == ')')
-					foundPreCommandHeader = true;
-
-			// Objective-C NSException macros are preCommandHeaders
-			if (isObjCStyle() && findKeyword(line, i, ASResource::AS_NS_DURING))
-				foundPreCommandMacro = true;
-			if (isObjCStyle() && findKeyword(line, i, ASResource::AS_NS_HANDLER))
-				foundPreCommandMacro = true;
-
-			//https://sourceforge.net/p/astyle/bugs/353/
-			// new is ending the line?
-			if (isJavaStyle() && findKeyword(line, i, ASResource::AS_NEW) && line.length() - 3 == i)
-			{
-				headerStack->emplace_back(&ASResource::AS_FIXED); // needs to be something which will not match - need to define a token which will never match
-			}
-
-			//https://sourceforge.net/p/astyle/bugs/550/
-			//enum can be function return value
-			if (parenDepth == 0 && findKeyword(line, i, ASResource::AS_ENUM) && line.find_first_of(ASResource::AS_OPEN_PAREN, i) == std::string::npos){
-				isInEnum = true;
-			}
-
-			if (parenDepth == 0 && (findKeyword(line, i, ASResource::AS_TYPEDEF_STRUCT) || findKeyword(line, i, ASResource::AS_STRUCT)) && line.find_first_of(ASResource::AS_SEMICOLON, i) == std::string::npos)
-			{
-				isInStruct = true;
-			}
-
-			// avoid regression with neovim test dataset
-			if (parenDepth == 0 && findKeyword(line, i, ASResource::AS_UNION) )
-			{
-				isInStruct = false;
-			}
-
-			if (isSharpStyle() && findKeyword(line, i, ASResource::AS_LET))
-				isInLet = true;
 
 		}   // isPotentialHeader
 
 		if (ch == '?')
 			isInQuestion = true;
 
-
-
 		// special handling of colons XXX 533
 		if (ch == ':')
 		{
-			if (line.length() > i + 1 && line[i + 1] == ':') // look for ::
-			{
-				++i;
+			if (!handleColonSection(line , i, tabIncrementIn, &ch))
 				continue;
-			}
-			else if (isInQuestion)		// NOLINT
-			{
-				// do nothing special
-			}
-			else if (parenDepth > 0)
-			{
-				// found a 'for' loop or an objective-C statement
-				// so do nothing special
-			}
-			else if (isInEnum)
-			{
-				// found an enum with a base-type
-				isInEnumTypeID = true;
-				if (i == 0)
-					indentCount += classInitializerIndents;
-			}
-			else if ((isCStyle() || isSharpStyle())
-			         && !isInCase
-			         && (prevNonSpaceCh == ')' || foundPreCommandHeader))
-			{
-				// found a 'class' c'tor initializer
-				isInClassInitializer = true;
-				registerContinuationIndentColon(line, i, tabIncrementIn);
-				if (i == 0)
-					indentCount += classInitializerIndents;
-			}
-
-			else if (isInClassHeader || isInObjCInterface)
-			{
-				// is in a 'class A : public B' definition
-				isInClassHeaderTab = true;
-				registerContinuationIndentColon(line, i, tabIncrementIn);
-			}
-			else if (isInAsm || isInAsmOneLine || isInAsmBlock)
-			{
-				// do nothing special
-			}
-			else if (isDigit(peekNextChar(line, i)))
-			{
-				// found a bit field - do nothing special
-			}
-			else if (isCStyle() && isInClass && prevNonSpaceCh != ')')
-			{
-				// found a 'private:' or 'public:' inside a class definition
-				--indentCount;
-				if (modifierIndent)
-					spaceIndentCount += (indentLength / 2);
-			}
-			else if (isCStyle() && !isInClass
-			         && headerStack->size() >= 2
-			         && (*headerStack)[headerStack->size() - 2] == &ASResource::AS_CLASS
-			         && (*headerStack)[headerStack->size() - 1] == &ASResource::AS_OPEN_BRACE)
-			{
-				// found a 'private:' or 'public:' inside a class definition
-				// and on the same line as the class opening brace
-				// do nothing
-			}
-			else if (isJavaStyle() && lastLineHeader == &ASResource::AS_FOR)
-			{
-				// found a java for-each statement
-				// so do nothing special
-			}
-			// do not trigger this in class definitions https://gitlab.com/saalen/astyle/-/issues/4
-			else if (isInStruct && !isInCase)
-			{
-				if (i == 0)
-					indentCount += classInitializerIndents;
-			}
-			else
-			{
-				currentNonSpaceCh = ';'; // so that braces after the ':' will appear as block-openers
-				char peekedChar = peekNextChar(line, i);
-				if (isInCase)
-				{
-					isInCase = false;
-					ch = ';'; // from here on, treat char as ';'
-				}
-				else if (isCStyle() || (isSharpStyle() && peekedChar == ';'))
-				{
-					// is in a label (e.g. 'label1:')
-					if (labelIndent)
-						--indentCount; // unindent label by one indent
-					else if (!lineBeginsWithOpenBrace)
-						indentCount = 0; // completely flush indent to left
-				}
-			}
 		}
 
 		if ((ch == ';' || (parenDepth > 0 && ch == ',')) && !continuationIndentStackSizeStack->empty()){
@@ -3586,255 +3990,13 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 		// handle ends of statements
 		if ((ch == ';' && parenDepth == 0) || ch == '}')
 		{
-			isInAssignment = isInInitializerList = false;
-
-			if (ch == '}')
-			{
-
-				lambdaIndicator = false;
-
-				// first check if this '}' closes a previous block, or a static array...
-				if (braceBlockStateStack->size() > 1)
-				{
-					bool braceBlockState = braceBlockStateStack->back();
-					braceBlockStateStack->pop_back();
-					if (!braceBlockState)
-					{
-						if (!continuationIndentStackSizeStack->empty())
-						{
-							// this brace is a static array
-							popLastContinuationIndent();
-							parenDepth--;
-							if (i == 0)
-								shouldIndentBracedLine = false;
-
-							if (!parenIndentStack->empty())
-							{
-								int poppedIndent = parenIndentStack->back();
-								parenIndentStack->pop_back();
-								if (i == 0)
-									spaceIndentCount = poppedIndent;
-							}
-						}
-						continue;
-					}
-				}
-
-				// this brace is block closer...
-
-				++lineClosingBlocksNum;
-
-				if (!continuationIndentStackSizeStack->empty())
-					popLastContinuationIndent();
-
-				if (!parenDepthStack->empty())
-				{
-					parenDepth = parenDepthStack->back();
-					parenDepthStack->pop_back();
-					isContinuation = blockStatementStack->back();
-					blockStatementStack->pop_back();
-
-					if (isContinuation)
-						blockTabCount--;
-				}
-
-				closingBraceReached = true;
-				if (i == 0)
-					spaceIndentCount = 0;
-				isInAsmBlock = false;
-				isInAsm = isInAsmOneLine = isInQuote = false;	// close these just in case
-				isInStruct = false;
-
-				int headerPlace = indexOf(*headerStack, &ASResource::AS_OPEN_BRACE);
-				if (headerPlace != -1)
-				{
-					const std::string* popped = headerStack->back();
-					while (popped != &ASResource::AS_OPEN_BRACE)
-					{
-						headerStack->pop_back();
-						popped = headerStack->back();
-					}
-					headerStack->pop_back();
-
-					if (headerStack->empty())
-						g_preprocessorCppExternCBrace = 0;
-
-					// do not indent namespace brace unless namespaces are indented
-					if (!namespaceIndent && !headerStack->empty()
-					        && ((*headerStack).back() == &ASResource::AS_NAMESPACE
-					            || (*headerStack).back() == &ASResource::AS_MODULE)
-					        && i == 0)		// must be the first brace on the line
-						shouldIndentBracedLine = false;
-
-					if (!tempStacks->empty())
-					{
-						std::vector<const std::string*>* temp = tempStacks->back();
-						tempStacks->pop_back();
-						delete temp;
-					}
-				}
-
-				ch = ' '; // needed due to cases such as '}else{', so that headers ('else' in this case) will be identified...
-			}	// ch == '}'
-
-			/*
-			 * Create a temporary snapshot of the current block's header-list in the
-			 * uppermost inner stack in tempStacks, and clear the headerStack up to
-			 * the beginning of the block.
-			 * Thus, the next future statement will think it comes one indent past
-			 * the block's '{' unless it specifically checks for a companion-header
-			 * (such as a previous 'if' for an 'else' header) within the tempStacks,
-			 * and recreates the temporary snapshot by manipulating the tempStacks.
-			 */
-			if (!tempStacks->back()->empty())
-				while (!tempStacks->back()->empty())
-					tempStacks->back()->pop_back();
-			while (!headerStack->empty() && headerStack->back() != &ASResource::AS_OPEN_BRACE)
-			{
-				tempStacks->back()->emplace_back(headerStack->back());
-				headerStack->pop_back();
-			}
-
-			if (parenDepth == 0 && ch == ';')
-			{
-				isContinuation = false;
-				isInClassInitializer = false;
-			}
-
-			if (isInObjCMethodDefinition)
-			{
-				objCColonAlignSubsequent = 0;
-				isImmediatelyPostObjCMethodDefinition = true;
-			}
-
-			previousLastLineHeader = nullptr;
-			isInClassHeader = false;		// for 'friend' class
-			isInEnum = false;
-			isInEnumTypeID = false;
-
-			isInQuestion = false;
-			isInTemplate = false;
-			isInObjCInterface = false;
-			foundPreCommandHeader = false;
-			foundPreCommandMacro = false;
-			squareBracketCount = 0;
-
+			handleEndOfStatement(i, &closingBraceReached, &ch);
 			continue;
 		}
 
 		if (isPotentialHeader)
 		{
-			// check for preBlockStatements in C/C++ ONLY if not within parentheses
-			// (otherwise 'struct XXX' statements would be wrongly interpreted...)
-			if (!isInTemplate && !(isCStyle() && parenDepth > 0))
-			{
-				const std::string* newHeader = findHeader(line, i, preBlockStatements);
-				// CORBA IDL module
-				if (newHeader == &ASResource::AS_MODULE)
-				{
-					char nextChar = peekNextChar(line, i + newHeader->length() - 1);
-					if (prevNonSpaceCh == ')' || !isalpha(nextChar))
-						newHeader = nullptr;
-				}
-				if (newHeader != nullptr
-				        && !(isCStyle() && newHeader == &ASResource::AS_CLASS && (isInEnum || isInStruct))	// is not 'enum class'
-				        && !(isCStyle() && newHeader == &ASResource::AS_INTERFACE			// CORBA IDL interface
-				             && (headerStack->empty()
-				                 || headerStack->back() != &ASResource::AS_OPEN_BRACE)))
-				{
-					if (!isSharpStyle())
-						headerStack->emplace_back(newHeader);
-					// do not need 'where' in the headerStack
-					// do not need second 'class' statement in a row
-					else if (!(newHeader == &ASResource::AS_WHERE
-					           || ((newHeader == &ASResource::AS_CLASS || newHeader == &ASResource::AS_STRUCT)
-					               && !headerStack->empty()
-					               && (headerStack->back() == &ASResource::AS_CLASS
-					                   || headerStack->back() == &ASResource::AS_STRUCT))))
-						headerStack->emplace_back(newHeader);
-
-					if (!headerStack->empty())
-					{
-						if ((*headerStack).back() == &ASResource::AS_CLASS
-						        || (*headerStack).back() == &ASResource::AS_STRUCT
-						        || (*headerStack).back() == &ASResource::AS_INTERFACE)
-						{
-							isInClassHeader = true;
-						}
-						else if ((*headerStack).back() == &ASResource::AS_NAMESPACE
-						         || (*headerStack).back() == &ASResource::AS_MODULE)
-						{
-							// remove continuationIndent from namespace
-							if (!continuationIndentStack->empty())
-								continuationIndentStack->pop_back();
-							isContinuation = false;
-						}
-					}
-
-					i += newHeader->length() - 1;
-					continue;
-				}
-			}
-			const std::string* foundIndentableHeader = findHeader(line, i, indentableHeaders);
-
-			if (foundIndentableHeader != nullptr)
-			{
-				// must bypass the header before registering the in statement
-				i += foundIndentableHeader->length() - 1;
-				if (!isInOperator && !isInTemplate && !isNonInStatementArray)
-				{
-					registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, false);
-					isContinuation = true;
-				}
-				continue;
-			}
-
-			if (isCStyle() && findKeyword(line, i, ASResource::AS_OPERATOR))
-				isInOperator = true;
-
-			if (g_preprocessorCppExternCBrace == 1 && findKeyword(line, i, ASResource::AS_EXTERN))
-				++g_preprocessorCppExternCBrace;
-
-			if (g_preprocessorCppExternCBrace == 3)	// extern "C" is not followed by a '{'
-				g_preprocessorCppExternCBrace = 0;
-
-			// "new" operator is a pointer, not a calculation
-			if (findKeyword(line, i, ASResource::AS_NEW))
-			{
-				if (isContinuation && !continuationIndentStack->empty() && prevNonSpaceCh == '=')
-					continuationIndentStack->back() = 0;
-			}
-
-			if (isCStyle() && findKeyword(line, i, ASResource::AS_AUTO) && isTopLevel())
-			{
-				isInTrailingReturnType = true;
-			}
-
-			if (isCStyle())
-			{
-				if (findKeyword(line, i, ASResource::AS_ASM)
-				        || findKeyword(line, i, ASResource::AS__ASM__))
-				{
-					isInAsm = true;
-				}
-				else if (findKeyword(line, i, ASResource::AS_MS_ASM)		// microsoft specific
-				         || findKeyword(line, i, ASResource::AS_MS__ASM))
-				{
-					int index = 4;
-					if (peekNextChar(line, i) == '_')		// check for __asm
-						index = 5;
-
-					char peekedChar = peekNextChar(line, i + index);
-					if (peekedChar == '{' || peekedChar == ' ')
-						isInAsmBlock = true;
-					else
-						isInAsmOneLine = true;
-				}
-			}
-
-			// bypass the entire name for all others
-			std::string_view name = getCurrentWord(line, i);
-			i += name.length() - 1;
+			handlePotentialHeaderSection(line, &i, tabIncrementIn, &isInOperator);
 			continue;
 		}
 
@@ -3904,126 +4066,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 
 		if (isPotentialOperator)
 		{
-			// Check if an operator has been reached.
-			const std::string* foundAssignmentOp = findOperator(line, i, assignmentOperators);
-			const std::string* foundNonAssignmentOp = findOperator(line, i, nonAssignmentOperators);
-
-			if (foundNonAssignmentOp != nullptr)
-			{
-				if (foundNonAssignmentOp == &ASResource::AS_LAMBDA)
-					foundPreCommandHeader = true;
-				if (isInTemplate && foundNonAssignmentOp == &ASResource::AS_GR_GR)
-					foundNonAssignmentOp = nullptr;
-			}
-
-			// Since findHeader's boundary checking was not used above, it is possible
-			// that both an assignment op and a non-assignment op where found,
-			// e.g. '>>' and '>>='. If this is the case, treat the LONGER one as the
-			// found operator.
-			if (foundAssignmentOp != nullptr && foundNonAssignmentOp != nullptr)
-			{
-				if (foundAssignmentOp->length() < foundNonAssignmentOp->length())
-					foundAssignmentOp = nullptr;
-				else
-					foundNonAssignmentOp = nullptr;
-			}
-
-			if (foundNonAssignmentOp != nullptr)
-			{
-				if (foundNonAssignmentOp->length() > 1)
-					i += foundNonAssignmentOp->length() - 1;
-
-				// For C++ input/output, operator<<, >> and . method calls should be
-				// aligned, if we are not in a statement already and
-				// also not in the "operator<<(...)" header line
-
-				// GL28: method calls have to contain only alphanumeric identifier
-				size_t openParenPos = line.find(ASResource::AS_OPEN_PAREN, i);
-				size_t closeParenPos = line.find(ASResource::AS_CLOSE_PAREN, openParenPos);
-
-				std::string methodName = getNextWord(std::string(line), i);
-				size_t methodNameEndPos =  i + methodName.length() + 1;
-				size_t firstCharAfterMethod = line.substr(i + methodName.length() + 1).find_first_not_of(" \t");
-				if (firstCharAfterMethod != std::string::npos)
-				{
-					methodNameEndPos += firstCharAfterMethod;
-				}
-
-				size_t firstCharOfLine = line.find_first_not_of(" \t");
-				bool lineStartsWithDot = false;
-				if (firstCharOfLine != std::string::npos)
-				{
-					lineStartsWithDot = line[firstCharOfLine] == '.';
-				}
-
-				// GL28: do not mixup template closing ">>" with IO operator
-				std::string searchTemplatePattern = std::string(line).substr(0, i);
-				size_t countLS = std::count_if( searchTemplatePattern.begin(), searchTemplatePattern.end(), []( char c ){return c =='<';});
-
-				if (!isInOperator
-				        && continuationIndentStack->empty()
-				        && isCStyle()
-				        && !lineStartsWithDot
-				        && ( (foundNonAssignmentOp == &ASResource::AS_GR_GR && countLS < 2 )
-				            ||  foundNonAssignmentOp == &ASResource::AS_LS_LS
-				            || (foundNonAssignmentOp == &ASResource::AS_DOT && openParenPos == methodNameEndPos && closeParenPos != std::string::npos )))
-				{
-					// this will be true if the line begins with the operator
-					if (i < foundNonAssignmentOp->length() && spaceIndentCount == 0)
-						spaceIndentCount += 2 * indentLength;
-					// align to the beginning column of the operator
-					registerContinuationIndent(line, i - foundNonAssignmentOp->length(), spaceIndentCount, tabIncrementIn, 0, false);
-				}
-			}
-
-			else if (foundAssignmentOp != nullptr)
-			{
-
-				isInAssignment = true;
-
-				foundPreCommandHeader = false;		// clears this for array assignments
-				foundPreCommandMacro = false;
-
-				if (foundAssignmentOp->length() > 1)
-					i += foundAssignmentOp->length() - 1;
-
-				if (!isInOperator && !isInTemplate && (!isNonInStatementArray || isInEnum || isInStruct))
-				{
-					// if multiple assignments, align on the previous word
-					if (foundAssignmentOp == &ASResource::AS_ASSIGN
-					        && prevNonSpaceCh != ']'		// an array
-					        && statementEndsWithComma(line, i))
-					{
-						// only one assignment indent per line + GH #10
-						if (!haveAssignmentThisLine && line.find(ASResource::AS_SCOPE_RESOLUTION) == std::string::npos)
-						{
-							// register indent at previous word
-							haveAssignmentThisLine = true;
-							int prevWordIndex = getContinuationIndentAssign(line, i);
-							int continuationIndentCount = prevWordIndex + spaceIndentCount + tabIncrementIn;
-							continuationIndentStack->emplace_back(continuationIndentCount);
-							isContinuation = true;
-						}
-					}
-					// don't indent an assignment if 'let'
-					else if (isInLet)
-					{
-						isInLet = false;
-					}
-					else if (!lineBeginsWithComma && !isInDefine)
-					{
-						if (i == 0 && spaceIndentCount == 0)
-							spaceIndentCount += indentLength;
-
-						// #SF 97
-						if (prevNonLegalCh == '=' && currentNonLegalCh == '=')
-							spaceIndentCount = 0;
-
-						registerContinuationIndent(line, i, spaceIndentCount, tabIncrementIn, 0, false);
-						isContinuation = true;
-					}
-				}
-			}
+			handlePotentialOperatorSection(line, i, tabIncrementIn, haveAssignmentThisLine, isInOperator);
 		}
 	}	// end of for loop * end of for loop * end of for loop * end of for loop * end of for loop *
 }
