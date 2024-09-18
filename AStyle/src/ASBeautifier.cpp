@@ -2662,29 +2662,29 @@ bool ASBeautifier::isTopLevel() const
 }
 
 
-bool ASBeautifier::handleHeaderSection(std::string_view line, size_t i, bool closingBraceReached, bool *haveCaseIndent)
+bool ASBeautifier::handleHeaderSection(std::string_view line, size_t *i, bool closingBraceReached, bool *haveCaseIndent)
 {
-	const std::string* newHeader = findHeader(line, i, headers);
+	const std::string* newHeader = findHeader(line, *i, headers);
 
 	// java can have a 'default' not in a switch
 	if (newHeader == &ASResource::AS_DEFAULT
-			&& peekNextChar(line, (i + (*newHeader).length() - 1)) != ':')
+			&& peekNextChar(line, (*i + (*newHeader).length() - 1)) != ':')
 		newHeader = nullptr;
 	// Qt headers may be variables in C++
 	if (isCStyle()
 			&& (newHeader == &ASResource::AS_FOREVER || newHeader == &ASResource::AS_FOREACH))
 	{
-		if (line.find_first_of("=;", i) != std::string::npos)
+		if (line.find_first_of("=;", *i) != std::string::npos)
 			newHeader = nullptr;
 	}
 	else if (isSharpStyle()
 				&& (newHeader == &ASResource::AS_GET || newHeader == &ASResource::AS_SET))
 	{
-		if (getNextWord(std::string(line), i + (*newHeader).length()) == "is")
+		if (getNextWord(std::string(line), *i + (*newHeader).length()) == "is")
 			newHeader = nullptr;
 	}
 	else if (newHeader == &ASResource::AS_USING
-				&& peekNextChar(line, i + (*newHeader).length() - 1) != '(')
+				&& peekNextChar(line, *i + (*newHeader).length() - 1) != '(')
 		newHeader = nullptr;
 
 	if (newHeader != nullptr)
@@ -2829,57 +2829,57 @@ bool ASBeautifier::handleHeaderSection(std::string_view line, size_t i, bool clo
 		else
 			isInHeader = false;
 
-		i += newHeader->length() - 1;
+		*i += newHeader->length() - 1;
 
 		return false;
 	}  // newHeader != nullptr
 
-	if (findHeader(line, i, preCommandHeaders) != nullptr)
+	if (findHeader(line, *i, preCommandHeaders) != nullptr)
 		// must be after function arguments
 		if (prevNonSpaceCh == ')')
 			foundPreCommandHeader = true;
 
 	// Objective-C NSException macros are preCommandHeaders
-	if (isObjCStyle() && findKeyword(line, i, ASResource::AS_NS_DURING))
+	if (isObjCStyle() && findKeyword(line, *i, ASResource::AS_NS_DURING))
 		foundPreCommandMacro = true;
-	if (isObjCStyle() && findKeyword(line, i, ASResource::AS_NS_HANDLER))
+	if (isObjCStyle() && findKeyword(line, *i, ASResource::AS_NS_HANDLER))
 		foundPreCommandMacro = true;
 
 	//https://sourceforge.net/p/astyle/bugs/353/
 	// new is ending the line?
-	if (isJavaStyle() && findKeyword(line, i, ASResource::AS_NEW) && line.length() - 3 == i)
+	if (isJavaStyle() && findKeyword(line, *i, ASResource::AS_NEW) && line.length() - 3 == *i)
 	{
 		headerStack->emplace_back(&ASResource::AS_FIXED); // needs to be something which will not match - need to define a token which will never match
 	}
 
 	//https://sourceforge.net/p/astyle/bugs/550/
 	//enum can be function return value
-	if (parenDepth == 0 && findKeyword(line, i, ASResource::AS_ENUM) && line.find_first_of(ASResource::AS_OPEN_PAREN, i) == std::string::npos){
+	if (parenDepth == 0 && findKeyword(line, *i, ASResource::AS_ENUM) && line.find_first_of(ASResource::AS_OPEN_PAREN, *i) == std::string::npos){
 		isInEnum = true;
 	}
 
-	if (parenDepth == 0 && (findKeyword(line, i, ASResource::AS_TYPEDEF_STRUCT) || findKeyword(line, i, ASResource::AS_STRUCT)) && line.find_first_of(ASResource::AS_SEMICOLON, i) == std::string::npos)
+	if (parenDepth == 0 && (findKeyword(line, *i, ASResource::AS_TYPEDEF_STRUCT) || findKeyword(line, *i, ASResource::AS_STRUCT)) && line.find_first_of(ASResource::AS_SEMICOLON, *i) == std::string::npos)
 	{
 		isInStruct = true;
 	}
 
 	// avoid regression with neovim test dataset
-	if (parenDepth == 0 && findKeyword(line, i, ASResource::AS_UNION) )
+	if (parenDepth == 0 && findKeyword(line, *i, ASResource::AS_UNION) )
 	{
 		isInStruct = false;
 	}
 
-	if (isSharpStyle() && findKeyword(line, i, ASResource::AS_LET))
+	if (isSharpStyle() && findKeyword(line, *i, ASResource::AS_LET))
 		isInLet = true;
 
 	return true;
 }
 
-bool ASBeautifier::handleColonSection(std::string_view line, size_t i, bool tabIncrementIn, char *ch)
+bool ASBeautifier::handleColonSection(std::string_view line, size_t *i, bool tabIncrementIn, char *ch)
 {
-	if (line.length() > i + 1 && line[i + 1] == ':') // look for ::
+	if (line.length() > *i + 1 && line[*i + 1] == ':') // look for ::
 	{
-		++i;
+		++*i;
 		return false;
 	}
 	else if (isInQuestion)		// NOLINT
@@ -2895,7 +2895,7 @@ bool ASBeautifier::handleColonSection(std::string_view line, size_t i, bool tabI
 	{
 		// found an enum with a base-type
 		isInEnumTypeID = true;
-		if (i == 0)
+		if (*i == 0)
 			indentCount += classInitializerIndents;
 	}
 	else if ((isCStyle() || isSharpStyle())
@@ -2904,8 +2904,8 @@ bool ASBeautifier::handleColonSection(std::string_view line, size_t i, bool tabI
 	{
 		// found a 'class' c'tor initializer
 		isInClassInitializer = true;
-		registerContinuationIndentColon(line, i, tabIncrementIn);
-		if (i == 0)
+		registerContinuationIndentColon(line, *i, tabIncrementIn);
+		if (*i == 0)
 			indentCount += classInitializerIndents;
 	}
 
@@ -2913,13 +2913,13 @@ bool ASBeautifier::handleColonSection(std::string_view line, size_t i, bool tabI
 	{
 		// is in a 'class A : public B' definition
 		isInClassHeaderTab = true;
-		registerContinuationIndentColon(line, i, tabIncrementIn);
+		registerContinuationIndentColon(line, *i, tabIncrementIn);
 	}
 	else if (isInAsm || isInAsmOneLine || isInAsmBlock)
 	{
 		// do nothing special
 	}
-	else if (isDigit(peekNextChar(line, i)))
+	else if (isDigit(peekNextChar(line, *i)))
 	{
 		// found a bit field - do nothing special
 	}
@@ -2947,13 +2947,13 @@ bool ASBeautifier::handleColonSection(std::string_view line, size_t i, bool tabI
 	// do not trigger this in class definitions https://gitlab.com/saalen/astyle/-/issues/4
 	else if (isInStruct && !isInCase)
 	{
-		if (i == 0)
+		if (*i == 0)
 			indentCount += classInitializerIndents;
 	}
 	else
 	{
 		currentNonSpaceCh = ';'; // so that braces after the ':' will appear as block-openers
-		char peekedChar = peekNextChar(line, i);
+		char peekedChar = peekNextChar(line, *i);
 		if (isInCase)
 		{
 			isInCase = false;
@@ -3928,7 +3928,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 		if (isPotentialHeader && squareBracketCount == 0)
 		{
 
-			if (!handleHeaderSection(line, i, closingBraceReached, &haveCaseIndent))
+			if (!handleHeaderSection(line, &i, closingBraceReached, &haveCaseIndent))
 				continue;
 
 		}   // isPotentialHeader
@@ -3939,7 +3939,7 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 		// special handling of colons XXX 533
 		if (ch == ':')
 		{
-			if (!handleColonSection(line , i, tabIncrementIn, &ch))
+			if (!handleColonSection(line , &i, tabIncrementIn, &ch))
 				continue;
 		}
 

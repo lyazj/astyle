@@ -440,8 +440,8 @@ private:  // functions
 	std::vector<std::vector<const std::string*>*>* copyTempStacks(const ASBeautifier& other) const;
 	std::pair<int, int> computePreprocessorIndent();
 
-	bool handleHeaderSection(std::string_view line, size_t i, bool closingBraceReached, bool *haveCaseIndent);
-	bool handleColonSection(std::string_view line, size_t i, bool tabIncrementIn, char *ch);
+	bool handleHeaderSection(std::string_view line, size_t *i, bool closingBraceReached, bool *haveCaseIndent);
+	bool handleColonSection(std::string_view line, size_t *i, bool tabIncrementIn, char *ch);
 	void handleEndOfStatement(size_t i, bool *closingBraceReached, char *ch);
 	void handleParens(std::string_view line, size_t i, bool tabIncrementIn, bool * isInOperator, char ch);
 	void handleClosingParen(std::string_view line, size_t i, bool tabIncrementIn);
