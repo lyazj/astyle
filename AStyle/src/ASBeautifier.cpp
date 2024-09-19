@@ -2882,7 +2882,7 @@ bool ASBeautifier::isNumericVariable(std::string_view word) const
 	        || word == "void"
 	        || word == "char"
 	        || word == "long"
-			|| word == "unsigned"
+	        || word == "unsigned"
 	        || word == "short"
 	        || word == "double"
 	        || word == "float"
@@ -2961,7 +2961,6 @@ bool ASBeautifier::handleColonSection(std::string_view line, size_t *i, bool tab
 	else if (isDigit(peekNextChar(line, *i)) || lineStartsWithNumericType(line))
 	{
 		// found a bit field - do nothing special
-		//std::cerr <<"bitfiled "<<line<<"\n";
 	}
 	else if (isCStyle() && isInClass && prevNonSpaceCh != ')')
 	{
