@@ -383,6 +383,9 @@ protected:
 	std::string extractPreprocessorStatement(std::string_view line) const;
 	std::string trim(std::string_view str) const;
 	std::string rtrim(std::string_view str) const;
+	bool isNumericVariable(std::string_view word) const;
+	bool lineStartsWithNumericType(std::string_view line) const;
+
 
 	// variables set by ASFormatter - must be updated in activeBeautifierStack
 	int  inLineNumber;
@@ -781,7 +784,6 @@ private:  // functions
 	bool isMultiStatementLine() const;
 	bool isNextWordSharpNonParenHeader(int startChar) const;
 	bool isNonInStatementArrayBrace() const;
-	bool isNumericVariable(std::string_view word) const;
 	bool isOkToSplitFormattedLine();
 	bool isPointerOrReference() const;
 	bool isPointerOrReferenceCentered() const;
@@ -864,6 +866,8 @@ private:  // functions
 	std::string peekNextText(std::string_view firstLine,
 	                         bool endOnEmptyLine = false,
 	                         const std::shared_ptr<ASPeekStream>& streamArg = nullptr) const;
+
+
 
 	bool handleImmediatelyPostHeaderSection();
 	bool handlePassedSemicolonSection();

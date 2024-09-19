@@ -2875,6 +2875,45 @@ bool ASBeautifier::handleHeaderSection(std::string_view line, size_t *i, bool cl
 	return true;
 }
 
+bool ASBeautifier::isNumericVariable(std::string_view word) const
+{
+	if (word == "bool"
+	        || word == "int"
+	        || word == "void"
+	        || word == "char"
+	        || word == "long"
+			|| word == "unsigned"
+	        || word == "short"
+	        || word == "double"
+	        || word == "float"
+	        || (word.length() >= 4     // check end of word for _t
+	            && word.compare(word.length() - 2, 2, "_t") == 0)
+
+	        || word == "BOOL"
+	        || word == "DWORD"
+	        || word == "HWND"
+	        || word == "INT"
+	        || word == "LPSTR"
+	        || word == "VOID"
+	        || word == "LPVOID"
+	        || word == "wxFontEncoding"
+	   )
+		return true;
+	return false;
+}
+
+
+bool ASBeautifier::lineStartsWithNumericType(std::string_view line) const
+{
+	size_t firstCharOfLine = line.find_first_not_of(" \t");
+	if (firstCharOfLine != std::string::npos && isCStyle()) {
+		size_t endOfWord = line.find_first_of(" \t", firstCharOfLine+1);
+		std::string_view word = line.substr(firstCharOfLine , endOfWord - firstCharOfLine);
+		return isNumericVariable(word);
+	}
+	return false;
+}
+
 bool ASBeautifier::handleColonSection(std::string_view line, size_t *i, bool tabIncrementIn, char *ch)
 {
 	if (line.length() > *i + 1 && line[*i + 1] == ':') // look for ::
@@ -2919,9 +2958,10 @@ bool ASBeautifier::handleColonSection(std::string_view line, size_t *i, bool tab
 	{
 		// do nothing special
 	}
-	else if (isDigit(peekNextChar(line, *i)))
+	else if (isDigit(peekNextChar(line, *i)) || lineStartsWithNumericType(line))
 	{
 		// found a bit field - do nothing special
+		//std::cerr <<"bitfiled "<<line<<"\n";
 	}
 	else if (isCStyle() && isInClass && prevNonSpaceCh != ')')
 	{

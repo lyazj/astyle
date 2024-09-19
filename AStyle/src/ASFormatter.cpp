@@ -1168,7 +1168,7 @@ void ASFormatter::handleColonSection()
 				&& !isInObjCMethodDefinition   // not objC '-' or '+' method
 				&& !isInObjCInterface          // not objC @interface
 				&& !isInObjCSelector           // not objC @selector
-				&& !isDigit(peekNextChar())    // not a bit field
+				&& !isDigit(peekNextChar()) && !lineStartsWithNumericType(currentLine)    // not a bit field xxxx
 				&& !isInEnum                   // not an enum with a base type
 				&& !isInStruct                 // not an struct
 				&& !isInContinuedPreProc           // not in preprocessor line
@@ -3479,32 +3479,6 @@ BraceType ASFormatter::getBraceType()
 
 
 	return returnVal;
-}
-
-bool ASFormatter::isNumericVariable(std::string_view word) const
-{
-	if (word == "bool"
-	        || word == "int"
-	        || word == "void"
-	        || word == "char"
-	        || word == "long"
-	        || word == "short"
-	        || word == "double"
-	        || word == "float"
-	        || (word.length() >= 4     // check end of word for _t
-	            && word.compare(word.length() - 2, 2, "_t") == 0)
-
-	        || word == "BOOL"
-	        || word == "DWORD"
-	        || word == "HWND"
-	        || word == "INT"
-	        || word == "LPSTR"
-	        || word == "VOID"
-	        || word == "LPVOID"
-	        || word == "wxFontEncoding"
-	   )
-		return true;
-	return false;
 }
 
 /**
@@ -7455,6 +7429,7 @@ bool ASFormatter::isIndentablePreprocessorBlock(const std::string& firstLine, si
 				else
 					isInClassConstructor = true;
 			}
+
 			// bypass unnecessary parsing - must exit BOTH loops
 			if (blockContainsBraces || isInClassConstructor || blockContainsDefineContinuation)
 				goto EndOfWhileLoop;
