@@ -3932,8 +3932,11 @@ bool ASFormatter::isUnaryOperator() const
 		std::string prevWord = getPreviousWord(currentLine, end);
 		if (prevWord.empty())
 			return false;
-		if (!isNumericVariable(prevWord))
-			return false;
+
+		// a cast can be a user defined type
+		//if (!isNumericVariable(prevWord))
+		//	return false;
+
 		return true;
 	}
 
