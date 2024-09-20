@@ -4540,6 +4540,12 @@ void ASFormatter::formatPointerOrReference()
 	int itemAlignment = (currentChar == '*' || currentChar == '^')
 	                    ? pa : ((ra == REF_SAME_AS_PTR) ? pa : ra);
 
+	// handle operator char*() {};
+	if (currentChar == '*' && isCStyle() && currentLine.find("operator") != std::string::npos) {
+		formattedLine.append("*");
+		return;
+	}
+
 	// check for ** and &&
 	int ptrLength = 1;
 	char peekedChar = peekNextChar();
