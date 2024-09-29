@@ -1381,9 +1381,14 @@ void ASBeautifier::registerContinuationIndent(std::string_view line, int i, int 
 
 		int currIndent = continuationIndent * indentLength + previousIndent;
 
-		// GL29
+
+		// GL29 / GL45
 		if (shouldIndentAfterParen) {
-			currIndent = indentLength;
+			size_t countOpenParen = std::count_if( line.begin(), line.end(), []( char c ){return c =='(';});
+			size_t countCloseParen = std::count_if( line.begin(), line.end(), []( char c ){return c ==')';});
+
+			if (countOpenParen > 1 && countOpenParen > countCloseParen)
+				currIndent = indentLength;
 		}
 
 		if (currIndent > maxContinuationIndent && line[i] != '{')
