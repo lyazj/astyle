@@ -211,6 +211,7 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	switchIndent = other.switchIndent;
 	caseIndent = other.caseIndent;
 	squeezeWhitespace = other.squeezeWhitespace;
+	noSqueezeWhitespacePrecomment = other.noSqueezeWhitespacePrecomment;
 	attemptLambdaIndentation = other.attemptLambdaIndentation;
 	isInAssignment = other.isInAssignment;
 	isInInitializerList = other.isInInitializerList;
@@ -1151,6 +1152,17 @@ void ASBeautifier::setAlignMethodColon(bool state)
 void ASBeautifier::setSqueezeWhitespace(bool state)
 {
 	squeezeWhitespace = state;
+}
+
+/**
+ * set the state of the squeeze whitespace option. If true,
+ * superfluous whitespace before "//" will not be removed
+ *
+ * @param   state             state of option.
+ */
+void ASBeautifier::setNoSqueezeWhitespacePrecomment(bool state)
+{
+	noSqueezeWhitespacePrecomment = state;
 }
 
 /**
@@ -2725,8 +2737,12 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 			if (squeezeWhitespace && !isInComment && !isInQuote && isWhiteSpace(line[i + 1]) && !isWhiteSpace(line[i - 1]))
 			{
 				size_t wsSpanEnd = line.find_first_not_of(" \t", i + 1);
-				std::pair<size_t, size_t> wsSpan(i, wsSpanEnd - i - 1);
-				squeezeWSStack.emplace_back(wsSpan);
+				if (!noSqueezeWhitespacePrecomment
+				        || (wsSpanEnd + 2 > line.length() || line[wsSpanEnd] != '/' || line[wsSpanEnd + 1] != '/'))
+				{
+					std::pair<size_t, size_t> wsSpan(i, wsSpanEnd - i - 1);
+					squeezeWSStack.emplace_back(wsSpan);
+				}
 			}
 
 			if (ch == '\t')
