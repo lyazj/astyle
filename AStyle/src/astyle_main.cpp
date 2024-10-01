@@ -3576,6 +3576,10 @@ bool ASOptions::parseOptionContinued(const std::string& arg)
 	{
 		formatter.setNoSqueezeWhitespacePrecomment(true);
 	}
+	else if (isOption(arg, "nosqueeze-ws-postcomm"))
+	{
+		formatter.setNoSqueezeWhitespacePostcomment(true);
+	}
 	else if (isOption(arg, "pad-brackets"))
 	{
 		formatter.setBracketsOutsidePaddingMode(true);

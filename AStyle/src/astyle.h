@@ -354,6 +354,7 @@ public:
 	void setPreprocConditionalIndent(bool state);
 	void setSqueezeWhitespace(bool state);
 	void setNoSqueezeWhitespacePrecomment(bool state);
+	void setNoSqueezeWhitespacePostcomment(bool state);
 	void setLambdaIndentation(bool state);
 	int  getBeautifierFileType() const;
 	int  getFileType() const;
@@ -542,6 +543,7 @@ private:  // variables
 	bool shouldIndentPreprocConditional;
 	bool squeezeWhitespace;
 	bool noSqueezeWhitespacePrecomment;
+	bool noSqueezeWhitespacePostcomment;
 	bool attemptLambdaIndentation;
 
 	bool isInAssignment;

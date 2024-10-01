@@ -62,6 +62,8 @@ ASBeautifier::ASBeautifier()
 	setSwitchIndent(false);
 	setCaseIndent(false);
 	setSqueezeWhitespace(false);
+	setNoSqueezeWhitespacePrecomment(false);
+	setNoSqueezeWhitespacePostcomment(false);
 	setLambdaIndentation(false);
 	setBlockIndent(false);
 	setBraceIndent(false);
@@ -212,6 +214,7 @@ ASBeautifier::ASBeautifier(const ASBeautifier& other) : ASBase(other)
 	caseIndent = other.caseIndent;
 	squeezeWhitespace = other.squeezeWhitespace;
 	noSqueezeWhitespacePrecomment = other.noSqueezeWhitespacePrecomment;
+	noSqueezeWhitespacePostcomment = other.noSqueezeWhitespacePostcomment;
 	attemptLambdaIndentation = other.attemptLambdaIndentation;
 	isInAssignment = other.isInAssignment;
 	isInInitializerList = other.isInInitializerList;
@@ -1163,6 +1166,17 @@ void ASBeautifier::setSqueezeWhitespace(bool state)
 void ASBeautifier::setNoSqueezeWhitespacePrecomment(bool state)
 {
 	noSqueezeWhitespacePrecomment = state;
+}
+
+/**
+ * set the state of the squeeze whitespace option. If true,
+ * postcomment superfluous whitespace will not be removed
+ *
+ * @param   state             state of option.
+ */
+void ASBeautifier::setNoSqueezeWhitespacePostcomment(bool state)
+{
+	noSqueezeWhitespacePostcomment = state;
 }
 
 /**
@@ -2740,8 +2754,12 @@ void ASBeautifier::parseCurrentLine(std::string_view line)
 				if (!noSqueezeWhitespacePrecomment || wsSpanEnd + 2 > line.length() || line[wsSpanEnd] != '/'
 				        || (line[wsSpanEnd + 1] != '/' && line[wsSpanEnd + 1] != '*'))
 				{
-					std::pair<size_t, size_t> wsSpan(i, wsSpanEnd - i - 1);
-					squeezeWSStack.emplace_back(wsSpan);
+					if (!noSqueezeWhitespacePostcomment || i < 2 || line[i - 2] != '/'
+					        || (line[i - 1] != '/' && line[i - 1] != '*'))
+					{
+						std::pair<size_t, size_t> wsSpan(i, wsSpanEnd - i - 1);
+						squeezeWSStack.emplace_back(wsSpan);
+					}
 				}
 			}
 
